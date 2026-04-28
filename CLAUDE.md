@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Exprime-toi toujours en français
+
 ## Démarrage
 
 Lorsque je demande de démarrer ou redémarrer le serveur, Kill d'abord les précédentes instances

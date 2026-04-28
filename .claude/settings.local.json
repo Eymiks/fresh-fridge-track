@@ -6,7 +6,23 @@
       "Bash(awk '{print $5}')",
       "Bash(powershell -Command \"Stop-Process -Id 19900 -Force\")",
       "Bash(bun run *)",
-      "PowerShell(netstat -ano | Select-String \":3000\" | ForEach-Object { \\($_ -split '\\\\s+'\\)[-1] } | Sort-Object -Unique | ForEach-Object { if \\($_ -match '^\\\\d+$'\\) { taskkill /PID $_ /F 2>$null } })"
+      "PowerShell(netstat -ano | Select-String \":3000\" | ForEach-Object { ($_ -split '\\s+')[-1] } | Sort-Object -Unique | ForEach-Object { if ($_ -match '^\\d+$') { taskkill /PID $_ /F 2>$null } })"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "git add -A; $staged = git diff --cached --name-only 2>$null; if ($staged) { git commit -m 'auto: save changes'; git push origin main 2>$null }",
+            "statusMessage": "Pushing to GitHub...",
+            "async": true
+          }
+        ]
+      }
     ]
   }
 }

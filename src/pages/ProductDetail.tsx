@@ -403,8 +403,23 @@ const ProductDetail = () => {
             </p>
           </div>
 
-          {/* ── Fraîcheur ── */}
-          <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Fraîcheur</h2>
+          {/* Badges row - all aligned */}
+          <div className="flex items-start justify-center gap-3 mb-3">
+            <ScoreBadge label="Nutri" value={nutriGrade} colorMap={nutriColors} onClick={() => setScoreDialog('nutri')} />
+            {product.novaGroup && (
+              <ScoreBadge label="NOVA" value={String(product.novaGroup)} colorMap={novaColors} onClick={() => setScoreDialog('nova')} />
+            )}
+            {product.ecoScore && (
+              <ScoreBadge label="Eco" value={product.ecoScore.toUpperCase()} colorMap={ecoColors} onClick={() => setScoreDialog('eco')} />
+            )}
+            <div className="flex flex-col items-center gap-0.5">
+              <span className={`flex items-center gap-1 text-xs font-bold h-8 px-3 rounded-lg ${config.badge}`}>
+                <StatusIcon className="w-3.5 h-3.5" />
+                {config.label}
+              </span>
+              <span className="text-[9px] text-muted-foreground font-semibold">État</span>
+            </div>
+          </div>
 
           {/* Product status badge */}
           {statusBadge && (
@@ -501,28 +516,28 @@ const ProductDetail = () => {
             )}
           </div>
 
-          {/* ── Nutrition ── */}
-          <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 mt-7">Nutrition</h2>
-
-          {/* Badges row */}
-          <div className="flex items-start justify-center gap-3 mb-4">
-            <ScoreBadge label="Nutri" value={nutriGrade} colorMap={nutriColors} onClick={() => setScoreDialog('nutri')} />
-            {product.novaGroup && (
-              <ScoreBadge label="NOVA" value={String(product.novaGroup)} colorMap={novaColors} onClick={() => setScoreDialog('nova')} />
-            )}
-            {product.ecoScore && (
-              <ScoreBadge label="Eco" value={product.ecoScore.toUpperCase()} colorMap={ecoColors} onClick={() => setScoreDialog('eco')} />
-            )}
-            <div className="flex flex-col items-center gap-0.5">
-              <span className={`flex items-center gap-1 text-xs font-bold h-8 px-3 rounded-lg ${config.badge}`}>
-                <StatusIcon className="w-3.5 h-3.5" />
-                {config.label}
-              </span>
-              <span className="text-[9px] text-muted-foreground font-semibold">État</span>
+          {/* Allergens */}
+          {product.allergens && (
+            <div className="mb-5">
+              <div className="flex items-center gap-2 mb-2">
+                <ShieldAlert className="w-4 h-4 text-destructive" />
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Allergènes</h3>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {product.allergens.split(',').map((a, i) => {
+                  const translated = translateAllergen(a);
+                  if (!translated) return null;
+                  return (
+                    <span key={i} className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
+                      {translated}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Nutrition table */}
+          {/* Nutrition */}
           {product.nutritionData && (() => {
             const n = JSON.parse(product.nutritionData) as Record<string, number>;
             const rows: [string, string, string][] = [
@@ -550,30 +565,6 @@ const ProductDetail = () => {
               </div>
             );
           })()}
-
-          {/* Allergens */}
-          {product.allergens && (
-            <div className="mb-5">
-              <div className="flex items-center gap-2 mb-2">
-                <ShieldAlert className="w-4 h-4 text-destructive" />
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Allergènes</h3>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {product.allergens.split(',').map((a, i) => {
-                  const translated = translateAllergen(a);
-                  if (!translated) return null;
-                  return (
-                    <span key={i} className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
-                      {translated}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ── Détails & Historique ── */}
-          <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 mt-7">Détails & Historique</h2>
 
           {/* Details card */}
           <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
@@ -622,6 +613,15 @@ const ProductDetail = () => {
             </Collapsible>
           )}
 
+          <div className="mt-5 space-y-2">
+            <button onClick={openEdit} className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold hover:bg-primary/90 transition-colors">
+              <Pencil className="w-4 h-4" /> Modifier
+            </button>
+            <button onClick={() => setConfirmDelete(true)} className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-destructive/10 text-destructive rounded-2xl font-bold hover:bg-destructive/20 transition-colors">
+              <Trash2 className="w-4 h-4" /> Supprimer
+            </button>
+          </div>
+
           {/* Timeline */}
           <div className="mt-5">
             <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Historique</h3>
@@ -654,15 +654,6 @@ const ProductDetail = () => {
                 </>
               )}
             </div>
-          </div>
-
-          <div className="mt-5 space-y-2">
-            <button onClick={openEdit} className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold hover:bg-primary/90 transition-colors">
-              <Pencil className="w-4 h-4" /> Modifier
-            </button>
-            <button onClick={() => setConfirmDelete(true)} className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-destructive/10 text-destructive rounded-2xl font-bold hover:bg-destructive/20 transition-colors">
-              <Trash2 className="w-4 h-4" /> Supprimer
-            </button>
           </div>
 
           {/* Barcode */}
