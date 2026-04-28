@@ -172,7 +172,6 @@ const ProductDetail = () => {
   const [editDate, setEditDate] = useState('');
   const [editBrand, setEditBrand] = useState('');
   const [editCategory, setEditCategory] = useState('');
-  const [ingredientsOpen, setIngredientsOpen] = useState(false);
   const [scoreDialog, setScoreDialog] = useState<ScoreDialogType>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
