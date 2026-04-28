@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "PowerShell(netstat -ano | Select-String \":3000\" | ForEach-Object { \\($_ -split '\\\\s+'\\)[-1] } | Sort-Object -Unique | ForEach-Object { taskkill /PID $_ /F 2>&1 })"
+    ]
+  }
+}

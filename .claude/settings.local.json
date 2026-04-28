@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/c/Users/Maxime/.bun/bin/bun run *)",
+      "Bash(netstat -ano)",
+      "Bash(awk '{print $5}')",
+      "Bash(powershell -Command \"Stop-Process -Id 19900 -Force\")",
+      "Bash(bun run *)",
+      "PowerShell(netstat -ano | Select-String \":3000\" | ForEach-Object { \\($_ -split '\\\\s+'\\)[-1] } | Sort-Object -Unique | ForEach-Object { if \\($_ -match '^\\\\d+$'\\) { taskkill /PID $_ /F 2>$null } })"
+    ]
+  }
+}
