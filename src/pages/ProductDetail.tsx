@@ -459,13 +459,16 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          {/* Day counter */}
+          {/* Day counter + date */}
           <div className={`rounded-2xl p-5 mb-5 ${config.bg} ${config.border} border text-center`}>
             <p className={`text-4xl font-black ${config.iconColor}`}>
               {days < 0 ? Math.abs(days) : days === 0 ? '!' : days}
             </p>
             <p className="text-sm font-semibold text-card-foreground mt-1">
               {days < 0 ? `jour${Math.abs(days) > 1 ? 's' : ''} de retard` : days === 0 ? "Expire aujourd'hui" : `jour${days > 1 ? 's' : ''} restant${days > 1 ? 's' : ''}`}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+              {format(new Date(product.expirationDate), 'dd MMMM yyyy', { locale: fr })}
             </p>
           </div>
 
