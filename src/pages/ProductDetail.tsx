@@ -317,6 +317,10 @@ const ProductDetail = () => {
   const expiryProgress = totalDays > 0 ? Math.min(Math.max(elapsedDays / totalDays, 0), 1) : 1;
   const progressBarColor = status === 'fresh' ? 'bg-success' : status === 'soon' ? 'bg-warning' : 'bg-destructive';
 
+  const nutritionObj = product.nutritionData ? JSON.parse(product.nutritionData) as Record<string, number> : {};
+  const nutritionRowCount = ['energy_kcal', 'fat', 'saturated_fat', 'carbohydrates', 'sugars', 'proteins', 'fiber', 'salt'].filter(k => nutritionObj[k] != null).length;
+  const ingredientsPreview = product.ingredients ? product.ingredients.slice(0, 40) + (product.ingredients.length > 40 ? '…' : '') : null;
+
   return (
     <PageTransition>
       <div className="min-h-screen bg-background">
