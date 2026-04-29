@@ -16,7 +16,7 @@
           {
             "type": "command",
             "shell": "powershell",
-            "command": "git add -A; $staged = git diff --cached --name-only 2>$null; if ($staged) { git commit -m 'auto: save changes'; git push origin main 2>$null }",
+            "command": "$msgFile = '.claude/commit_msg.txt'; if (Test-Path $msgFile) { $msg = (Get-Content $msgFile -Raw).Trim(); Remove-Item $msgFile } else { $msg = $null }; git add -A; $staged = git diff --cached --name-only 2>$null; if ($staged) { if (-not $msg) { $files = ($staged -split \"`n\" | Where-Object { $_ } | ForEach-Object { Split-Path $_ -Leaf }) -join ', '; $msg = \"auto: $files\" }; git commit -m $msg; git push origin main 2>$null }",
             "statusMessage": "Pushing to GitHub...",
             "async": true
           }
