@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAppearance } from '@/contexts/AppearanceContext';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { Trash2, PackageOpen, UtensilsCrossed, MoreVertical, CalendarDays, Pencil, Check, Snowflake } from 'lucide-react';
 import { Product, getExpirationStatus, getDaysUntilExpiration, getEffectiveExpirationDate } from '@/types/product';
@@ -75,6 +76,9 @@ function ProductCardInner({
 }: ProductCardProps) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { density } = useAppearance();
+  const padClass = density === 'compact' ? 'p-2' : density === 'spacious' ? 'p-4' : 'p-3';
+  const gapClass = density === 'compact' ? 'gap-2' : density === 'spacious' ? 'gap-4' : 'gap-3';
   const [pendingAction, setPendingAction] = useState<'consumed' | 'thrown' | null>(null);
   const [showDateDialog, setShowDateDialog] = useState(false);
   const [pendingDate, setPendingDate] = useState('');
@@ -195,7 +199,7 @@ function ProductCardInner({
           onDragEnd={handleDragEnd}
           style={{ x }}
           onClick={handleCardClick}
-          className="relative flex items-center gap-3 p-3 rounded-2xl bg-card border border-border cursor-pointer active:scale-[0.98] will-change-transform overflow-hidden select-none"
+          className={`relative flex items-center ${gapClass} ${padClass} rounded-2xl bg-card border border-border cursor-pointer active:scale-[0.98] will-change-transform overflow-hidden select-none`}
         >
           {/* Status color indicator */}
           <div className={`absolute left-0 top-0 bottom-0 w-1 ${statusColors[status]} rounded-l-2xl`} />

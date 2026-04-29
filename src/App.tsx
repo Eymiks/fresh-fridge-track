@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AppearanceProvider } from "@/contexts/AppearanceContext";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { MobileMenu } from "@/components/MobileMenu";
 import { NotificationChecker } from "@/components/NotificationChecker";
@@ -87,13 +88,15 @@ function AppRoutes() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </BrowserRouter>
+      <AppearanceProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </BrowserRouter>
+      </AppearanceProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

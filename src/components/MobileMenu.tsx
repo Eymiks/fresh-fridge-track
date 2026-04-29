@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -19,6 +19,7 @@ import {
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppearance } from '@/contexts/AppearanceContext';
 import { useProducts } from '@/hooks/useProducts';
 import { useNotificationSettings } from '@/hooks/useNotificationSettings';
 import { getEffectiveExpirationDate, getExpirationStatus } from '@/types/product';
@@ -44,27 +45,13 @@ export function MobileMenu() {
   const { household, members, displayName, signOut, user } = useAuth();
   const { products } = useProducts();
   const { enabled: notificationsEnabled, permission, isSupported } = useNotificationSettings();
+  const { themeMode, setThemeMode } = useAppearance();
+  const isDark = themeMode === 'dark';
   const [open, setOpen] = useState(false);
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const [copied, setCopied] = useState(false);
 
   const myMember = members.find(member => member.user_id === user?.id);
   const isProductPage = location.pathname.startsWith('/product/');
-
-  useEffect(() => {
-    const saved = localStorage.getItem('frigo-dark-mode');
-    if (saved !== null) {
-      const next = saved === 'true';
-      setIsDark(next);
-      document.documentElement.classList.toggle('dark', next);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (open) {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    }
-  }, [open]);
 
   const activeProducts = useMemo(
     () => products.filter(product => product.status !== 'consumed' && product.status !== 'thrown'),
@@ -92,10 +79,7 @@ export function MobileMenu() {
   };
 
   const toggleDark = () => {
-    const next = !isDark;
-    setIsDark(next);
-    document.documentElement.classList.toggle('dark', next);
-    localStorage.setItem('frigo-dark-mode', next ? 'true' : 'false');
+    setThemeMode(isDark ? 'light' : 'dark');
     setOpen(false);
   };
 

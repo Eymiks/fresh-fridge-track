@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { LeafyGreen, BarChart3, Bell, History, Info, Moon, Sun, Home, Settings } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppearance } from '@/contexts/AppearanceContext';
 import { getExpirationStatus, getEffectiveExpirationDate } from '@/types/product';
 
 const navItems = [
@@ -17,15 +18,8 @@ const navItems = [
 export function DesktopSidebar() {
   const { products } = useProducts();
   const { displayName } = useAuth();
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
-
-  useEffect(() => {
-    const saved = localStorage.getItem('frigo-dark-mode');
-    if (saved === 'true') {
-      setIsDark(true);
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
+  const { themeMode, setThemeMode } = useAppearance();
+  const isDark = themeMode === 'dark';
 
   const alertCount = useMemo(() =>
     products.filter(p => {
@@ -35,12 +29,7 @@ export function DesktopSidebar() {
     }).length,
   [products]);
 
-  const toggleDark = () => {
-    const next = !isDark;
-    setIsDark(next);
-    document.documentElement.classList.toggle('dark', next);
-    localStorage.setItem('frigo-dark-mode', next ? 'true' : 'false');
-  };
+  const toggleDark = () => setThemeMode(isDark ? 'light' : 'dark');
 
   return (
     <aside className="w-56 shrink-0 h-screen bg-card border-r border-border flex flex-col">

@@ -8,6 +8,7 @@ import { ProductCard } from '@/components/ProductCard';
 import { AddProductSheet } from '@/components/AddProductSheet';
 import { getExpirationStatus, getEffectiveExpirationDate, PRODUCT_CATEGORIES } from '@/types/product';
 import { PageTransition } from '@/components/PageTransition';
+import { useAppearance } from '@/contexts/AppearanceContext';
 
 type AddMode = 'single' | 'multi';
 type StatusFilter = 'all' | 'expired' | 'soon' | 'fresh';
@@ -42,6 +43,8 @@ function SkeletonCard() {
 
 const Index = () => {
   const isMobile = useIsMobile();
+  const { density } = useAppearance();
+  const spaceClass = density === 'compact' ? 'space-y-2' : density === 'spacious' ? 'space-y-4' : 'space-y-3';
   const { products, loading, addProduct, removeProduct, setProductStatus, updateProduct } = useProducts();
   const [showBubble, setShowBubble] = useState(false);
   const [addMode, setAddMode] = useState<AddMode | null>(null);
@@ -354,7 +357,7 @@ const Index = () => {
         )}
 
         {/* Product list */}
-        <div className="px-5 mt-5 space-y-3">
+        <div className={`px-5 mt-5 ${spaceClass}`}>
           {loading ? (
             <div className="space-y-3">
               {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}

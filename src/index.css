@@ -83,6 +83,11 @@
   }
 }
 
+.reduce-motion * {
+  transition-duration: 0.01ms !important;
+  animation-duration: 0.01ms !important;
+}
+
 @layer base {
   * {
     @apply border-border;

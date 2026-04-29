@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useAppearance } from '@/contexts/AppearanceContext';
 
 const pageVariants = {
   initial: { opacity: 0, y: 10 },
@@ -22,8 +23,9 @@ let lastAnimatedPath: string | null = null;
 
 export function PageTransition({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
-  const shouldAnimate = lastAnimatedPath !== pathname;
-  if (shouldAnimate) lastAnimatedPath = pathname;
+  const { reduceMotion } = useAppearance();
+  const shouldAnimate = !reduceMotion && lastAnimatedPath !== pathname;
+  if (!reduceMotion && lastAnimatedPath !== pathname) lastAnimatedPath = pathname;
 
   return (
     <motion.div

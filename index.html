@@ -18,6 +18,22 @@
 
   <body>
     <div id="root"></div>
+    <script>
+      (function() {
+        var mode = localStorage.getItem('frigo-theme-mode');
+        var legacy = localStorage.getItem('frigo-dark-mode');
+        var isDark = mode === 'dark' ||
+          (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches) ||
+          (!mode && legacy === 'true');
+        if (isDark) document.documentElement.classList.add('dark');
+        var accents = { blue:'215 80% 55%', violet:'263 70% 60%', orange:'22 90% 52%', rose:'340 75% 58%', cyan:'190 75% 42%' };
+        var a = localStorage.getItem('frigo-accent-color');
+        if (a && accents[a]) {
+          document.documentElement.style.setProperty('--primary', accents[a]);
+          document.documentElement.style.setProperty('--ring', accents[a]);
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

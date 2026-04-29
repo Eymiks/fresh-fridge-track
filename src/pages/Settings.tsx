@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -11,7 +11,9 @@ import {
   Home,
   Info,
   LogOut,
+  Monitor,
   Moon,
+  Palette,
   Pencil,
   Settings as SettingsIcon,
   Share2,
@@ -25,6 +27,8 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { PageTransition } from '@/components/PageTransition';
 import { Switch } from '@/components/ui/switch';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useAppearance, ACCENT_COLORS, type ThemeMode, type AccentColor, type Density } from '@/contexts/AppearanceContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -84,7 +88,7 @@ export default function Settings() {
     requestPermission,
   } = useNotificationSettings();
 
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const { themeMode, setThemeMode, accentColor, setAccentColor, reduceMotion, setReduceMotion, density, setDensity } = useAppearance();
   const [copied, setCopied] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
@@ -98,20 +102,6 @@ export default function Settings() {
   const myMember = members.find(m => m.user_id === user?.id);
   const isOwner = household?.created_by === user?.id;
   const removingMember = members.find(m => m.user_id === removingMemberId);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('frigo-dark-mode');
-    const next = saved === 'true';
-    setIsDark(next);
-    document.documentElement.classList.toggle('dark', next);
-  }, []);
-
-  const toggleDark = () => {
-    const next = !isDark;
-    setIsDark(next);
-    document.documentElement.classList.toggle('dark', next);
-    localStorage.setItem('frigo-dark-mode', next ? 'true' : 'false');
-  };
 
   const handleAvatarUpload = async (file: File) => {
     if (!user || !household) return;
@@ -346,13 +336,73 @@ export default function Settings() {
             </div>
           </Section>
 
-          <Section title="Apparence" icon={isDark ? Moon : Sun}>
-            <div className="flex items-center justify-between gap-4 rounded-xl bg-muted/60 px-4 py-3">
-              <div>
-                <p className="text-sm font-bold text-foreground">{isDark ? 'Mode sombre' : 'Mode clair'}</p>
+          <Section title="Apparence" icon={Palette}>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Thème</p>
+                <ToggleGroup
+                  type="single"
+                  value={themeMode}
+                  onValueChange={v => v && setThemeMode(v as ThemeMode)}
+                  className="w-full"
+                  variant="outline"
+                >
+                  <ToggleGroupItem value="light" className="flex-1 gap-1.5 text-xs font-bold">
+                    <Sun className="w-3.5 h-3.5" /> Clair
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="dark" className="flex-1 gap-1.5 text-xs font-bold">
+                    <Moon className="w-3.5 h-3.5" /> Sombre
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="system" className="flex-1 gap-1.5 text-xs font-bold">
+                    <Monitor className="w-3.5 h-3.5" /> Système
+                  </ToggleGroupItem>
+                </ToggleGroup>
                 <p className="text-xs text-muted-foreground">Préférence conservée sur cet appareil.</p>
               </div>
-              <Switch checked={isDark} onCheckedChange={toggleDark} aria-label="Basculer le theme" />
+
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Couleur d'accent</p>
+                <div className="flex gap-3">
+                  {(Object.keys(ACCENT_COLORS) as AccentColor[]).map(key => (
+                    <button
+                      key={key}
+                      onClick={() => setAccentColor(key)}
+                      aria-label={ACCENT_COLORS[key].label}
+                      className="w-9 h-9 rounded-full flex items-center justify-center transition-transform hover:scale-110"
+                      style={{
+                        backgroundColor: `hsl(${ACCENT_COLORS[key].hsl})`,
+                        outline: accentColor === key ? `2px solid hsl(${ACCENT_COLORS[key].hsl})` : '2px solid transparent',
+                        outlineOffset: '3px',
+                      }}
+                    >
+                      {accentColor === key && <Check className="w-4 h-4 text-white drop-shadow" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-4 rounded-xl bg-muted/60 px-4 py-3">
+                <div>
+                  <p className="text-sm font-bold text-foreground">Réduire les animations</p>
+                  <p className="text-xs text-muted-foreground">Désactive les transitions de page.</p>
+                </div>
+                <Switch checked={reduceMotion} onCheckedChange={setReduceMotion} aria-label="Réduire les animations" />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Densité d'affichage</p>
+                <ToggleGroup
+                  type="single"
+                  value={density}
+                  onValueChange={v => v && setDensity(v as Density)}
+                  className="w-full"
+                  variant="outline"
+                >
+                  <ToggleGroupItem value="compact" className="flex-1 text-xs font-bold">Compact</ToggleGroupItem>
+                  <ToggleGroupItem value="normal" className="flex-1 text-xs font-bold">Normal</ToggleGroupItem>
+                  <ToggleGroupItem value="spacious" className="flex-1 text-xs font-bold">Aéré</ToggleGroupItem>
+                </ToggleGroup>
+              </div>
             </div>
           </Section>
 
