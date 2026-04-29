@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2, Barcode, Clock, Tag, Pencil, AlertTriangle, CircleCheck, PackageOpen, UtensilsCrossed, RotateCcw, Scale, ShieldAlert, Info, SearchX, RefreshCw, X, Snowflake, BarChart2, AlignLeft } from 'lucide-react';
+import { ArrowLeft, Trash2, Barcode, Clock, Tag, Pencil, AlertTriangle, CircleCheck, PackageOpen, UtensilsCrossed, RotateCcw, Scale, ShieldAlert, Info, SearchX, RefreshCw, X, Snowflake, BarChart2, AlignLeft, Calendar } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -352,7 +352,7 @@ const ProductDetail = () => {
         </AnimatePresence>
 
         {/* Hero header with blurred background + parallax */}
-        <div className="relative h-52 overflow-hidden">
+        <div className="relative h-32 overflow-hidden">
           {product.imageUrl ? (
             <>
               <motion.img src={product.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover blur-xl" style={{ y: heroY, scale: heroScale, opacity: heroOpacity }} />
@@ -362,74 +362,87 @@ const ProductDetail = () => {
             <div className={`absolute inset-0 bg-gradient-to-b ${config.gradient}`} />
           )}
           {/* Back button - glass style */}
-          <button onClick={() => navigate('/')} className="absolute top-12 left-4 z-10 p-2.5 rounded-full bg-background/30 backdrop-blur-md border border-white/20 hover:bg-background/50 transition-colors text-white dark:text-foreground">
+          <button onClick={() => navigate('/')} className="absolute top-8 left-4 z-10 p-2.5 rounded-full bg-background/30 backdrop-blur-md border border-white/20 hover:bg-background/50 transition-colors text-white dark:text-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Product image overlapping hero with parallax */}
-        <motion.div className="flex justify-center -mt-16 relative z-10 mb-3" style={{ y: thumbY }}>
-          <motion.div className="relative" initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.08, type: 'spring', stiffness: 300, damping: 25 }}>
-            {product.imageUrl ? (
-              <button onClick={() => setShowFullscreen(true)} className="w-28 h-40 rounded-2xl overflow-hidden shadow-xl border-4 border-background block">
-                <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+        {/* Info card overlapping hero */}
+        <motion.div
+          className="relative z-10 mx-5 -mt-10 mb-4"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08, duration: 0.28 }}
+        >
+          <div className="bg-card rounded-3xl border border-border shadow-lg p-4 flex gap-4 items-start">
+            {/* Image */}
+            <div className="relative shrink-0">
+              {product.imageUrl ? (
+                <button onClick={() => setShowFullscreen(true)} className="w-24 h-32 rounded-2xl overflow-hidden block border border-border/50">
+                  <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                </button>
+              ) : (
+                <div className="w-24 h-32 rounded-2xl bg-muted flex items-center justify-center border border-border/50">
+                  <span className="text-4xl">🥬</span>
+                </div>
+              )}
+              <button
+                onClick={() => product.barcode ? fetchOFFImages() : fileInputRef.current?.click()}
+                disabled={loadingImage}
+                className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full bg-background border border-border shadow flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loadingImage ? 'animate-spin' : ''}`} />
               </button>
-            ) : (
-              <div className="w-28 h-40 rounded-2xl bg-muted flex items-center justify-center shadow-xl border-4 border-background">
-                <span className="text-4xl">🥬</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f); e.target.value = ''; }}
+              />
+            </div>
+
+            {/* Infos */}
+            <div className="flex-1 min-w-0 pt-1">
+              <h1 className="text-lg font-extrabold text-foreground leading-tight line-clamp-2">{product.name}</h1>
+              {(product.brand || product.quantity) && (
+                <p className="text-xs text-muted-foreground mt-0.5 mb-3">
+                  {[product.brand ? product.brand.charAt(0).toUpperCase() + product.brand.slice(1) : '', product.quantity].filter(Boolean).join(' · ')}
+                </p>
+              )}
+
+              {/* Badges */}
+              <div className="flex items-start flex-wrap gap-2">
+                <ScoreBadge label="Nutri" value={nutriGrade} colorMap={nutriColors} onClick={() => setScoreDialog('nutri')} />
+                {product.novaGroup && (
+                  <ScoreBadge label="NOVA" value={String(product.novaGroup)} colorMap={novaColors} onClick={() => setScoreDialog('nova')} />
+                )}
+                {product.ecoScore && (
+                  <ScoreBadge label="Eco" value={product.ecoScore.toUpperCase()} colorMap={ecoColors} onClick={() => setScoreDialog('eco')} />
+                )}
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className={`flex items-center gap-1 text-xs font-bold h-8 px-2.5 rounded-lg ${config.badge}`}>
+                    <StatusIcon className="w-3 h-3" />
+                    {config.label}
+                  </span>
+                  <span className="text-[9px] text-muted-foreground font-semibold">État</span>
+                </div>
               </div>
-            )}
-            <button
-              onClick={() => product.barcode ? fetchOFFImages() : fileInputRef.current?.click()}
-              disabled={loadingImage}
-              className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full bg-background border border-border shadow flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loadingImage ? 'animate-spin' : ''}`} />
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f); e.target.value = ''; }}
-            />
-          </motion.div>
+
+              {/* Status badge (opened/consumed/thrown) */}
+              {statusBadge && (
+                <div className="mt-2">
+                  <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border ${statusBadge.color}`}>
+                    <statusBadge.icon className="w-3 h-3" />{statusBadge.label}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
         </motion.div>
 
         {/* Content */}
-        <motion.div className="px-5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.25 }}>
-          {/* Name + brand */}
-          <div className="text-center mb-4">
-            <h1 className="text-2xl font-extrabold text-foreground">{product.name}</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {[product.brand ? product.brand.charAt(0).toUpperCase() + product.brand.slice(1) : '', product.quantity].filter(Boolean).join(' · ')}
-            </p>
-          </div>
-
-          {/* Badges row - all aligned */}
-          <div className="flex items-start justify-center gap-3 mb-3">
-            <ScoreBadge label="Nutri" value={nutriGrade} colorMap={nutriColors} onClick={() => setScoreDialog('nutri')} />
-            {product.novaGroup && (
-              <ScoreBadge label="NOVA" value={String(product.novaGroup)} colorMap={novaColors} onClick={() => setScoreDialog('nova')} />
-            )}
-            {product.ecoScore && (
-              <ScoreBadge label="Eco" value={product.ecoScore.toUpperCase()} colorMap={ecoColors} onClick={() => setScoreDialog('eco')} />
-            )}
-            <div className="flex flex-col items-center gap-0.5">
-              <span className={`flex items-center gap-1 text-xs font-bold h-8 px-3 rounded-lg ${config.badge}`}>
-                <StatusIcon className="w-3.5 h-3.5" />
-                {config.label}
-              </span>
-              <span className="text-[9px] text-muted-foreground font-semibold">État</span>
-            </div>
-          </div>
-
-          {/* Product status badge */}
-          {statusBadge && (
-            <div className="flex justify-center mb-2">
-              <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border ${statusBadge.color}`}><statusBadge.icon className="w-3.5 h-3.5" />{statusBadge.label}</span>
-            </div>
-          )}
+        <motion.div className="px-5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16, duration: 0.25 }}>
 
           {/* Frozen badge */}
           {product.frozenUntil && (
@@ -454,24 +467,34 @@ const ProductDetail = () => {
             </div>
           )}
 
-          {/* Expiry progress bar */}
-          <div className="mb-3">
-            <div className="h-2 rounded-full bg-muted overflow-hidden">
-              <div className={`h-full rounded-full transition-all ${progressBarColor}`} style={{ width: `${expiryProgress * 100}%` }} />
+          {/* Compteur + date en 2 colonnes */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            {/* Compteur de jours */}
+            <div className={`rounded-2xl p-4 ${config.bg} ${config.border} border text-center`}>
+              <p className={`text-4xl font-black ${config.iconColor}`}>
+                {days < 0 ? Math.abs(days) : days === 0 ? '!' : days}
+              </p>
+              <p className="text-xs font-semibold text-card-foreground mt-1 leading-tight">
+                {days < 0 ? `jour${Math.abs(days) > 1 ? 's' : ''} de retard` : days === 0 ? "Expire aujourd'hui" : `jour${days > 1 ? 's' : ''} restant${days > 1 ? 's' : ''}`}
+              </p>
+            </div>
+            {/* Date de péremption */}
+            <div className="rounded-2xl p-4 bg-card border border-border flex flex-col justify-center gap-1">
+              <div className="flex items-center gap-1.5 text-muted-foreground mb-0.5">
+                <Calendar className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-bold uppercase tracking-wide">Péremption</span>
+              </div>
+              <p className="text-sm font-bold text-card-foreground leading-tight">
+                {format(new Date(effectiveDate), 'dd MMMM yyyy', { locale: fr })}
+              </p>
             </div>
           </div>
 
-          {/* Day counter + date */}
-          <div className={`rounded-2xl p-5 mb-5 ${config.bg} ${config.border} border text-center`}>
-            <p className={`text-4xl font-black ${config.iconColor}`}>
-              {days < 0 ? Math.abs(days) : days === 0 ? '!' : days}
-            </p>
-            <p className="text-sm font-semibold text-card-foreground mt-1">
-              {days < 0 ? `jour${Math.abs(days) > 1 ? 's' : ''} de retard` : days === 0 ? "Expire aujourd'hui" : `jour${days > 1 ? 's' : ''} restant${days > 1 ? 's' : ''}`}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
-              {format(new Date(effectiveDate), 'dd MMMM yyyy', { locale: fr })}
-            </p>
+          {/* Barre de progression */}
+          <div className="mb-4">
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div className={`h-full rounded-full transition-all ${progressBarColor}`} style={{ width: `${expiryProgress * 100}%` }} />
+            </div>
           </div>
 
           {/* Post-expiry note */}
@@ -489,34 +512,53 @@ const ProductDetail = () => {
 
           {/* Status actions */}
           <div className="mb-5">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Statut du produit</h3>
-            <div className="grid grid-cols-3 gap-2">
+            {/* Consommé + Jeté en 2 colonnes */}
+            <div className="grid grid-cols-2 gap-2 mb-2">
               {([
-                { status: 'opened' as ProductStatus, icon: PackageOpen, label: 'Ouvert', color: 'text-blue-500', bg: 'bg-blue-500/10', activeBg: 'bg-blue-500 text-white' },
-                { status: 'consumed' as ProductStatus, icon: UtensilsCrossed, label: 'Consommé', color: 'text-success', bg: 'bg-success/10', activeBg: 'bg-success text-success-foreground' },
-                { status: 'thrown' as ProductStatus, icon: Trash2, label: 'Jeté', color: 'text-destructive', bg: 'bg-destructive/10', activeBg: 'bg-destructive text-destructive-foreground' },
+                { status: 'consumed' as ProductStatus, icon: UtensilsCrossed, label: 'Consommé', color: 'text-success', activeBg: 'bg-success text-success-foreground', inactiveBg: 'bg-success/10 border-success/30 text-success' },
+                { status: 'thrown' as ProductStatus, icon: Trash2, label: 'Jeté', color: 'text-destructive', activeBg: 'bg-destructive text-destructive-foreground', inactiveBg: 'bg-destructive/10 border-destructive/30 text-destructive' },
               ]).map(item => {
                 const isActive = currentProductStatus === item.status;
                 return (
-                  <button key={item.status} onClick={() => handleStatusChange(isActive ? 'active' : item.status)}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition-colors ${isActive ? `${item.activeBg} border-transparent` : `${item.bg} border-border hover:border-muted-foreground/20`}`}>
-                    <item.icon className={`w-5 h-5 ${isActive ? '' : item.color}`} />
-                    <span className={`text-[10px] font-bold ${isActive ? '' : item.color}`}>{item.label}</span>
+                  <button
+                    key={item.status}
+                    onClick={() => handleStatusChange(isActive ? 'active' : item.status)}
+                    className={`flex items-center justify-center gap-2 py-4 rounded-2xl border font-bold text-sm transition-colors ${isActive ? `${item.activeBg} border-transparent` : item.inactiveBg}`}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    {item.label}
                   </button>
                 );
               })}
             </div>
+
+            {/* Ouvert — pleine largeur */}
+            {(() => {
+              const isActive = currentProductStatus === 'opened';
+              return (
+                <button
+                  onClick={() => handleStatusChange(isActive ? 'active' : 'opened')}
+                  className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl border font-bold text-sm transition-colors mb-2 ${isActive ? 'bg-blue-500 text-white border-transparent' : 'bg-blue-500/10 border-blue-500/30 text-blue-600'}`}
+                >
+                  <PackageOpen className="w-4 h-4" /> Ouvert
+                </button>
+              );
+            })()}
+
+            {/* Remettre en actif */}
             {currentProductStatus !== 'active' && (
-              <button onClick={() => handleStatusChange('active')} className="w-full mt-2 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={() => handleStatusChange('active')} className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors mb-1">
                 <RotateCcw className="w-3.5 h-3.5" /> Remettre en actif
               </button>
             )}
+
+            {/* Congélateur — pleine largeur */}
             {!product.frozenUntil ? (
-              <button onClick={handleFreeze} className="w-full mt-2 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-blue-500/10 text-blue-600 text-xs font-bold border border-blue-500/20 hover:bg-blue-500/20 transition-colors">
-                <Snowflake className="w-4 h-4" /> Mettre au congélateur ({getFreezeDuration(product.category)} mois)
+              <button onClick={handleFreeze} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-blue-500/10 text-blue-600 text-sm font-bold border border-blue-500/20 hover:bg-blue-500/20 transition-colors">
+                <Snowflake className="w-4 h-4" /> Congélateur ({getFreezeDuration(product.category)} mois)
               </button>
             ) : (
-              <button onClick={handleUnfreeze} className="w-full mt-2 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-blue-500 hover:text-blue-700 transition-colors">
+              <button onClick={handleUnfreeze} className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-blue-500 hover:text-blue-700 transition-colors">
                 <RotateCcw className="w-3.5 h-3.5" /> Retirer du congélateur
               </button>
             )}
