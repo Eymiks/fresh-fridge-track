@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2, Barcode, Clock, Tag, Pencil, AlertTriangle, CircleCheck, PackageOpen, UtensilsCrossed, RotateCcw, Scale, ShieldAlert, Info, SearchX, RefreshCw, X, Snowflake, BarChart2, AlignLeft } from 'lucide-react';
-import { format, differenceInDays } from 'date-fns';
+import { ArrowLeft, Trash2, Barcode, Clock, Tag, Pencil, AlertTriangle, CircleCheck, PackageOpen, UtensilsCrossed, RotateCcw, Scale, ShieldAlert, Info, SearchX, RefreshCw, X, Snowflake, BarChart2, AlignLeft, Copy, Check } from 'lucide-react';
+import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useProducts } from '@/hooks/useProducts';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { getExpirationStatus, getDaysUntilExpiration, getEffectiveExpirationDate, ProductStatus, RECOMMENDED_DAYS_AFTER_OPENING, CATEGORY_POST_EXPIRY_NOTES, PRODUCT_CATEGORIES, getPostExpiryNote, getRecommendedDaysAfterOpening, getFreezeDuration } from '@/types/product';
+import { getExpirationStatus, getDaysUntilExpiration, getEffectiveExpirationDate, ProductStatus, PRODUCT_CATEGORIES, getPostExpiryNote, getRecommendedDaysAfterOpening, getFreezeDuration } from '@/types/product';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +15,7 @@ import { PageTransition } from '@/components/PageTransition';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, useScroll, useSpring, useTransform } from 'framer-motion';
 
 const statusConfig = {
   fresh: {
@@ -87,7 +87,79 @@ function translateAllergen(raw: string): string {
   return allergenTranslations[cleaned] || cleaned.charAt(0).toUpperCase() + cleaned.slice(1).replace(/-/g, ' ');
 }
 
+function parseAllergens(raw?: string): string[] {
+  if (!raw) return [];
+  return Array.from(new Set(raw.split(',').map(translateAllergen).filter(Boolean)));
+}
+
+function parseNutritionData(raw?: string): Record<string, number> {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.entries(parsed)
+        .map(([key, value]) => [key, typeof value === 'number' ? value : Number(value)])
+        .filter(([, value]) => Number.isFinite(value))
+    ) as Record<string, number>;
+  } catch {
+    return {};
+  }
+}
+
+function formatNutritionValue(value: number, unit: string): string {
+  const formatted = unit === 'kcal' || Number.isInteger(value) ? String(Math.round(value)) : value.toFixed(1);
+  return `${formatted} ${unit}`;
+}
+
+function extractAdditives(ingredients?: string): string[] {
+  if (!ingredients) return [];
+  const matches = ingredients.match(/\bE\s?\d{3}[a-z]?\b/gi) ?? [];
+  return Array.from(new Set(matches.map((match) => match.replace(/\s+/g, '').toUpperCase())));
+}
+
+function getNutritionInsights(nutrition: Record<string, number>, rowCount: number): { label: string; className: string }[] {
+  const insights: { label: string; className: string }[] = [];
+
+  if (nutrition.sugars >= 15) {
+    insights.push({ label: 'Sucré', className: 'border-orange-500/20 bg-orange-500/10 text-orange-600' });
+  }
+  if (nutrition.salt >= 1.5) {
+    insights.push({ label: 'Salé', className: 'border-orange-500/20 bg-orange-500/10 text-orange-600' });
+  }
+  if (nutrition.proteins >= 12) {
+    insights.push({ label: 'Source de protéines', className: 'border-success/20 bg-success/10 text-success' });
+  }
+  if (nutrition.fiber >= 3) {
+    insights.push({ label: 'Source de fibres', className: 'border-success/20 bg-success/10 text-success' });
+  }
+  if (rowCount > 0 && rowCount < 5) {
+    insights.push({ label: 'Données partielles', className: 'border-blue-500/20 bg-blue-500/10 text-blue-600' });
+  }
+
+  return insights;
+}
+
 type ScoreDialogType = 'nutri' | 'nova' | 'eco' | null;
+
+type SharedElementRect = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+type SharedElementGeometry = {
+  mainImage: SharedElementRect;
+  mainTitle: SharedElementRect;
+  stickyImage: SharedElementRect;
+  stickyTitle: SharedElementRect;
+  mainTitleFontSize: number;
+  stickyTitleFontSize: number;
+  mainTitleLineHeight: number;
+  stickyTitleLineHeight: number;
+};
+
+const lerp = (from: number, to: number, progress: number) => from + (to - from) * progress;
 
 const scoreExplanations = {
   nutri: {
@@ -124,15 +196,27 @@ const scoreExplanations = {
   },
 };
 
-function ScoreBadge({ label, value, colorMap, onClick }: { label: string; value: string; colorMap: Record<string, string>; onClick?: () => void }) {
+function ScoreBadge({ label, value, colorMap, onClick }: { label: string; value: string; colorMap: Record<string | number, string>; onClick?: () => void }) {
   const bg = colorMap[value] || 'bg-muted';
   return (
-    <button onClick={onClick} className="flex flex-col items-center gap-0.5 group">
+    <button onClick={onClick} className="flex h-11 flex-col items-center justify-start gap-0.5 group">
       <span className={`${bg} text-white text-xs font-extrabold w-8 h-8 rounded-lg flex items-center justify-center group-hover:ring-2 group-hover:ring-primary/40 transition-all`}>
         {value}
       </span>
       <span className="text-[9px] text-muted-foreground font-semibold">{label}</span>
     </button>
+  );
+}
+
+function StatusPill({ icon: Icon, label, className }: { icon: React.ElementType; label: string; className: string }) {
+  return (
+    <div className="flex h-11 flex-col items-center justify-start gap-0.5">
+      <span className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-extrabold shadow-sm ${className}`}>
+        <Icon className="h-3.5 w-3.5" />
+        {label}
+      </span>
+      <span className="invisible text-[9px] font-semibold">État</span>
+    </div>
   );
 }
 
@@ -142,12 +226,88 @@ const productStatusBadges: Record<string, { label: string; icon: typeof PackageO
   thrown: { label: 'Jeté', icon: Trash2, color: 'bg-destructive/10 text-destructive border-destructive/20' },
 };
 
-function TimelineStep({ icon: Icon, label, date }: { icon: React.ElementType; label: string; date: string }) {
+function InfoSectionCard({
+  icon: Icon,
+  title,
+  eyebrow,
+  children,
+  className = '',
+}: {
+  icon: React.ElementType;
+  title: string;
+  eyebrow?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="flex flex-col items-center gap-0.5 min-w-0">
-      <Icon className="w-3.5 h-3.5 text-muted-foreground" />
-      <span className="text-[10px] font-bold text-card-foreground">{label}</span>
-      <span className="text-[9px] text-muted-foreground">{format(new Date(date), 'd MMM', { locale: fr })}</span>
+    <section className={`rounded-[1.75rem] border border-border bg-card p-4 shadow-sm ${className}`}>
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
+          <Icon className="h-5 w-5 text-primary" />
+        </div>
+        <div className="min-w-0">
+          {eyebrow && (
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-muted-foreground">{eyebrow}</p>
+          )}
+          <h2 className="text-base font-black text-card-foreground">{title}</h2>
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function DetailRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-muted">
+        <Icon className="h-4 w-4 text-primary" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[11px] font-bold text-muted-foreground">{label}</p>
+        <p className="text-sm font-extrabold text-card-foreground">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function NutritionSummaryCard({ label, value, tone = 'default' }: { label: string; value: string; tone?: 'default' | 'warning' | 'success' }) {
+  const toneClass = tone === 'warning'
+    ? 'border-orange-500/20 bg-orange-500/10 text-orange-600'
+    : tone === 'success'
+      ? 'border-success/20 bg-success/10 text-success'
+      : 'border-primary/10 bg-primary/5 text-card-foreground';
+
+  return (
+    <div className={`rounded-2xl border p-3 ${toneClass}`}>
+      <p className="text-[10px] font-extrabold uppercase tracking-wide opacity-70">{label}</p>
+      <p className="mt-1 text-base font-black">{value}</p>
+    </div>
+  );
+}
+
+function TimelineEvent({ icon: Icon, label, date, detail, tone = 'default' }: { icon: React.ElementType; label: string; date: string; detail?: string; tone?: 'default' | 'blue' | 'success' | 'danger' }) {
+  const toneClass = tone === 'blue'
+    ? 'bg-blue-500/10 text-blue-600'
+    : tone === 'success'
+      ? 'bg-success/10 text-success'
+      : tone === 'danger'
+        ? 'bg-destructive/10 text-destructive'
+        : 'bg-primary/10 text-primary';
+
+  return (
+    <div className="relative flex gap-3 pb-4 last:pb-0">
+      <div className="flex flex-col items-center">
+        <span className={`flex h-9 w-9 items-center justify-center rounded-2xl ${toneClass}`}>
+          <Icon className="h-4 w-4" />
+        </span>
+        <span className="mt-2 h-full w-px bg-border last:hidden" />
+      </div>
+      <div className="min-w-0 pt-0.5">
+        <p className="text-sm font-extrabold text-card-foreground">{label}</p>
+        <p className="text-xs font-semibold text-muted-foreground">{format(new Date(date), 'dd MMMM yyyy', { locale: fr })}</p>
+        {detail && <p className="mt-1 text-xs text-muted-foreground">{detail}</p>}
+      </div>
     </div>
   );
 }
@@ -157,7 +317,15 @@ const ProductDetail = () => {
   const heroY = useTransform(scrollY, [0, 300], [0, 80]);
   const heroScale = useTransform(scrollY, [0, 300], [1.1, 1.3]);
   const heroOpacity = useTransform(scrollY, [0, 250], [1, 0.3]);
-  const thumbY = useTransform(scrollY, [0, 200], [0, 30]);
+  const heroBackOpacity = useTransform(scrollY, [60, 160], [1, 0]);
+  const stickyOpacity = useTransform(scrollY, [90, 180], [0, 1]);
+  const stickyY = useTransform(scrollY, [90, 180], [-10, 0]);
+  const sharedProgressRaw = useTransform(scrollY, [60, 180], [0, 1]);
+  const sharedProgress = useSpring(sharedProgressRaw, { stiffness: 260, damping: 34, mass: 0.25 });
+  const mainElementOpacity = useTransform(sharedProgress, [0, 0.35], [1, 0]);
+  const stickyElementOpacity = useTransform(sharedProgress, [0.65, 1], [0, 1]);
+  const sharedLayerOpacity = useTransform(sharedProgress, [0, 0.08, 0.94, 1], [0, 1, 1, 0]);
+  const sharedButtonOpacity = useTransform(sharedProgress, [0, 0.18], [1, 0]);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -178,19 +346,141 @@ const ProductDetail = () => {
   const [daysInput, setDaysInput] = useState(3);
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [notes, setNotes] = useState('');
+  const [ingredientsExpanded, setIngredientsExpanded] = useState(false);
+  const mainImageRef = useRef<HTMLDivElement>(null);
+  const mainTitleRef = useRef<HTMLHeadingElement>(null);
+  const stickyImageRef = useRef<HTMLDivElement>(null);
+  const stickyTitleRef = useRef<HTMLSpanElement>(null);
+  const measureFrameRef = useRef<number | null>(null);
+  const [sharedGeometry, setSharedGeometry] = useState<SharedElementGeometry | null>(null);
 
   const product = products.find(p => p.id === id);
+  const productId = product?.id;
+  const productNotes = product?.notes;
+
+  const measureSharedElements = useCallback(() => {
+    const mainImage = mainImageRef.current;
+    const mainTitle = mainTitleRef.current;
+    const stickyImage = stickyImageRef.current;
+    const stickyTitle = stickyTitleRef.current;
+
+    if (!mainImage || !mainTitle || !stickyImage || !stickyTitle) return;
+
+    const scrollTop = window.scrollY;
+    const toDocumentRect = (rect: DOMRect): SharedElementRect => ({
+      left: rect.left,
+      top: rect.top + scrollTop,
+      width: rect.width,
+      height: rect.height,
+    });
+    const toViewportRect = (rect: DOMRect): SharedElementRect => ({
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+    });
+
+    const mainTitleStyle = window.getComputedStyle(mainTitle);
+    const stickyTitleStyle = window.getComputedStyle(stickyTitle);
+    const parsePx = (value: string, fallback: number) => {
+      const parsed = Number.parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    };
+    const mainTitleFontSize = parsePx(mainTitleStyle.fontSize, 28);
+    const stickyTitleFontSize = parsePx(stickyTitleStyle.fontSize, 14);
+
+    setSharedGeometry({
+      mainImage: toDocumentRect(mainImage.getBoundingClientRect()),
+      mainTitle: toDocumentRect(mainTitle.getBoundingClientRect()),
+      stickyImage: toViewportRect(stickyImage.getBoundingClientRect()),
+      stickyTitle: toViewportRect(stickyTitle.getBoundingClientRect()),
+      mainTitleFontSize,
+      stickyTitleFontSize,
+      mainTitleLineHeight: parsePx(mainTitleStyle.lineHeight, mainTitleFontSize * 1.15),
+      stickyTitleLineHeight: parsePx(stickyTitleStyle.lineHeight, stickyTitleFontSize * 1.25),
+    });
+  }, []);
+
+  const scheduleMeasure = useCallback(() => {
+    if (measureFrameRef.current != null) cancelAnimationFrame(measureFrameRef.current);
+    measureFrameRef.current = requestAnimationFrame(() => {
+      measureFrameRef.current = null;
+      measureSharedElements();
+    });
+  }, [measureSharedElements]);
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   useEffect(() => {
-    if (product) setNotes(product.notes ?? '');
-  }, [product?.id]);
+    if (productId) setNotes(productNotes ?? '');
+  }, [productId, productNotes]);
 
   useEffect(() => {
-    const unsubscribe = scrollY.on('change', (v) => setShowStickyHeader(v > 180));
+    const unsubscribe = scrollY.on('change', (v) => setShowStickyHeader(v > 90));
     return unsubscribe;
   }, [scrollY]);
+
+  useEffect(() => {
+    if (!productId) return;
+
+    scheduleMeasure();
+    window.addEventListener('resize', scheduleMeasure);
+
+    const observer = new ResizeObserver(scheduleMeasure);
+    [mainImageRef.current, mainTitleRef.current, stickyImageRef.current, stickyTitleRef.current]
+      .filter(Boolean)
+      .forEach((element) => observer.observe(element!));
+
+    return () => {
+      if (measureFrameRef.current != null) cancelAnimationFrame(measureFrameRef.current);
+      window.removeEventListener('resize', scheduleMeasure);
+      observer.disconnect();
+    };
+  }, [scheduleMeasure, productId, product?.imageUrl, product?.name]);
+
+  const sharedImageX = useTransform([scrollY, sharedProgress], ([, progress]) => {
+    if (!sharedGeometry) return 0;
+    return lerp(sharedGeometry.mainImage.left, sharedGeometry.stickyImage.left, Number(progress));
+  });
+  const sharedImageY = useTransform([scrollY, sharedProgress], ([latestScroll, progress]) => {
+    if (!sharedGeometry) return 0;
+    return lerp(sharedGeometry.mainImage.top - Number(latestScroll), sharedGeometry.stickyImage.top, Number(progress));
+  });
+  const sharedImageWidth = useTransform(sharedProgress, (progress) => {
+    if (!sharedGeometry) return 0;
+    return lerp(sharedGeometry.mainImage.width, sharedGeometry.stickyImage.width, progress);
+  });
+  const sharedImageHeight = useTransform(sharedProgress, (progress) => {
+    if (!sharedGeometry) return 0;
+    return lerp(sharedGeometry.mainImage.height, sharedGeometry.stickyImage.height, progress);
+  });
+  const sharedImageRadius = useTransform(sharedProgress, [0, 1], [26, 8]);
+
+  const sharedTitleX = useTransform([scrollY, sharedProgress], ([, progress]) => {
+    if (!sharedGeometry) return 0;
+    return lerp(sharedGeometry.mainTitle.left, sharedGeometry.stickyTitle.left, Number(progress));
+  });
+  const sharedTitleY = useTransform([scrollY, sharedProgress], ([latestScroll, progress]) => {
+    if (!sharedGeometry) return 0;
+    return lerp(sharedGeometry.mainTitle.top - Number(latestScroll), sharedGeometry.stickyTitle.top, Number(progress));
+  });
+  const sharedTitleWidth = useTransform(sharedProgress, (progress) => {
+    if (!sharedGeometry) return 0;
+    return lerp(sharedGeometry.mainTitle.width, sharedGeometry.stickyTitle.width, progress);
+  });
+  const sharedTitleFontSize = useTransform(sharedProgress, (progress) => {
+    if (!sharedGeometry) return 14;
+    return lerp(sharedGeometry.mainTitleFontSize, sharedGeometry.stickyTitleFontSize, progress);
+  });
+  const sharedTitleLineHeight = useTransform(sharedProgress, (progress) => {
+    if (!sharedGeometry) return 18;
+    return lerp(sharedGeometry.mainTitleLineHeight, sharedGeometry.stickyTitleLineHeight, progress);
+  });
+  const sharedTitleHeight = useTransform(sharedProgress, (progress) => {
+    if (!sharedGeometry) return 18;
+    return lerp(sharedGeometry.mainTitleLineHeight, sharedGeometry.stickyTitle.height, progress);
+  });
+  const sharedTitleOpacity = useTransform(sharedProgress, [0, 0.18, 0.92, 1], [0, 1, 1, 0]);
 
   const fetchOFFImages = async () => {
     if (!product.barcode) return;
@@ -305,441 +595,560 @@ const ProductDetail = () => {
 
   const handleUnfreeze = () => updateProduct(product.id, { frozenUntil: null });
 
-  const nutriGrade = product.nutriScore || '?';
+  const notesDirty = notes !== (product.notes ?? '');
+  const saveNotes = (showToast = false) => {
+    updateProduct(product.id, { notes: notes || undefined });
+    if (showToast) toast.success('Note sauvegardée');
+  };
+
+  const copyBarcode = async () => {
+    if (!product.barcode) return;
+    try {
+      await navigator.clipboard.writeText(product.barcode);
+      toast.success('Code-barres copié');
+    } catch {
+      toast.error('Impossible de copier le code-barres');
+    }
+  };
+
+  const nutriGrade = (product.nutriScore || '?').toUpperCase();
   const statusBadge = productStatusBadges[currentProductStatus];
   const activeExplanation = scoreDialog ? scoreExplanations[scoreDialog] : null;
 
   const today = new Date();
-  const addedDate = new Date(product.addedAt);
-  const expDate = new Date(effectiveDate);
-  const totalDays = differenceInDays(expDate, addedDate);
-  const elapsedDays = differenceInDays(today, addedDate);
-  const expiryProgress = totalDays > 0 ? Math.min(Math.max(elapsedDays / totalDays, 0), 1) : 1;
-  const progressBarColor = status === 'fresh' ? 'bg-success' : status === 'soon' ? 'bg-warning' : 'bg-destructive';
+  const openedDays = product.openedAt
+    ? Math.max(0, Math.ceil((today.getTime() - new Date(product.openedAt).getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+  const dayCounterValue = days < 0 ? Math.abs(days) : days === 0 ? '!' : days;
+  const dayCounterLabel = days < 0
+    ? `jour${Math.abs(days) > 1 ? 's' : ''} de retard`
+    : days === 0
+      ? "Expire aujourd'hui"
+      : `jour${days > 1 ? 's' : ''} restant${days > 1 ? 's' : ''}`;
+  const postExpiryNote = getPostExpiryNote(product.category, product.subcategory);
 
-  const nutritionObj = product.nutritionData ? JSON.parse(product.nutritionData) as Record<string, number> : {};
-  const nutritionRowCount = ['energy_kcal', 'fat', 'saturated_fat', 'carbohydrates', 'sugars', 'proteins', 'fiber', 'salt'].filter(k => nutritionObj[k] != null).length;
-  const ingredientsPreview = product.ingredients ? product.ingredients.slice(0, 40) + (product.ingredients.length > 40 ? '…' : '') : null;
+  const allergens = parseAllergens(product.allergens);
+  const additives = extractAdditives(product.ingredients);
+  const ingredientsIsLong = (product.ingredients?.length ?? 0) > 280;
+  const displayedIngredients = product.ingredients && ingredientsIsLong && !ingredientsExpanded
+    ? `${product.ingredients.slice(0, 280).trim()}…`
+    : product.ingredients;
+  const nutritionObj = parseNutritionData(product.nutritionData);
+  const nutritionRows: [string, string, string][] = ([
+    ['energy_kcal', 'Énergie', 'kcal'],
+    ['fat', 'Matières grasses', 'g'],
+    ['saturated_fat', 'dont saturées', 'g'],
+    ['carbohydrates', 'Glucides', 'g'],
+    ['sugars', 'dont sucres', 'g'],
+    ['proteins', 'Protéines', 'g'],
+    ['fiber', 'Fibres', 'g'],
+    ['salt', 'Sel', 'g'],
+  ] as [string, string, string][]).filter(([key]) => nutritionObj[key] != null);
+  const nutritionSummary = ([
+    ['energy_kcal', 'Énergie', 'kcal', 'default'],
+    ['sugars', 'Sucres', 'g', nutritionObj.sugars >= 15 ? 'warning' : 'default'],
+    ['salt', 'Sel', 'g', nutritionObj.salt >= 1.5 ? 'warning' : 'default'],
+    ['proteins', 'Protéines', 'g', nutritionObj.proteins >= 12 ? 'success' : 'default'],
+  ] as [string, string, string, 'default' | 'warning' | 'success'][]).filter(([key]) => nutritionObj[key] != null);
+  const nutritionInsights = getNutritionInsights(nutritionObj, nutritionRows.length);
 
   return (
     <PageTransition>
       <div className="min-h-screen bg-background">
         {/* Sticky header */}
-        <AnimatePresence>
-          {showStickyHeader && product && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="fixed top-0 inset-x-0 z-30 bg-background/80 backdrop-blur-lg border-b border-border"
-            >
-              <div className="flex items-center gap-2 px-4 pt-10 pb-2">
-                <button onClick={() => navigate('/')} className="p-1.5 rounded-full hover:bg-muted transition-colors flex-shrink-0">
-                  <ArrowLeft className="w-5 h-5 text-foreground" />
-                </button>
-                {product.imageUrl ? (
-                  <img src={product.imageUrl} alt={product.name} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
-                ) : (
-                  <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm">🥬</span>
-                  </div>
-                )}
-                <span className="font-semibold text-sm text-foreground truncate flex-1 min-w-0">{product.name}</span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Hero header with blurred background + parallax */}
-        <div className="relative h-52 overflow-hidden">
-          {product.imageUrl ? (
-            <>
-              <motion.img src={product.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover blur-xl" style={{ y: heroY, scale: heroScale, opacity: heroOpacity }} />
-              <div className="absolute inset-0 bg-foreground/40 dark:bg-background/60" />
-            </>
-          ) : (
-            <div className={`absolute inset-0 bg-gradient-to-b ${config.gradient}`} />
-          )}
-          {/* Back button - glass style */}
-          <button onClick={() => navigate('/')} className="absolute top-12 left-4 z-10 p-2.5 rounded-full bg-background/30 backdrop-blur-md border border-white/20 hover:bg-background/50 transition-colors text-white dark:text-foreground">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Product image overlapping hero with parallax */}
-        <motion.div className="flex justify-center -mt-16 relative z-10 mb-3" style={{ y: thumbY }}>
-          <motion.div className="relative" initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.08, type: 'spring', stiffness: 300, damping: 25 }}>
-            {product.imageUrl ? (
-              <button onClick={() => setShowFullscreen(true)} className="w-28 h-40 rounded-2xl overflow-hidden shadow-xl border-4 border-background block">
-                <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-              </button>
-            ) : (
-              <div className="w-28 h-40 rounded-2xl bg-muted flex items-center justify-center shadow-xl border-4 border-background">
-                <span className="text-4xl">🥬</span>
-              </div>
-            )}
-            <button
-              onClick={() => product.barcode ? fetchOFFImages() : fileInputRef.current?.click()}
-              disabled={loadingImage}
-              className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full bg-background border border-border shadow flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loadingImage ? 'animate-spin' : ''}`} />
+        <motion.div
+          style={{ opacity: stickyOpacity, y: stickyY }}
+          className={`fixed top-0 inset-x-0 z-30 bg-background/85 backdrop-blur-lg border-b border-border ${showStickyHeader ? 'pointer-events-auto' : 'pointer-events-none'}`}
+        >
+          <div className="flex items-center gap-2 px-4 pt-6 pb-2">
+            <button onClick={() => navigate('/')} className="p-1.5 rounded-full hover:bg-muted transition-colors flex-shrink-0">
+              <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f); e.target.value = ''; }}
-            />
-          </motion.div>
+            <motion.div ref={stickyImageRef} style={{ opacity: stickyElementOpacity }} className="w-7 h-7 rounded-lg overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
+              {product.imageUrl ? (
+                <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" onLoad={scheduleMeasure} />
+              ) : (
+                <span className="text-sm">🥬</span>
+              )}
+            </motion.div>
+            <motion.span ref={stickyTitleRef} style={{ opacity: stickyElementOpacity }} className="font-semibold text-sm text-foreground truncate flex-1 min-w-0">{product.name}</motion.span>
+          </div>
         </motion.div>
 
-        {/* Content */}
-        <motion.div className="px-5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.25 }}>
-          {/* Name + brand */}
-          <div className="text-center mb-4">
-            <h1 className="text-2xl font-extrabold text-foreground">{product.name}</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {[product.brand ? product.brand.charAt(0).toUpperCase() + product.brand.slice(1) : '', product.quantity].filter(Boolean).join(' · ')}
-            </p>
-          </div>
-
-          {/* Badges row - all aligned */}
-          <div className="flex items-start justify-center gap-3 mb-3">
-            <ScoreBadge label="Nutri" value={nutriGrade} colorMap={nutriColors} onClick={() => setScoreDialog('nutri')} />
-            {product.novaGroup && (
-              <ScoreBadge label="NOVA" value={String(product.novaGroup)} colorMap={novaColors} onClick={() => setScoreDialog('nova')} />
-            )}
-            {product.ecoScore && (
-              <ScoreBadge label="Eco" value={product.ecoScore.toUpperCase()} colorMap={ecoColors} onClick={() => setScoreDialog('eco')} />
-            )}
-            <div className="flex flex-col items-center gap-0.5">
-              <span className={`flex items-center gap-1 text-xs font-bold h-8 px-3 rounded-lg ${config.badge}`}>
-                <StatusIcon className="w-3.5 h-3.5" />
-                {config.label}
-              </span>
-              <span className="text-[9px] text-muted-foreground font-semibold">État</span>
-            </div>
-          </div>
-
-          {/* Product status badge */}
-          {statusBadge && (
-            <div className="flex justify-center mb-2">
-              <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border ${statusBadge.color}`}><statusBadge.icon className="w-3.5 h-3.5" />{statusBadge.label}</span>
-            </div>
-          )}
-
-          {/* Frozen badge */}
-          {product.frozenUntil && (
-            <div className="flex justify-center mb-4">
-              <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border bg-blue-500/10 text-blue-500 border-blue-500/20">
-                <Snowflake className="w-3.5 h-3.5" /> Congelé jusqu'au {format(new Date(product.frozenUntil), 'dd MMM yyyy', { locale: fr })}
-              </span>
-            </div>
-          )}
-
-          {/* Opened info */}
-          {product.openedAt && product.daysAfterOpening != null && (
-            <div className="rounded-2xl p-4 mb-4 bg-primary/10 border border-primary/20 text-center">
-              <p className="text-sm font-bold text-primary flex items-center justify-center gap-1.5">
-                <PackageOpen className="h-4 w-4" /> Ouvert depuis {Math.max(0, Math.ceil((new Date().getTime() - new Date(product.openedAt).getTime()) / (1000 * 60 * 60 * 24)))} jour{Math.ceil((new Date().getTime() - new Date(product.openedAt).getTime()) / (1000 * 60 * 60 * 24)) > 1 ? 's' : ''}
-              </p>
-              {effectiveDate !== product.expirationDate && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Date effective : {format(new Date(effectiveDate), 'dd MMMM yyyy', { locale: fr })}
-                </p>
+        {sharedGeometry && (
+          <motion.div className="pointer-events-none fixed inset-0 z-40" style={{ opacity: sharedLayerOpacity }}>
+            <motion.div
+              className="absolute overflow-hidden bg-muted shadow-xl"
+              style={{
+                x: sharedImageX,
+                y: sharedImageY,
+                width: sharedImageWidth,
+                height: sharedImageHeight,
+                borderRadius: sharedImageRadius,
+              }}
+            >
+              {product.imageUrl ? (
+                <img src={product.imageUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-4xl">🥬</div>
               )}
-            </div>
-          )}
+            </motion.div>
+            <motion.div
+              className="absolute overflow-hidden font-black text-card-foreground"
+              style={{
+                x: sharedTitleX,
+                y: sharedTitleY,
+                width: sharedTitleWidth,
+                height: sharedTitleHeight,
+                opacity: sharedTitleOpacity,
+                fontSize: sharedTitleFontSize,
+                lineHeight: sharedTitleLineHeight,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span className="block overflow-hidden text-ellipsis whitespace-nowrap">{product.name}</span>
+            </motion.div>
+          </motion.div>
+        )}
 
-          {/* Expiry progress bar */}
-          <div className="mb-3">
-            <div className="h-2 rounded-full bg-muted overflow-hidden">
-              <div className={`h-full rounded-full transition-all ${progressBarColor}`} style={{ width: `${expiryProgress * 100}%` }} />
-            </div>
-          </div>
-
-          {/* Day counter + date */}
-          <div className={`rounded-2xl p-5 mb-5 ${config.bg} ${config.border} border text-center`}>
-            <p className={`text-4xl font-black ${config.iconColor}`}>
-              {days < 0 ? Math.abs(days) : days === 0 ? '!' : days}
-            </p>
-            <p className="text-sm font-semibold text-card-foreground mt-1">
-              {days < 0 ? `jour${Math.abs(days) > 1 ? 's' : ''} de retard` : days === 0 ? "Expire aujourd'hui" : `jour${days > 1 ? 's' : ''} restant${days > 1 ? 's' : ''}`}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
-              {format(new Date(effectiveDate), 'dd MMMM yyyy', { locale: fr })}
-            </p>
-          </div>
-
-          {/* Post-expiry note */}
-          {(() => {
-            const note = getPostExpiryNote(product.category, product.subcategory);
-            return note ? (
-              <div className="flex items-start gap-3 rounded-2xl p-4 mb-5 bg-blue-500/10 border border-blue-500/20">
-                <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                <p className="text-sm text-card-foreground">
-                  Ce produit peut généralement être consommé jusqu'à <span className="font-semibold">{note}</span> après la date d'expiration.
-                </p>
-              </div>
-            ) : null;
-          })()}
-
-          {/* Status actions */}
-          <div className="mb-5">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Statut du produit</h3>
-            <div className="grid grid-cols-3 gap-2">
-              {([
-                { status: 'opened' as ProductStatus, icon: PackageOpen, label: 'Ouvert', color: 'text-blue-500', bg: 'bg-blue-500/10', activeBg: 'bg-blue-500 text-white' },
-                { status: 'consumed' as ProductStatus, icon: UtensilsCrossed, label: 'Consommé', color: 'text-success', bg: 'bg-success/10', activeBg: 'bg-success text-success-foreground' },
-                { status: 'thrown' as ProductStatus, icon: Trash2, label: 'Jeté', color: 'text-destructive', bg: 'bg-destructive/10', activeBg: 'bg-destructive text-destructive-foreground' },
-              ]).map(item => {
-                const isActive = currentProductStatus === item.status;
-                return (
-                  <button key={item.status} onClick={() => handleStatusChange(isActive ? 'active' : item.status)}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition-colors ${isActive ? `${item.activeBg} border-transparent` : `${item.bg} border-border hover:border-muted-foreground/20`}`}>
-                    <item.icon className={`w-5 h-5 ${isActive ? '' : item.color}`} />
-                    <span className={`text-[10px] font-bold ${isActive ? '' : item.color}`}>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-            {currentProductStatus !== 'active' && (
-              <button onClick={() => handleStatusChange('active')} className="w-full mt-2 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors">
-                <RotateCcw className="w-3.5 h-3.5" /> Remettre en actif
-              </button>
-            )}
-            {!product.frozenUntil ? (
-              <button onClick={handleFreeze} className="w-full mt-2 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-blue-500/10 text-blue-600 text-xs font-bold border border-blue-500/20 hover:bg-blue-500/20 transition-colors">
-                <Snowflake className="w-4 h-4" /> Mettre au congélateur ({getFreezeDuration(product.category)} mois)
-              </button>
+        <div className="relative overflow-hidden bg-background">
+          <div className="relative h-[17rem] overflow-hidden md:h-[21rem]">
+            {product.imageUrl ? (
+              <>
+                <motion.img src={product.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover blur-2xl" style={{ y: heroY, scale: heroScale, opacity: heroOpacity }} />
+                <div className="absolute inset-0 bg-gradient-to-b from-foreground/35 via-foreground/55 to-background dark:from-background/30 dark:via-background/70 dark:to-background" />
+              </>
             ) : (
-              <button onClick={handleUnfreeze} className="w-full mt-2 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-blue-500 hover:text-blue-700 transition-colors">
-                <RotateCcw className="w-3.5 h-3.5" /> Retirer du congélateur
-              </button>
+              <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient}`} />
             )}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.26),transparent_32%),radial-gradient(circle_at_85%_10%,rgba(255,255,255,0.18),transparent_30%)]" />
+            <motion.button
+              onClick={() => navigate('/')}
+              style={{ opacity: heroBackOpacity }}
+              className={`absolute left-4 top-6 z-10 rounded-full border border-white/25 bg-background/25 p-2.5 text-white shadow-lg backdrop-blur-md transition-colors hover:bg-background/45 dark:text-foreground ${showStickyHeader ? 'pointer-events-none' : ''}`}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </motion.button>
           </div>
 
-          {/* Accordion sections */}
-          <Accordion type="multiple" defaultValue={['nutrition']} className="space-y-3 mt-2">
-
-            {/* — Nutrition & Allergènes — */}
-            <AccordionItem value="nutrition" className="border-0 bg-card rounded-2xl overflow-hidden border border-border">
-              <AccordionTrigger className="px-4 py-3.5 hover:no-underline [&[data-state=open]]:bg-primary/5 transition-colors rounded-t-2xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <BarChart2 className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-bold text-card-foreground">Nutrition</p>
-                    <p className="text-xs text-muted-foreground">
-                      {nutritionRowCount > 0 ? `${nutritionRowCount} valeur${nutritionRowCount > 1 ? 's' : ''}` : 'Non renseigné'}
-                    </p>
-                  </div>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                {(() => {
-                  const n = nutritionObj;
-                  const rows: [string, string, string][] = ([
-                    ['energy_kcal', 'Énergie', 'kcal'],
-                    ['fat', 'Matières grasses', 'g'],
-                    ['saturated_fat', 'dont saturées', 'g'],
-                    ['carbohydrates', 'Glucides', 'g'],
-                    ['sugars', 'dont sucres', 'g'],
-                    ['proteins', 'Protéines', 'g'],
-                    ['fiber', 'Fibres', 'g'],
-                    ['salt', 'Sel', 'g'],
-                  ] as [string, string, string][]).filter(([key]) => n[key] != null);
-                  const hasNutrition = rows.length > 0;
-                  const hasAllergens = !!product.allergens;
-                  if (!hasNutrition && !hasAllergens) {
-                    return <p className="text-sm text-muted-foreground text-center py-4">Aucune information nutritionnelle disponible</p>;
-                  }
-                  return (
-                    <>
-                      {hasNutrition && (
-                        <div className="mb-4">
-                          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Valeurs nutritionnelles <span className="font-normal normal-case">pour 100 g</span></h3>
-                          <div className="rounded-2xl border border-border divide-y divide-border">
-                            {rows.map(([key, label, unit]) => (
-                              <div key={key} className={`flex justify-between items-center px-4 py-2.5 ${key === 'saturated_fat' || key === 'sugars' ? 'pl-7' : ''}`}>
-                                <span className="text-sm text-card-foreground">{label}</span>
-                                <span className="text-sm font-bold text-card-foreground">{Number(n[key]).toFixed(1)} {unit}</span>
-                              </div>
-                            ))}
-                          </div>
+          <motion.div className="relative z-10 mx-auto -mt-36 w-full max-w-5xl px-4 pb-8 md:-mt-48 md:px-8" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.28 }}>
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(20rem,0.92fr)] lg:items-start">
+              <section className="overflow-hidden rounded-[2rem] border border-white/35 bg-card/95 shadow-2xl shadow-foreground/10 backdrop-blur-xl dark:border-white/10">
+                <div className="flex gap-4 p-4 md:p-5">
+                  <motion.div className="shrink-0" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.14, type: 'spring', stiffness: 280, damping: 24 }}>
+                    <motion.div ref={mainImageRef} style={{ opacity: mainElementOpacity }} className="relative h-40 w-28 md:h-48 md:w-36">
+                      {product.imageUrl ? (
+                        <button onClick={() => setShowFullscreen(true)} className="block h-full w-full overflow-hidden rounded-[1.6rem] border-4 border-background bg-muted shadow-xl">
+                          <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" onLoad={scheduleMeasure} />
+                        </button>
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center rounded-[1.6rem] border-4 border-background bg-muted text-4xl shadow-xl">
+                          🥬
                         </div>
                       )}
-                      {hasAllergens && (
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <ShieldAlert className="w-4 h-4 text-destructive" />
-                            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Allergènes</h3>
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {product.allergens!.split(',').map((a, i) => {
-                              const translated = translateAllergen(a);
-                              if (!translated) return null;
-                              return (
-                                <span key={i} className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
-                                  {translated}
-                                </span>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
-              </AccordionContent>
-            </AccordionItem>
+                      <motion.button
+                        onClick={() => product.barcode ? fetchOFFImages() : fileInputRef.current?.click()}
+                        disabled={loadingImage}
+                        style={{ opacity: sharedButtonOpacity }}
+                        className="absolute -bottom-2 -right-2 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/95 shadow-xl backdrop-blur-sm transition-all hover:scale-105 hover:bg-background disabled:opacity-50"
+                        aria-label="Changer l'image du produit"
+                      >
+                        <RefreshCw className={`h-4 w-4 text-muted-foreground ${loadingImage ? 'animate-spin' : ''}`} />
+                      </motion.button>
+                    </motion.div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f); e.target.value = ''; }}
+                    />
+                  </motion.div>
 
-            {/* — Ingrédients — */}
-            <AccordionItem value="ingredients" className="border-0 bg-card rounded-2xl overflow-hidden border border-border">
-              <AccordionTrigger className="px-4 py-3.5 hover:no-underline [&[data-state=open]]:bg-primary/5 transition-colors rounded-t-2xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <AlignLeft className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-bold text-card-foreground">Ingrédients</p>
-                    <p className="text-xs text-muted-foreground truncate max-w-[210px]">
-                      {ingredientsPreview ?? 'Non renseigné'}
-                    </p>
-                  </div>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                {product.ingredients ? (
-                  <p className="text-sm text-card-foreground leading-relaxed">{product.ingredients}</p>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">Aucun ingrédient renseigné</p>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* — Détails — */}
-            <AccordionItem value="details" className="border-0 bg-card rounded-2xl overflow-hidden border border-border">
-              <AccordionTrigger className="px-4 py-3.5 hover:no-underline [&[data-state=open]]:bg-primary/5 transition-colors rounded-t-2xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <Info className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-bold text-card-foreground">Détails</p>
-                    <p className="text-xs text-muted-foreground">
-                      {categoryLabel || 'Informations du produit'}
-                    </p>
-                  </div>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <div className="space-y-3 mb-4">
-                  {product.quantity && (
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center"><Scale className="w-4 h-4 text-primary" /></div>
-                      <div>
-                        <p className="text-[11px] text-muted-foreground font-semibold">Quantité</p>
-                        <p className="text-sm font-bold text-card-foreground">{product.quantity}</p>
-                      </div>
-                    </div>
-                  )}
-                  {product.category && (
-                    <>
-                      {product.quantity && <div className="h-px bg-border" />}
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center"><Tag className="w-4 h-4 text-primary" /></div>
-                        <div>
-                          <p className="text-[11px] text-muted-foreground font-semibold">Catégorie</p>
-                          <p className="text-sm font-bold text-card-foreground">{categoryLabel}{product.subcategory && (<><span className="text-muted-foreground font-normal mx-1">›</span>{product.subcategory}</>)}</p>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  {(product.quantity || product.category) && <div className="h-px bg-border" />}
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center"><Clock className="w-4 h-4 text-primary" /></div>
+                  <div className="flex min-w-0 flex-1 flex-col justify-between py-1">
                     <div>
-                      <p className="text-[11px] text-muted-foreground font-semibold">Ajouté le</p>
-                      <p className="text-sm font-bold text-card-foreground">{format(new Date(product.addedAt), 'dd MMMM yyyy', { locale: fr })}</p>
+                      <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.2em] text-muted-foreground">Fiche produit</p>
+                      <motion.h1 ref={mainTitleRef} style={{ opacity: mainElementOpacity }} className="text-2xl font-black leading-tight text-card-foreground md:text-4xl">{product.name}</motion.h1>
+                      <p className="mt-2 text-sm font-semibold text-muted-foreground">
+                        {[product.brand ? product.brand.charAt(0).toUpperCase() + product.brand.slice(1) : '', product.quantity].filter(Boolean).join(' · ') || 'Produit du foyer'}
+                      </p>
+                      {categoryLabel && (
+                        <p className="mt-3 inline-flex max-w-full items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-extrabold text-primary">
+                          <Tag className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">{categoryLabel}{product.subcategory && ` · ${product.subcategory}`}</span>
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                <div className="mb-4">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1.5 block">Notes</label>
-                  <textarea
-                    value={notes}
-                    onChange={e => setNotes(e.target.value)}
-                    onBlur={() => updateProduct(product.id, { notes: notes || undefined })}
-                    placeholder="Ajouter une note…"
-                    rows={2}
-                    className="w-full px-3 py-2 rounded-xl bg-muted text-sm text-foreground resize-none border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Historique</h3>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <TimelineStep icon={Clock} label="Ajouté" date={product.addedAt} />
-                    {product.openedAt && (
-                      <>
-                        <span className="text-muted-foreground text-sm">→</span>
-                        <TimelineStep icon={PackageOpen} label="Ouvert" date={product.openedAt} />
-                      </>
+                <div className="border-t border-border bg-background/55 p-4 md:p-5">
+                  <div className="flex flex-wrap items-center justify-center gap-3 md:justify-start">
+                    <ScoreBadge label="Nutri" value={nutriGrade} colorMap={nutriColors} onClick={() => setScoreDialog('nutri')} />
+                    {product.novaGroup && (
+                      <ScoreBadge label="NOVA" value={String(product.novaGroup)} colorMap={novaColors} onClick={() => setScoreDialog('nova')} />
+                    )}
+                    {product.ecoScore && (
+                      <ScoreBadge label="Eco" value={product.ecoScore.toUpperCase()} colorMap={ecoColors} onClick={() => setScoreDialog('eco')} />
+                    )}
+                    <StatusPill icon={StatusIcon} label={config.label} className={config.badge} />
+                    {statusBadge && (
+                      <StatusPill icon={statusBadge.icon} label={statusBadge.label} className={`border ${statusBadge.color}`} />
                     )}
                     {product.frozenUntil && (
-                      <>
-                        <span className="text-muted-foreground text-sm">→</span>
-                        <div className="flex flex-col items-center gap-0.5 min-w-0">
-                          <Snowflake className="w-3.5 h-3.5 text-blue-500" />
-                          <span className="text-[10px] font-bold text-blue-500">Congelé</span>
-                          <span className="text-[9px] text-muted-foreground">jusqu'au {format(new Date(product.frozenUntil), 'd MMM', { locale: fr })}</span>
-                        </div>
-                      </>
-                    )}
-                    {(product.status === 'consumed' || product.status === 'thrown') && product.statusChangedAt && (
-                      <>
-                        <span className="text-muted-foreground text-sm">→</span>
-                        <TimelineStep
-                          icon={product.status === 'consumed' ? UtensilsCrossed : Trash2}
-                          label={product.status === 'consumed' ? 'Consommé' : 'Jeté'}
-                          date={product.statusChangedAt}
-                        />
-                      </>
+                      <StatusPill icon={Snowflake} label="Congelé" className="border border-blue-500/20 bg-blue-500/10 text-blue-500" />
                     )}
                   </div>
                 </div>
+              </section>
 
-                {product.barcode && (
-                  <div className="flex items-center justify-center gap-1.5 mb-3">
-                    <Barcode className="w-3.5 h-3.5 text-muted-foreground/50" />
-                    <span className="text-[10px] text-muted-foreground/50 font-mono">{product.barcode}</span>
+              <section className={`relative overflow-hidden rounded-[2rem] border p-4 text-center shadow-xl shadow-foreground/5 md:p-5 lg:sticky lg:top-20 ${config.border} ${
+                status === 'fresh'
+                  ? 'bg-gradient-to-br from-success/20 via-success/10 to-card'
+                  : status === 'soon'
+                    ? 'bg-gradient-to-br from-warning/20 via-warning/10 to-card'
+                    : 'bg-gradient-to-br from-destructive/20 via-destructive/10 to-card'
+              }`}>
+                <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-background/55 blur-2xl" />
+                <div className="pointer-events-none absolute -bottom-16 left-1/2 h-40 w-40 -translate-x-1/2 rounded-full bg-background/40 blur-2xl" />
+                <div className="relative">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[1.1rem] border border-white/50 bg-background/75 shadow-lg shadow-foreground/5 backdrop-blur-sm md:mb-4 md:h-16 md:w-16 md:rounded-[1.35rem]">
+                    <StatusIcon className={`h-6 w-6 md:h-8 md:w-8 ${config.iconColor}`} />
                   </div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">Date limite</p>
+                  <p className={`mt-1 text-6xl font-black leading-none tracking-tight md:mt-2 md:text-7xl ${config.iconColor}`}>{dayCounterValue}</p>
+                  <p className="mt-1 text-base font-black text-card-foreground md:mt-2 md:text-lg">{dayCounterLabel}</p>
+                  <p className="mt-1 text-sm font-bold text-muted-foreground">
+                    {format(new Date(effectiveDate), 'dd MMMM yyyy', { locale: fr })}
+                  </p>
+                </div>
+
+                <div className="relative mt-4 space-y-2.5 md:mt-5 md:space-y-3">
+                  {product.openedAt && product.daysAfterOpening != null && (
+                    <div className="rounded-2xl border border-primary/20 bg-background/75 p-3 text-left shadow-sm backdrop-blur-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                          <PackageOpen className="h-4 w-4 text-primary" />
+                        </span>
+                        <p className="text-sm font-extrabold text-primary">Ouvert depuis {openedDays} jour{openedDays > 1 ? 's' : ''}</p>
+                      </div>
+                      {effectiveDate !== product.expirationDate && (
+                        <p className="mt-2 pl-10 text-xs font-semibold text-muted-foreground">
+                          Date effective : {format(new Date(effectiveDate), 'dd MMMM yyyy', { locale: fr })}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {product.frozenUntil && (
+                    <div className="rounded-2xl border border-blue-500/20 bg-background/75 p-3 text-left shadow-sm backdrop-blur-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-500/10">
+                          <Snowflake className="h-4 w-4 text-blue-500" />
+                        </span>
+                        <p className="text-sm font-extrabold text-blue-500">Congelé jusqu'au {format(new Date(product.frozenUntil), 'dd MMM yyyy', { locale: fr })}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {postExpiryNote && (
+                    <div className="flex items-start gap-3 rounded-2xl border border-blue-500/20 bg-background/75 p-3 text-left shadow-sm backdrop-blur-sm">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-500/10">
+                        <Info className="h-4 w-4 text-blue-500" />
+                      </span>
+                      <p className="text-sm text-card-foreground">
+                        Ce produit peut généralement être consommé jusqu'à <span className="font-extrabold">{postExpiryNote}</span> après la date d'expiration.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
+
+            <motion.div className="mt-4 grid gap-4 lg:grid-cols-2" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16, duration: 0.25 }}>
+              <InfoSectionCard icon={PackageOpen} title="Actions rapides" eyebrow="Statut">
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { status: 'opened' as ProductStatus, icon: PackageOpen, label: 'Ouvert', color: 'text-blue-500', bg: 'bg-blue-500/10', activeBg: 'bg-blue-500 text-white' },
+                    { status: 'consumed' as ProductStatus, icon: UtensilsCrossed, label: 'Consommé', color: 'text-success', bg: 'bg-success/10', activeBg: 'bg-success text-success-foreground' },
+                    { status: 'thrown' as ProductStatus, icon: Trash2, label: 'Jeté', color: 'text-destructive', bg: 'bg-destructive/10', activeBg: 'bg-destructive text-destructive-foreground' },
+                  ]).map(item => {
+                    const isActive = currentProductStatus === item.status;
+                    return (
+                      <button key={item.status} onClick={() => handleStatusChange(isActive ? 'active' : item.status)}
+                        className={`flex flex-col items-center gap-1.5 rounded-2xl border p-3 transition-all hover:-translate-y-0.5 ${isActive ? `${item.activeBg} border-transparent shadow-md` : `${item.bg} border-border hover:border-muted-foreground/20`}`}>
+                        <item.icon className={`h-5 w-5 ${isActive ? '' : item.color}`} />
+                        <span className={`text-[10px] font-extrabold ${isActive ? '' : item.color}`}>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {currentProductStatus !== 'active' && (
+                  <button onClick={() => handleStatusChange('active')} className="mt-3 flex w-full items-center justify-center gap-1.5 py-2 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground">
+                    <RotateCcw className="h-3.5 w-3.5" /> Remettre en actif
+                  </button>
                 )}
+                {!product.frozenUntil ? (
+                  <button onClick={handleFreeze} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-2xl border border-blue-500/20 bg-blue-500/10 py-3 text-xs font-extrabold text-blue-600 transition-colors hover:bg-blue-500/20">
+                    <Snowflake className="h-4 w-4" /> Mettre au congélateur ({getFreezeDuration(product.category)} mois)
+                  </button>
+                ) : (
+                  <button onClick={handleUnfreeze} className="mt-3 flex w-full items-center justify-center gap-1.5 py-2 text-xs font-bold text-blue-500 transition-colors hover:text-blue-700">
+                    <RotateCcw className="h-3.5 w-3.5" /> Retirer du congélateur
+                  </button>
+                )}
+              </InfoSectionCard>
 
-                <p className="text-[10px] text-muted-foreground/40 text-center px-4">
-                  Les informations proviennent d'OpenFoodFacts et peuvent être inexactes ou incomplètes.
-                </p>
-              </AccordionContent>
-            </AccordionItem>
+              <Accordion type="multiple" defaultValue={['nutrition']} className="space-y-3 lg:col-span-2">
+                <AccordionItem value="nutrition" className="overflow-hidden rounded-[1.75rem] border border-border bg-card shadow-sm">
+                  <AccordionTrigger className="px-4 py-3.5 hover:no-underline [&[data-state=open]]:bg-primary/5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
+                        <BarChart2 className="h-5 w-5 text-primary" />
+                      </div>
+                      <p className="text-base font-black text-card-foreground">Nutrition & Allergènes</p>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    {nutritionRows.length === 0 && allergens.length === 0 ? (
+                      <div className="rounded-2xl bg-muted p-4 text-center">
+                        <p className="text-sm font-extrabold text-card-foreground">Aucune information nutritionnelle disponible</p>
+                        <p className="mt-1 text-xs font-semibold text-muted-foreground">Change l'image ou complète les infos depuis OpenFoodFacts pour enrichir cette fiche.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {allergens.length > 0 && (
+                          <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-3">
+                            <div className="mb-2 flex items-center gap-2">
+                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-background/70">
+                                <ShieldAlert className="h-4 w-4 text-destructive" />
+                              </span>
+                              <div>
+                                <p className="text-sm font-black text-destructive">Allergènes à vérifier</p>
+                                <p className="text-xs font-semibold text-destructive/80">À confirmer sur l'emballage avant consommation.</p>
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {allergens.map((allergen) => (
+                                <span key={allergen} className="rounded-full border border-destructive/20 bg-background/80 px-2.5 py-1 text-[10px] font-extrabold text-destructive">
+                                  {allergen}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
-          </Accordion>
+                        {nutritionSummary.length > 0 && (
+                          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                            {nutritionSummary.map(([key, label, unit, tone]) => (
+                              <NutritionSummaryCard key={key} label={label} value={formatNutritionValue(nutritionObj[key], unit)} tone={tone} />
+                            ))}
+                          </div>
+                        )}
 
-          {/* Boutons toujours visibles en bas */}
-          <div className="mt-6 mb-8 space-y-2">
-            <button onClick={openEdit} className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold hover:bg-primary/90 transition-colors">
-              <Pencil className="w-4 h-4" /> Modifier
-            </button>
-            <button onClick={() => setConfirmDelete(true)} className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-destructive/10 text-destructive rounded-2xl font-bold hover:bg-destructive/20 transition-colors">
-              <Trash2 className="w-4 h-4" /> Supprimer
-            </button>
-          </div>
-        </motion.div>
+                        {nutritionInsights.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {nutritionInsights.map((insight) => (
+                              <span key={insight.label} className={`rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${insight.className}`}>
+                                {insight.label}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {nutritionRows.length > 0 && (
+                          <div>
+                            <h3 className="mb-2 text-xs font-extrabold uppercase tracking-wider text-muted-foreground">Valeurs nutritionnelles <span className="font-semibold normal-case">pour 100 g</span></h3>
+                            <div className="overflow-hidden rounded-2xl border border-border">
+                              {nutritionRows.map(([key, label, unit]) => (
+                                <div key={key} className={`flex items-center justify-between gap-3 border-b border-border px-4 py-2.5 last:border-0 ${key === 'saturated_fat' || key === 'sugars' ? 'pl-7' : ''}`}>
+                                  <span className="text-sm text-card-foreground">{label}</span>
+                                  <span className="text-sm font-extrabold text-card-foreground">{formatNutritionValue(nutritionObj[key], unit)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="ingredients" className="overflow-hidden rounded-[1.75rem] border border-border bg-card shadow-sm">
+                  <AccordionTrigger className="px-4 py-3.5 hover:no-underline [&[data-state=open]]:bg-primary/5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
+                        <AlignLeft className="h-5 w-5 text-primary" />
+                      </div>
+                      <p className="text-base font-black text-card-foreground">Ingrédients</p>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    {product.ingredients ? (
+                      <div className="space-y-3">
+                        <div className="rounded-2xl border border-border bg-muted/50 p-4">
+                          <p className="max-w-3xl text-sm leading-7 text-card-foreground">{displayedIngredients}</p>
+                          {ingredientsIsLong && (
+                            <button
+                              type="button"
+                              onClick={() => setIngredientsExpanded((expanded) => !expanded)}
+                              className="mt-3 text-xs font-extrabold text-primary transition-colors hover:text-primary/80"
+                            >
+                              {ingredientsExpanded ? 'Voir moins' : 'Voir la liste complète'}
+                            </button>
+                          )}
+                        </div>
+
+                        {allergens.length > 0 && (
+                          <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-3">
+                            <p className="mb-2 text-xs font-extrabold uppercase tracking-wider text-destructive">Allergènes signalés</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {allergens.map((allergen) => (
+                                <span key={allergen} className="rounded-full border border-destructive/20 bg-background/80 px-2.5 py-1 text-[10px] font-extrabold text-destructive">
+                                  {allergen}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {additives.length > 0 && (
+                          <div>
+                            <p className="mb-2 text-xs font-extrabold uppercase tracking-wider text-muted-foreground">Additifs détectés</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {additives.map((additive) => (
+                                <span key={additive} className="rounded-full border border-orange-500/20 bg-orange-500/10 px-2.5 py-1 text-[10px] font-extrabold text-orange-600">
+                                  {additive}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <p className="text-[10px] font-semibold text-muted-foreground/70">
+                          Liste issue d'OpenFoodFacts, à vérifier sur l'emballage.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl bg-muted p-4 text-center">
+                        <p className="text-sm font-extrabold text-card-foreground">Aucun ingrédient renseigné</p>
+                        <p className="mt-1 text-xs font-semibold text-muted-foreground">Change l'image du produit ou complète la fiche pour retrouver la composition ici.</p>
+                      </div>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="details" className="overflow-hidden rounded-[1.75rem] border border-border bg-card shadow-sm">
+                  <AccordionTrigger className="px-4 py-3.5 hover:no-underline [&[data-state=open]]:bg-primary/5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
+                        <Info className="h-5 w-5 text-primary" />
+                      </div>
+                      <p className="text-base font-black text-card-foreground">Détails & historique</p>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="mb-3 text-xs font-extrabold uppercase tracking-wider text-muted-foreground">Identité</h3>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {product.brand && <DetailRow icon={Tag} label="Marque" value={product.brand.charAt(0).toUpperCase() + product.brand.slice(1)} />}
+                          {product.quantity && <DetailRow icon={Scale} label="Quantité" value={product.quantity} />}
+                          {product.category && (
+                            <DetailRow
+                              icon={Tag}
+                              label="Catégorie"
+                              value={<>{categoryLabel}{product.subcategory && (<><span className="mx-1 font-semibold text-muted-foreground">›</span>{product.subcategory}</>)}</>}
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Note du foyer</label>
+                        <div className="relative">
+                          <textarea
+                            value={notes}
+                            onChange={e => setNotes(e.target.value)}
+                            onBlur={() => { if (notesDirty) saveNotes(); }}
+                            placeholder="Ajouter une note utile pour tout le foyer…"
+                            rows={3}
+                            className="w-full resize-none rounded-2xl border border-border bg-muted py-2 pl-3 pr-14 pb-12 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                          />
+                          <button
+                            type="button"
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => saveNotes(true)}
+                            className={`absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full border shadow-sm transition-all ${
+                              notesDirty
+                                ? 'border-primary/20 bg-primary text-primary-foreground hover:scale-105 hover:bg-primary/90'
+                                : 'border-border bg-background/90 text-muted-foreground hover:text-primary'
+                            }`}
+                            aria-label="Sauvegarder la note"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="mb-3 text-xs font-extrabold uppercase tracking-wider text-muted-foreground">Historique</h3>
+                        <div className="rounded-2xl border border-border bg-muted/40 p-3">
+                          <TimelineEvent icon={Clock} label="Produit ajouté" date={product.addedAt} />
+                          {product.openedAt && (
+                            <TimelineEvent
+                              icon={PackageOpen}
+                              label="Produit ouvert"
+                              date={product.openedAt}
+                              detail={product.daysAfterOpening != null ? `À consommer idéalement sous ${product.daysAfterOpening} jour${product.daysAfterOpening > 1 ? 's' : ''} après ouverture.` : undefined}
+                              tone="blue"
+                            />
+                          )}
+                          {product.frozenUntil && (
+                            <TimelineEvent icon={Snowflake} label="Congélation active" date={product.frozenUntil} detail="La date effective prend cette congélation en compte." tone="blue" />
+                          )}
+                          {product.status === 'consumed' && product.statusChangedAt && (
+                            <TimelineEvent icon={UtensilsCrossed} label="Produit consommé" date={product.statusChangedAt} tone="success" />
+                          )}
+                          {product.status === 'thrown' && product.statusChangedAt && (
+                            <TimelineEvent icon={Trash2} label="Produit jeté" date={product.statusChangedAt} tone="danger" />
+                          )}
+                        </div>
+                        {product.barcode && (
+                          <div className="mt-2 flex items-center justify-center gap-1.5 px-3">
+                            <Barcode className="h-3.5 w-3.5 shrink-0 text-muted-foreground/45" />
+                            <span className="truncate font-mono text-[10px] text-muted-foreground/50">{product.barcode}</span>
+                            <button
+                              type="button"
+                              onClick={copyBarcode}
+                              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted-foreground/45 transition-colors hover:bg-muted hover:text-primary"
+                              aria-label="Copier le code-barres"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      <p className="px-4 text-center text-[10px] text-muted-foreground/50">
+                        Les informations proviennent d'OpenFoodFacts et peuvent être inexactes ou incomplètes.
+                      </p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </motion.div>
+
+            <div className="mt-5 grid gap-2 pb-2 sm:grid-cols-2">
+              <button onClick={openEdit} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3.5 font-extrabold text-primary-foreground transition-colors hover:bg-primary/90">
+                <Pencil className="h-4 w-4" /> Modifier
+              </button>
+              <button onClick={() => setConfirmDelete(true)} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 px-4 py-3.5 font-extrabold text-destructive transition-colors hover:bg-destructive/20">
+                <Trash2 className="h-4 w-4" /> Supprimer
+              </button>
+            </div>
+          </motion.div>
+        </div>
 
         {/* Fullscreen image overlay */}
         {showFullscreen && product.imageUrl && (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LeafyGreen, BarChart3, Bell, History, Info, Moon, Sun, Home, Users } from 'lucide-react';
+import { LeafyGreen, BarChart3, Bell, History, Info, Moon, Sun, Home, Settings } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
 import { useAuth } from '@/contexts/AuthContext';
 import { getExpirationStatus, getEffectiveExpirationDate } from '@/types/product';
@@ -10,7 +10,7 @@ const navItems = [
   { to: '/stats', icon: BarChart3, label: 'Statistiques' },
   { to: '/notifications', icon: Bell, label: 'Notifications' },
   { to: '/history', icon: History, label: 'Historique' },
-  { to: '/household', icon: Users, label: 'Mon foyer' },
+  { to: '/settings', icon: Settings, label: 'Paramètres' },
   { to: '/credits', icon: Info, label: 'Crédits' },
 ];
 

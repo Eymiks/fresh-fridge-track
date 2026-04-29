@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { WifiOff } from "lucide-react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -9,6 +9,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
+import { MobileMenu } from "@/components/MobileMenu";
 import { NotificationChecker } from "@/components/NotificationChecker";
 import Auth from "./pages/Auth.tsx";
 import HouseholdSetup from "./pages/HouseholdSetup.tsx";
@@ -18,7 +19,7 @@ import Stats from "./pages/Stats.tsx";
 import Credits from "./pages/Credits.tsx";
 import Notifications from "./pages/Notifications.tsx";
 import History from "./pages/History.tsx";
-import HouseholdSettings from "./pages/HouseholdSettings.tsx";
+import Settings from "./pages/Settings.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -33,7 +34,12 @@ function Layout({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <MobileMenu />
+    </>
+  );
 }
 
 function AppRoutes() {
@@ -69,7 +75,8 @@ function AppRoutes() {
           <Route path="/credits" element={<Credits />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/history" element={<History />} />
-          <Route path="/household" element={<HouseholdSettings />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/household" element={<Navigate to="/settings" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>

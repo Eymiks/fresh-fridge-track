@@ -1,16 +1,13 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Plus, LeafyGreen, Package, Layers, Search, AlertTriangle, Clock, CircleCheck, X, ArrowUpDown, Moon, Sun, Bell, BarChart3, Info, Menu, LayoutGrid, Apple, Milk, Beef, Fish, CupSoda, Snowflake, Wheat, History, SlidersHorizontal, RotateCcw, UtensilsCrossed, Trash2, ChevronDown } from 'lucide-react';
+import { Plus, LeafyGreen, Package, Layers, Search, AlertTriangle, Clock, CircleCheck, X, ArrowUpDown, LayoutGrid, Apple, Milk, Beef, Fish, CupSoda, Snowflake, Wheat, SlidersHorizontal, RotateCcw, UtensilsCrossed, Trash2, ChevronDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { useProducts } from '@/hooks/useProducts';
 import { ProductCard } from '@/components/ProductCard';
 import { AddProductSheet } from '@/components/AddProductSheet';
 import { getExpirationStatus, getEffectiveExpirationDate, PRODUCT_CATEGORIES } from '@/types/product';
 import { PageTransition } from '@/components/PageTransition';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { useAuth } from '@/contexts/AuthContext';
 
 type AddMode = 'single' | 'multi';
 type StatusFilter = 'all' | 'expired' | 'soon' | 'fresh';
@@ -29,8 +26,6 @@ const sortOptions: { key: SortBy; label: string }[] = [
   { key: 'added', label: 'Date d\'ajout' },
 ];
 
-const SEEN_KEY = 'frigo-seen-statuses';
-
 function SkeletonCard() {
   return (
     <div className="relative flex items-center gap-3 p-3 rounded-2xl bg-card border border-border overflow-hidden">
@@ -46,10 +41,7 @@ function SkeletonCard() {
 }
 
 const Index = () => {
-  const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { displayName, household, members, user } = useAuth();
-  const myMember = members.find(m => m.user_id === user?.id);
   const { products, loading, addProduct, removeProduct, setProductStatus, updateProduct } = useProducts();
   const [showBubble, setShowBubble] = useState(false);
   const [addMode, setAddMode] = useState<AddMode | null>(null);
@@ -58,9 +50,6 @@ const Index = () => {
   const [sortBy, setSortBy] = useState<SortBy>('expiration');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [showSortMenu, setShowSortMenu] = useState(false);
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
-  const [hasNewAlerts, setHasNewAlerts] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   // Collapsible sections
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -104,40 +93,10 @@ const Index = () => {
     exitSelection();
   };
 
-  // Dark mode toggle
-  const toggleDark = () => {
-    const next = !isDark;
-    setIsDark(next);
-    document.documentElement.classList.toggle('dark', next);
-    localStorage.setItem('frigo-dark-mode', next ? 'true' : 'false');
-  };
-
-  useEffect(() => {
-    const saved = localStorage.getItem('frigo-dark-mode');
-    if (saved === 'true') {
-      setIsDark(true);
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
-
   const activeProducts = useMemo(() =>
     products.filter(p => p.status !== 'consumed' && p.status !== 'thrown'),
     [products]
   );
-
-  useEffect(() => {
-    const currentAlertIds = activeProducts
-      .filter(p => {
-        const s = getExpirationStatus(getEffectiveExpirationDate(p));
-        return s === 'expired' || s === 'soon';
-      })
-      .map(p => p.id)
-      .sort()
-      .join(',');
-
-    const seen = localStorage.getItem(SEEN_KEY) || '';
-    setHasNewAlerts(!!(currentAlertIds && currentAlertIds !== seen));
-  }, [activeProducts]);
 
   const handleModeSelect = (mode: AddMode) => {
     setShowBubble(false);
@@ -205,17 +164,7 @@ const Index = () => {
               </div>
               <h1 className="text-xl font-extrabold text-foreground">FreshTrack</h1>
             </div>
-            {isMobile ? (
-              <button
-                onClick={() => setMenuOpen(true)}
-                className="relative p-2.5 rounded-xl hover:bg-muted transition-colors"
-              >
-                <Menu className="w-5 h-5 text-foreground" />
-                {hasNewAlerts && (
-                  <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-destructive rounded-full animate-pulse" />
-                )}
-              </button>
-            ) : (
+            {!isMobile && (
               <button
                 onClick={() => setAddMode('single')}
                 className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors shadow-sm"
@@ -256,130 +205,6 @@ const Index = () => {
             </div>
           )}
         </div>
-
-        {/* Hamburger menu sheet */}
-        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-          <SheetContent side="right" className="w-72 flex flex-col p-0 gap-0">
-
-            {/* Profile header */}
-            <div className="flex flex-col gap-3 px-5 pt-10 pb-5 border-b border-border">
-              <div className="flex items-center gap-3">
-                {myMember?.avatar_url ? (
-                  <img
-                    src={myMember.avatar_url}
-                    alt={displayName}
-                    className="w-12 h-12 rounded-2xl object-cover shadow-sm shrink-0"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-sm shrink-0">
-                    <span className="text-lg font-extrabold text-primary-foreground">
-                      {displayName.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                )}
-
-                <button
-                  onClick={() => { setMenuOpen(false); navigate('/household'); }}
-                  className="flex-1 min-w-0 text-left"
-                >
-                  <p className="font-extrabold text-foreground truncate">{displayName}</p>
-                  <p className="text-xs text-muted-foreground truncate">{household?.name}</p>
-                </button>
-              </div>
-
-              {/* Member avatars */}
-              {members.length > 1 && (
-                <button
-                  onClick={() => { setMenuOpen(false); navigate('/household'); }}
-                  className="flex items-center gap-1.5 text-left"
-                >
-                  {members.slice(0, 5).map((m, i) => {
-                    const colors = ['bg-primary', 'bg-blue-500', 'bg-purple-500', 'bg-orange-400', 'bg-pink-500'];
-                    return m.avatar_url ? (
-                      <img
-                        key={m.user_id}
-                        src={m.avatar_url}
-                        alt={m.display_name}
-                        title={m.display_name}
-                        className="w-7 h-7 rounded-full object-cover ring-2 ring-background shrink-0"
-                      />
-                    ) : (
-                      <div
-                        key={m.user_id}
-                        title={m.display_name}
-                        className={`w-7 h-7 rounded-full ${colors[i % colors.length]} flex items-center justify-center shrink-0 ring-2 ring-background`}
-                      >
-                        <span className="text-[10px] font-extrabold text-white">
-                          {m.display_name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                    );
-                  })}
-                  {members.length > 5 && (
-                    <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0 ring-2 ring-background">
-                      <span className="text-[10px] font-bold text-muted-foreground">+{members.length - 5}</span>
-                    </div>
-                  )}
-                  <span className="text-xs text-muted-foreground ml-1">
-                    {members.length} membre{members.length > 1 ? 's' : ''}
-                  </span>
-                </button>
-              )}
-            </div>
-
-            <nav className="flex-1 px-3 py-3 space-y-1">
-              <button
-                onClick={() => { setMenuOpen(false); navigate('/stats'); }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted transition-colors text-foreground"
-              >
-                <BarChart3 className="w-5 h-5 text-muted-foreground" />
-                <span className="text-sm font-semibold">Statistiques</span>
-              </button>
-              <button
-                onClick={() => { setMenuOpen(false); navigate('/history'); }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted transition-colors text-foreground"
-              >
-                <History className="w-5 h-5 text-muted-foreground" />
-                <span className="text-sm font-semibold">Historique</span>
-                {(() => {
-                  const count = products.filter(p => p.status === 'opened' || p.status === 'consumed' || p.status === 'thrown').length;
-                  return count > 0 ? <span className="ml-auto text-xs font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{count}</span> : null;
-                })()}
-              </button>
-              <button
-                onClick={() => { setMenuOpen(false); navigate('/notifications'); }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted transition-colors text-foreground"
-              >
-                <div className="relative">
-                  <Bell className="w-5 h-5 text-muted-foreground" />
-                  {hasNewAlerts && (
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full animate-pulse" />
-                  )}
-                </div>
-                <span className="text-sm font-semibold">Notifications</span>
-                {hasNewAlerts && (
-                  <span className="ml-auto text-xs font-bold text-destructive">Nouveau</span>
-                )}
-              </button>
-              <button
-                onClick={toggleDark}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted transition-colors text-foreground"
-              >
-                {isDark ? <Sun className="w-5 h-5 text-muted-foreground" /> : <Moon className="w-5 h-5 text-muted-foreground" />}
-                <span className="text-sm font-semibold">{isDark ? 'Mode clair' : 'Mode sombre'}</span>
-              </button>
-              <div className="h-px bg-border my-2" />
-              <button
-                onClick={() => { setMenuOpen(false); navigate('/credits'); }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted transition-colors text-foreground"
-              >
-                <Info className="w-5 h-5 text-muted-foreground" />
-                <span className="text-sm font-semibold">Crédits</span>
-              </button>
-            </nav>
-          </SheetContent>
-        </Sheet>
-
 
         {/* Search bar + sort */}
         {products.length > 0 && (
