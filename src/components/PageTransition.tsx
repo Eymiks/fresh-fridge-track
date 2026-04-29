@@ -3,14 +3,16 @@ import { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 
 const pageVariants = {
-  initial: { opacity: 0, scale: 0.97, y: 16 },
-  animate: { opacity: 1, scale: 1, y: 0 },
-  exit: { opacity: 0, scale: 0.98, y: -12 },
-};
-
-const pageTransition = {
-  duration: 0.3,
-  ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+  initial: { opacity: 0, y: 10 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] },
+  },
+  exit: {
+    opacity: 0,
+    transition: { duration: 0.1, ease: 'easeIn' },
+  },
 };
 
 // Module-level: tracks the last pathname that triggered the entrance animation.
@@ -29,7 +31,6 @@ export function PageTransition({ children }: { children: ReactNode }) {
       initial={shouldAnimate ? 'initial' : false}
       animate="animate"
       exit="exit"
-      transition={pageTransition}
     >
       {children}
     </motion.div>

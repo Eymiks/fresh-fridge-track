@@ -67,7 +67,7 @@ function AppRoutes() {
         </div>
       )}
       <NotificationChecker />
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="sync">
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<Index />} />
           <Route path="/product/:id" element={<ProductDetail />} />
