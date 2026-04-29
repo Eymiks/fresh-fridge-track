@@ -466,7 +466,7 @@ const ProductDetail = () => {
               {days < 0 ? `jour${Math.abs(days) > 1 ? 's' : ''} de retard` : days === 0 ? "Expire aujourd'hui" : `jour${days > 1 ? 's' : ''} restant${days > 1 ? 's' : ''}`}
             </p>
             <p className="text-xs text-muted-foreground mt-1.5 font-medium">
-              {format(new Date(product.expirationDate), 'dd MMMM yyyy', { locale: fr })}
+              {format(new Date(effectiveDate), 'dd MMMM yyyy', { locale: fr })}
             </p>
           </div>
 
