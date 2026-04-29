@@ -323,7 +323,9 @@ const ProductDetail = () => {
 
   const arcRadius = 52;
   const arcCircumference = 2 * Math.PI * arcRadius;
-  const arcOffset = arcCircumference * (1 - Math.min(Math.max(expiryProgress, 0), 1));
+  // Arc shows remaining time (full = fresh, drains as product ages, full red when expired)
+  const arcFill = days <= 0 ? 1 : Math.max(0, 1 - expiryProgress);
+  const arcOffset = arcCircumference * (1 - arcFill);
   const arcColorClass = status === 'fresh' ? 'text-success' : status === 'soon' ? 'text-warning' : 'text-destructive';
 
   return (
@@ -417,8 +419,8 @@ const ProductDetail = () => {
             </div>
 
             {/* Badges */}
-            <div className="flex-1 min-w-0 flex flex-col justify-center gap-3">
-              <div className="flex items-start flex-wrap gap-2">
+            <div className="flex-1 min-w-0 flex flex-col justify-center gap-2.5 overflow-hidden">
+              <div className="flex items-start flex-wrap gap-x-2 gap-y-2">
                 <ScoreBadge label="Nutri" value={nutriGrade} colorMap={nutriColors} onClick={() => setScoreDialog('nutri')} />
                 {product.novaGroup && (
                   <ScoreBadge label="NOVA" value={String(product.novaGroup)} colorMap={novaColors} onClick={() => setScoreDialog('nova')} />
@@ -427,16 +429,17 @@ const ProductDetail = () => {
                   <ScoreBadge label="Eco" value={product.ecoScore.toUpperCase()} colorMap={ecoColors} onClick={() => setScoreDialog('eco')} />
                 )}
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className={`flex items-center gap-1 text-xs font-bold h-8 px-2.5 rounded-lg ${config.badge}`}>
-                    <StatusIcon className="w-3 h-3" />
-                    {config.label}
+                  <span className={`flex items-center gap-1 text-[11px] font-bold h-8 px-2 rounded-lg ${config.badge}`}>
+                    <StatusIcon className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{config.label}</span>
                   </span>
                   <span className="text-[9px] text-muted-foreground font-semibold">État</span>
                 </div>
               </div>
               {statusBadge && (
-                <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border w-fit ${statusBadge.color}`}>
-                  <statusBadge.icon className="w-3 h-3" />{statusBadge.label}
+                <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border w-fit max-w-full ${statusBadge.color}`}>
+                  <statusBadge.icon className="w-3 h-3 shrink-0" />
+                  <span className="truncate">{statusBadge.label}</span>
                 </span>
               )}
             </div>
