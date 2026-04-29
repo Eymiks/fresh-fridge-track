@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2, Barcode, Clock, Tag, Pencil, AlertTriangle, CircleCheck, PackageOpen, UtensilsCrossed, RotateCcw, Scale, ShieldAlert, Info, X, Snowflake, BarChart2, AlignLeft, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Trash2, Barcode, Clock, Tag, Pencil, AlertTriangle, CircleCheck, PackageOpen, UtensilsCrossed, RotateCcw, Scale, ShieldAlert, Info, RefreshCw, X, Snowflake, BarChart2, AlignLeft, Copy, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
