@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { LeafyGreen, BarChart3, Bell, History, Info, Moon, Sun, Home, Settings } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
@@ -27,11 +27,13 @@ export function DesktopSidebar() {
     }
   }, []);
 
-  const alertCount = products.filter(p => {
-    if (p.status === 'consumed' || p.status === 'thrown') return false;
-    const s = getExpirationStatus(getEffectiveExpirationDate(p));
-    return s === 'expired' || s === 'soon';
-  }).length;
+  const alertCount = useMemo(() =>
+    products.filter(p => {
+      if (p.status === 'consumed' || p.status === 'thrown') return false;
+      const s = getExpirationStatus(getEffectiveExpirationDate(p));
+      return s === 'expired' || s === 'soon';
+    }).length,
+  [products]);
 
   const toggleDark = () => {
     const next = !isDark;

@@ -11,6 +11,7 @@ async function getActiveRegistration(): Promise<ServiceWorkerRegistration> {
 
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('SW activation timeout (8s)')), 8000);
+    // eslint-disable-next-line prefer-const
     let poll: ReturnType<typeof setInterval>;
 
     const done = () => {

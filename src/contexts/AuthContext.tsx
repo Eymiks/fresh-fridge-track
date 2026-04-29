@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -102,7 +102,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user) await fetchHousehold(user.id);
   }, [user, fetchHousehold]);
 
-  const displayName = members.find(m => m.user_id === user?.id)?.display_name ?? '';
+  const displayName = useMemo(
+    () => members.find(m => m.user_id === user?.id)?.display_name ?? '',
+    [members, user?.id]
+  );
 
   return (
     <AuthContext.Provider value={{ user, household, members, displayName, loading, signOut, refreshHousehold }}>

@@ -25,3 +25,22 @@ dist-ssr
 
 # Claude commit message temp file
 .claude/commit_msg.txt
+
+# Environment (clés Supabase — ne jamais committer)
+.env
+.env.*
+!.env.example
+
+# Bun binary lockfile (redondant avec bun.lock texte)
+bun.lockb
+
+# AI tools temp
+.codex/
+
+# Supabase CLI temp
+supabase/.temp/
+
+# Tests output
+test-results/
+playwright-report/
+coverage/

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
@@ -64,7 +64,7 @@ const productStatusConfig: Record<string, { icon: typeof PackageOpen; label: str
   thrown: { icon: Trash2, label: 'Jeté', color: 'text-destructive bg-destructive/10' },
 };
 
-export function ProductCard({
+function ProductCardInner({
   product,
   onSetStatus,
   onUpdateDate,
@@ -103,13 +103,13 @@ export function ProductCard({
   const isInactive = productStatus === 'consumed' || productStatus === 'thrown';
   const pStatusConfig = productStatusConfig[productStatus];
 
-  const handleDragEnd = (_: any, info: { offset: { x: number } }) => {
+  const handleDragEnd = useCallback((_event: MouseEvent | TouchEvent | PointerEvent, info: { offset: { x: number } }) => {
     if (!selectionMode) {
       if (info.offset.x > 120) setPendingAction('consumed');
       else if (info.offset.x < -120) setPendingAction('thrown');
     }
     animate(x, 0, { type: 'spring', stiffness: 300, damping: 30 });
-  };
+  }, [selectionMode, x]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!onLongPress || selectionMode) return;
@@ -377,3 +377,5 @@ export function ProductCard({
     </>
   );
 }
+
+export const ProductCard = React.memo(ProductCardInner);
