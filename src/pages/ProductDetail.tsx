@@ -522,179 +522,213 @@ const ProductDetail = () => {
             )}
           </div>
 
-          {/* Tabs : Nutrition / Ingrédients / Détails */}
-          <Tabs defaultValue="nutrition" className="mt-2">
-            <TabsList className="grid w-full grid-cols-3 bg-muted">
-              <TabsTrigger value="nutrition">Nutrition</TabsTrigger>
-              <TabsTrigger value="ingredients">Ingrédients</TabsTrigger>
-              <TabsTrigger value="details">Détails</TabsTrigger>
-            </TabsList>
+          {/* Accordion sections */}
+          <Accordion type="multiple" defaultValue={['nutrition']} className="space-y-3 mt-2">
 
-            {/* — Onglet Nutrition — */}
-            <TabsContent value="nutrition" className="mt-4">
-              {(() => {
-                const n = product.nutritionData ? JSON.parse(product.nutritionData) as Record<string, number> : {};
-                const rows: [string, string, string][] = ([
-                  ['energy_kcal', 'Énergie', 'kcal'],
-                  ['fat', 'Matières grasses', 'g'],
-                  ['saturated_fat', 'dont saturées', 'g'],
-                  ['carbohydrates', 'Glucides', 'g'],
-                  ['sugars', 'dont sucres', 'g'],
-                  ['proteins', 'Protéines', 'g'],
-                  ['fiber', 'Fibres', 'g'],
-                  ['salt', 'Sel', 'g'],
-                ] as [string, string, string][]).filter(([key]) => n[key] != null);
-                const hasNutrition = rows.length > 0;
-                const hasAllergens = !!product.allergens;
-                if (!hasNutrition && !hasAllergens) {
-                  return <p className="text-sm text-muted-foreground text-center py-8">Aucune information nutritionnelle disponible</p>;
-                }
-                return (
-                  <>
-                    {hasNutrition && (
-                      <div className="mb-5">
-                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Valeurs nutritionnelles <span className="font-normal normal-case">pour 100 g</span></h3>
-                        <div className="bg-card rounded-2xl border border-border divide-y divide-border">
-                          {rows.map(([key, label, unit]) => (
-                            <div key={key} className={`flex justify-between items-center px-4 py-2.5 ${key === 'saturated_fat' || key === 'sugars' ? 'pl-7' : ''}`}>
-                              <span className="text-sm text-card-foreground">{label}</span>
-                              <span className="text-sm font-bold text-card-foreground">{Number(n[key]).toFixed(1)} {unit}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {hasAllergens && (
-                      <div className="mb-2">
-                        <div className="flex items-center gap-2 mb-2">
-                          <ShieldAlert className="w-4 h-4 text-destructive" />
-                          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Allergènes</h3>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {product.allergens!.split(',').map((a, i) => {
-                            const translated = translateAllergen(a);
-                            if (!translated) return null;
-                            return (
-                              <span key={i} className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
-                                {translated}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
-            </TabsContent>
-
-            {/* — Onglet Ingrédients — */}
-            <TabsContent value="ingredients" className="mt-4">
-              {product.ingredients ? (
-                <div className="bg-card rounded-2xl border border-border px-4 py-3">
-                  <p className="text-sm text-card-foreground leading-relaxed">{product.ingredients}</p>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-8">Aucun ingrédient renseigné</p>
-              )}
-            </TabsContent>
-
-            {/* — Onglet Détails — */}
-            <TabsContent value="details" className="mt-4">
-              {/* Details card (sans la date de péremption, déplacée en haut) */}
-              <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-                {product.quantity && (
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center"><Scale className="w-4 h-4 text-primary" /></div>
-                    <div>
-                      <p className="text-[11px] text-muted-foreground font-semibold">Quantité</p>
-                      <p className="text-sm font-bold text-card-foreground">{product.quantity}</p>
-                    </div>
-                  </div>
-                )}
-                {product.category && (
-                  <>
-                    {product.quantity && <div className="h-px bg-border" />}
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center"><Tag className="w-4 h-4 text-primary" /></div>
-                      <div>
-                        <p className="text-[11px] text-muted-foreground font-semibold">Catégorie</p>
-                        <p className="text-sm font-bold text-card-foreground">{categoryLabel}{product.subcategory && (<><span className="text-muted-foreground font-normal mx-1">›</span>{product.subcategory}</>)}</p>
-                      </div>
-                    </div>
-                  </>
-                )}
-                {(product.quantity || product.category) && <div className="h-px bg-border" />}
+            {/* — Nutrition & Allergènes — */}
+            <AccordionItem value="nutrition" className="border-0 bg-card rounded-2xl overflow-hidden border border-border">
+              <AccordionTrigger className="px-4 py-3.5 hover:no-underline [&[data-state=open]]:bg-primary/5 transition-colors rounded-t-2xl">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center"><Clock className="w-4 h-4 text-primary" /></div>
-                  <div>
-                    <p className="text-[11px] text-muted-foreground font-semibold">Ajouté le</p>
-                    <p className="text-sm font-bold text-card-foreground">{format(new Date(product.addedAt), 'dd MMMM yyyy', { locale: fr })}</p>
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <BarChart2 className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-bold text-card-foreground">Nutrition</p>
+                    <p className="text-xs text-muted-foreground">
+                      {nutritionRowCount > 0 ? `${nutritionRowCount} valeur${nutritionRowCount > 1 ? 's' : ''}` : 'Non renseigné'}
+                    </p>
                   </div>
                 </div>
-              </div>
-
-              {/* Notes */}
-              <div className="mt-4">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1.5 block">Notes</label>
-                <textarea
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  onBlur={() => updateProduct(product.id, { notes: notes || undefined })}
-                  placeholder="Ajouter une note…"
-                  rows={2}
-                  className="w-full px-3 py-2 rounded-xl bg-muted text-sm text-foreground resize-none border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-              </div>
-
-              {/* Timeline */}
-              <div className="mt-5">
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Historique</h3>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <TimelineStep icon={Clock} label="Ajouté" date={product.addedAt} />
-                  {product.openedAt && (
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                {(() => {
+                  const n = nutritionObj;
+                  const rows: [string, string, string][] = ([
+                    ['energy_kcal', 'Énergie', 'kcal'],
+                    ['fat', 'Matières grasses', 'g'],
+                    ['saturated_fat', 'dont saturées', 'g'],
+                    ['carbohydrates', 'Glucides', 'g'],
+                    ['sugars', 'dont sucres', 'g'],
+                    ['proteins', 'Protéines', 'g'],
+                    ['fiber', 'Fibres', 'g'],
+                    ['salt', 'Sel', 'g'],
+                  ] as [string, string, string][]).filter(([key]) => n[key] != null);
+                  const hasNutrition = rows.length > 0;
+                  const hasAllergens = !!product.allergens;
+                  if (!hasNutrition && !hasAllergens) {
+                    return <p className="text-sm text-muted-foreground text-center py-4">Aucune information nutritionnelle disponible</p>;
+                  }
+                  return (
                     <>
-                      <span className="text-muted-foreground text-sm">→</span>
-                      <TimelineStep icon={PackageOpen} label="Ouvert" date={product.openedAt} />
+                      {hasNutrition && (
+                        <div className="mb-4">
+                          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Valeurs nutritionnelles <span className="font-normal normal-case">pour 100 g</span></h3>
+                          <div className="rounded-2xl border border-border divide-y divide-border">
+                            {rows.map(([key, label, unit]) => (
+                              <div key={key} className={`flex justify-between items-center px-4 py-2.5 ${key === 'saturated_fat' || key === 'sugars' ? 'pl-7' : ''}`}>
+                                <span className="text-sm text-card-foreground">{label}</span>
+                                <span className="text-sm font-bold text-card-foreground">{Number(n[key]).toFixed(1)} {unit}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {hasAllergens && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <ShieldAlert className="w-4 h-4 text-destructive" />
+                            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Allergènes</h3>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {product.allergens!.split(',').map((a, i) => {
+                              const translated = translateAllergen(a);
+                              if (!translated) return null;
+                              return (
+                                <span key={i} className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
+                                  {translated}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </>
+                  );
+                })()}
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* — Ingrédients — */}
+            <AccordionItem value="ingredients" className="border-0 bg-card rounded-2xl overflow-hidden border border-border">
+              <AccordionTrigger className="px-4 py-3.5 hover:no-underline [&[data-state=open]]:bg-primary/5 transition-colors rounded-t-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <AlignLeft className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-bold text-card-foreground">Ingrédients</p>
+                    <p className="text-xs text-muted-foreground truncate max-w-[210px]">
+                      {ingredientsPreview ?? 'Non renseigné'}
+                    </p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                {product.ingredients ? (
+                  <p className="text-sm text-card-foreground leading-relaxed">{product.ingredients}</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">Aucun ingrédient renseigné</p>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* — Détails — */}
+            <AccordionItem value="details" className="border-0 bg-card rounded-2xl overflow-hidden border border-border">
+              <AccordionTrigger className="px-4 py-3.5 hover:no-underline [&[data-state=open]]:bg-primary/5 transition-colors rounded-t-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Info className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-bold text-card-foreground">Détails</p>
+                    <p className="text-xs text-muted-foreground">
+                      {categoryLabel || 'Informations du produit'}
+                    </p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="space-y-3 mb-4">
+                  {product.quantity && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center"><Scale className="w-4 h-4 text-primary" /></div>
+                      <div>
+                        <p className="text-[11px] text-muted-foreground font-semibold">Quantité</p>
+                        <p className="text-sm font-bold text-card-foreground">{product.quantity}</p>
+                      </div>
+                    </div>
                   )}
-                  {product.frozenUntil && (
+                  {product.category && (
                     <>
-                      <span className="text-muted-foreground text-sm">→</span>
-                      <div className="flex flex-col items-center gap-0.5 min-w-0">
-                        <Snowflake className="w-3.5 h-3.5 text-blue-500" />
-                        <span className="text-[10px] font-bold text-blue-500">Congelé</span>
-                        <span className="text-[9px] text-muted-foreground">jusqu'au {format(new Date(product.frozenUntil), 'd MMM', { locale: fr })}</span>
+                      {product.quantity && <div className="h-px bg-border" />}
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center"><Tag className="w-4 h-4 text-primary" /></div>
+                        <div>
+                          <p className="text-[11px] text-muted-foreground font-semibold">Catégorie</p>
+                          <p className="text-sm font-bold text-card-foreground">{categoryLabel}{product.subcategory && (<><span className="text-muted-foreground font-normal mx-1">›</span>{product.subcategory}</>)}</p>
+                        </div>
                       </div>
                     </>
                   )}
-                  {(product.status === 'consumed' || product.status === 'thrown') && product.statusChangedAt && (
-                    <>
-                      <span className="text-muted-foreground text-sm">→</span>
-                      <TimelineStep
-                        icon={product.status === 'consumed' ? UtensilsCrossed : Trash2}
-                        label={product.status === 'consumed' ? 'Consommé' : 'Jeté'}
-                        date={product.statusChangedAt}
-                      />
-                    </>
-                  )}
+                  {(product.quantity || product.category) && <div className="h-px bg-border" />}
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center"><Clock className="w-4 h-4 text-primary" /></div>
+                    <div>
+                      <p className="text-[11px] text-muted-foreground font-semibold">Ajouté le</p>
+                      <p className="text-sm font-bold text-card-foreground">{format(new Date(product.addedAt), 'dd MMMM yyyy', { locale: fr })}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              {/* Barcode */}
-              {product.barcode && (
-                <div className="flex items-center justify-center gap-1.5 mt-4">
-                  <Barcode className="w-3.5 h-3.5 text-muted-foreground/50" />
-                  <span className="text-[10px] text-muted-foreground/50 font-mono">{product.barcode}</span>
+                <div className="mb-4">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1.5 block">Notes</label>
+                  <textarea
+                    value={notes}
+                    onChange={e => setNotes(e.target.value)}
+                    onBlur={() => updateProduct(product.id, { notes: notes || undefined })}
+                    placeholder="Ajouter une note…"
+                    rows={2}
+                    className="w-full px-3 py-2 rounded-xl bg-muted text-sm text-foreground resize-none border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
                 </div>
-              )}
 
-              {/* OpenFoodFacts mention */}
-              <p className="text-[10px] text-muted-foreground/40 text-center mt-3 px-4">
-                Les informations proviennent d'OpenFoodFacts et peuvent être inexactes ou incomplètes.
-              </p>
-            </TabsContent>
-          </Tabs>
+                <div className="mb-4">
+                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Historique</h3>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <TimelineStep icon={Clock} label="Ajouté" date={product.addedAt} />
+                    {product.openedAt && (
+                      <>
+                        <span className="text-muted-foreground text-sm">→</span>
+                        <TimelineStep icon={PackageOpen} label="Ouvert" date={product.openedAt} />
+                      </>
+                    )}
+                    {product.frozenUntil && (
+                      <>
+                        <span className="text-muted-foreground text-sm">→</span>
+                        <div className="flex flex-col items-center gap-0.5 min-w-0">
+                          <Snowflake className="w-3.5 h-3.5 text-blue-500" />
+                          <span className="text-[10px] font-bold text-blue-500">Congelé</span>
+                          <span className="text-[9px] text-muted-foreground">jusqu'au {format(new Date(product.frozenUntil), 'd MMM', { locale: fr })}</span>
+                        </div>
+                      </>
+                    )}
+                    {(product.status === 'consumed' || product.status === 'thrown') && product.statusChangedAt && (
+                      <>
+                        <span className="text-muted-foreground text-sm">→</span>
+                        <TimelineStep
+                          icon={product.status === 'consumed' ? UtensilsCrossed : Trash2}
+                          label={product.status === 'consumed' ? 'Consommé' : 'Jeté'}
+                          date={product.statusChangedAt}
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {product.barcode && (
+                  <div className="flex items-center justify-center gap-1.5 mb-3">
+                    <Barcode className="w-3.5 h-3.5 text-muted-foreground/50" />
+                    <span className="text-[10px] text-muted-foreground/50 font-mono">{product.barcode}</span>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-muted-foreground/40 text-center px-4">
+                  Les informations proviennent d'OpenFoodFacts et peuvent être inexactes ou incomplètes.
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+
+          </Accordion>
 
           {/* Boutons toujours visibles en bas */}
           <div className="mt-6 mb-8 space-y-2">
