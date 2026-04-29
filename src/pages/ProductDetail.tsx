@@ -321,6 +321,11 @@ const ProductDetail = () => {
   const nutritionRowCount = ['energy_kcal', 'fat', 'saturated_fat', 'carbohydrates', 'sugars', 'proteins', 'fiber', 'salt'].filter(k => nutritionObj[k] != null).length;
   const ingredientsPreview = product.ingredients ? product.ingredients.slice(0, 40) + (product.ingredients.length > 40 ? '…' : '') : null;
 
+  const arcRadius = 52;
+  const arcCircumference = 2 * Math.PI * arcRadius;
+  const arcOffset = arcCircumference * (1 - Math.min(Math.max(expiryProgress, 0), 1));
+  const arcColorClass = status === 'fresh' ? 'text-success' : status === 'soon' ? 'text-warning' : 'text-destructive';
+
   return (
     <PageTransition>
       <div className="min-h-screen bg-background">
@@ -352,11 +357,11 @@ const ProductDetail = () => {
         </AnimatePresence>
 
         {/* Hero header with blurred background + parallax */}
-        <div className="relative h-32 overflow-hidden">
+        <div className="relative h-44 overflow-hidden">
           {product.imageUrl ? (
             <>
               <motion.img src={product.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover blur-xl" style={{ y: heroY, scale: heroScale, opacity: heroOpacity }} />
-              <div className="absolute inset-0 bg-foreground/40 dark:bg-background/60" />
+              <div className="absolute inset-0 bg-foreground/50 dark:bg-background/60" />
             </>
           ) : (
             <div className={`absolute inset-0 bg-gradient-to-b ${config.gradient}`} />
@@ -365,6 +370,15 @@ const ProductDetail = () => {
           <button onClick={() => navigate('/')} className="absolute top-8 left-4 z-10 p-2.5 rounded-full bg-background/30 backdrop-blur-md border border-white/20 hover:bg-background/50 transition-colors text-white dark:text-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
+          {/* Nom + marque en overlay bas du hero */}
+          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent px-5 pb-4 pt-10 z-10">
+            <h1 className="text-xl font-extrabold text-white leading-tight line-clamp-2 drop-shadow-md">{product.name}</h1>
+            {(product.brand || product.quantity) && (
+              <p className="text-xs text-white/70 mt-0.5 font-medium">
+                {[product.brand ? product.brand.charAt(0).toUpperCase() + product.brand.slice(1) : '', product.quantity].filter(Boolean).join(' · ')}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Info card overlapping hero */}
@@ -402,16 +416,8 @@ const ProductDetail = () => {
               />
             </div>
 
-            {/* Infos */}
-            <div className="flex-1 min-w-0 pt-1">
-              <h1 className="text-lg font-extrabold text-foreground leading-tight line-clamp-2">{product.name}</h1>
-              {(product.brand || product.quantity) && (
-                <p className="text-xs text-muted-foreground mt-0.5 mb-3">
-                  {[product.brand ? product.brand.charAt(0).toUpperCase() + product.brand.slice(1) : '', product.quantity].filter(Boolean).join(' · ')}
-                </p>
-              )}
-
-              {/* Badges */}
+            {/* Badges */}
+            <div className="flex-1 min-w-0 flex flex-col justify-center gap-3">
               <div className="flex items-start flex-wrap gap-2">
                 <ScoreBadge label="Nutri" value={nutriGrade} colorMap={nutriColors} onClick={() => setScoreDialog('nutri')} />
                 {product.novaGroup && (
@@ -428,14 +434,10 @@ const ProductDetail = () => {
                   <span className="text-[9px] text-muted-foreground font-semibold">État</span>
                 </div>
               </div>
-
-              {/* Status badge (opened/consumed/thrown) */}
               {statusBadge && (
-                <div className="mt-2">
-                  <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border ${statusBadge.color}`}>
-                    <statusBadge.icon className="w-3 h-3" />{statusBadge.label}
-                  </span>
-                </div>
+                <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border w-fit ${statusBadge.color}`}>
+                  <statusBadge.icon className="w-3 h-3" />{statusBadge.label}
+                </span>
               )}
             </div>
           </div>
@@ -467,33 +469,39 @@ const ProductDetail = () => {
             </div>
           )}
 
-          {/* Compteur + date en 2 colonnes */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            {/* Compteur de jours */}
-            <div className={`rounded-2xl p-4 ${config.bg} ${config.border} border text-center`}>
-              <p className={`text-4xl font-black ${config.iconColor}`}>
-                {days < 0 ? Math.abs(days) : days === 0 ? '!' : days}
-              </p>
-              <p className="text-xs font-semibold text-card-foreground mt-1 leading-tight">
-                {days < 0 ? `jour${Math.abs(days) > 1 ? 's' : ''} de retard` : days === 0 ? "Expire aujourd'hui" : `jour${days > 1 ? 's' : ''} restant${days > 1 ? 's' : ''}`}
-              </p>
-            </div>
-            {/* Date de péremption */}
-            <div className="rounded-2xl p-4 bg-card border border-border flex flex-col justify-center gap-1">
-              <div className="flex items-center gap-1.5 text-muted-foreground mb-0.5">
-                <Calendar className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-bold uppercase tracking-wide">Péremption</span>
+          {/* Compteur circulaire */}
+          <div className="flex flex-col items-center py-2 mb-4">
+            <div className="relative">
+              <svg width="148" height="148" viewBox="0 0 148 148">
+                {/* Piste de fond */}
+                <circle cx="74" cy="74" r={arcRadius} fill="none" stroke="currentColor" strokeWidth="9" className="text-muted" />
+                {/* Arc de progression */}
+                <circle
+                  cx="74" cy="74" r={arcRadius}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="9"
+                  strokeDasharray={arcCircumference}
+                  strokeDashoffset={arcOffset}
+                  strokeLinecap="round"
+                  transform="rotate(-90 74 74)"
+                  className={`${arcColorClass} transition-all duration-700`}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className={`text-4xl font-black leading-none ${config.iconColor}`}>
+                  {days < 0 ? Math.abs(days) : days === 0 ? '!' : days}
+                </span>
+                <span className="text-[11px] font-semibold text-card-foreground text-center px-4 mt-1 leading-tight">
+                  {days < 0 ? `jour${Math.abs(days) > 1 ? 's' : ''} de retard` : days === 0 ? "Expire aujourd'hui" : `jour${days > 1 ? 's' : ''} restant${days > 1 ? 's' : ''}`}
+                </span>
               </div>
-              <p className="text-sm font-bold text-card-foreground leading-tight">
-                {format(new Date(effectiveDate), 'dd MMMM yyyy', { locale: fr })}
-              </p>
             </div>
-          </div>
-
-          {/* Barre de progression */}
-          <div className="mb-4">
-            <div className="h-2 rounded-full bg-muted overflow-hidden">
-              <div className={`h-full rounded-full transition-all ${progressBarColor}`} style={{ width: `${expiryProgress * 100}%` }} />
+            <div className="flex items-center gap-1.5 mt-3">
+              <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-sm font-semibold text-card-foreground">
+                {format(new Date(effectiveDate), 'dd MMMM yyyy', { locale: fr })}
+              </span>
             </div>
           </div>
 
