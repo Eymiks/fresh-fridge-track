@@ -12,6 +12,7 @@ import { AppearanceProvider } from "@/contexts/AppearanceContext";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { MobileMenu } from "@/components/MobileMenu";
 import { NotificationChecker } from "@/components/NotificationChecker";
+import { GuestImportDialog } from "@/components/GuestImportDialog";
 import Auth from "./pages/Auth.tsx";
 import HouseholdSetup from "./pages/HouseholdSetup.tsx";
 import Index from "./pages/Index.tsx";
@@ -44,7 +45,7 @@ function Layout({ children }: { children: React.ReactNode }) {
 }
 
 function AppRoutes() {
-  const { user, household, loading } = useAuth();
+  const { user, household, loading, isGuest } = useAuth();
   const location = useLocation();
   const isOnline = useOnlineStatus();
 
@@ -56,8 +57,8 @@ function AppRoutes() {
     );
   }
 
-  if (!user) return <Auth />;
-  if (!household) return <HouseholdSetup />;
+  if (!user && !isGuest) return <Auth />;
+  if (user && !household) return <HouseholdSetup />;
 
   return (
     <Layout>
@@ -68,6 +69,7 @@ function AppRoutes() {
         </div>
       )}
       <NotificationChecker />
+      {user && household && <GuestImportDialog />}
       <AnimatePresence mode="sync">
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<Index />} />

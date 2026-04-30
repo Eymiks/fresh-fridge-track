@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useState, useCallback, useMemo } 
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+const GUEST_MODE_KEY = 'freshtrack-guest-mode';
+
 export interface Household {
   id: string;
   name: string;
@@ -20,7 +22,10 @@ interface AuthContextType {
   household: Household | null;
   members: Member[];
   displayName: string;
+  isGuest: boolean;
   loading: boolean;
+  enterGuest: () => void;
+  exitGuest: () => void;
   signOut: () => Promise<void>;
   refreshHousehold: () => Promise<void>;
 }
@@ -31,6 +36,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [household, setHousehold] = useState<Household | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
+  const [isGuest, setIsGuest] = useState(() =>
+    typeof window !== 'undefined' && localStorage.getItem(GUEST_MODE_KEY) === 'true'
+  );
   const [loading, setLoading] = useState(true);
 
   const fetchHousehold = useCallback(async (userId: string) => {
@@ -75,6 +83,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!mounted) return;
       setUser(u);
       if (u) {
+        localStorage.removeItem(GUEST_MODE_KEY);
+        setIsGuest(false);
         fetchHousehold(u.id).finally(() => {
           if (mounted) setLoading(false);
         });
@@ -91,11 +101,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [fetchHousehold]);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
+  const enterGuest = useCallback(() => {
+    localStorage.setItem(GUEST_MODE_KEY, 'true');
     setUser(null);
     setHousehold(null);
     setMembers([]);
+    setIsGuest(true);
+  }, []);
+
+  const exitGuest = useCallback(() => {
+    localStorage.removeItem(GUEST_MODE_KEY);
+    setIsGuest(false);
+  }, []);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem(GUEST_MODE_KEY);
+    setUser(null);
+    setHousehold(null);
+    setMembers([]);
+    setIsGuest(false);
   };
 
   const refreshHousehold = useCallback(async () => {
@@ -103,12 +128,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, fetchHousehold]);
 
   const displayName = useMemo(
-    () => members.find(m => m.user_id === user?.id)?.display_name ?? '',
-    [members, user?.id]
+    () => isGuest ? 'Invité' : members.find(m => m.user_id === user?.id)?.display_name ?? '',
+    [isGuest, members, user?.id]
   );
 
   return (
-    <AuthContext.Provider value={{ user, household, members, displayName, loading, signOut, refreshHousehold }}>
+    <AuthContext.Provider value={{ user, household, members, displayName, isGuest, loading, enterGuest, exitGuest, signOut, refreshHousehold }}>
       {children}
     </AuthContext.Provider>
   );

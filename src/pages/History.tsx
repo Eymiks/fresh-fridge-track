@@ -12,7 +12,7 @@ const sections = [
 
 const History = () => {
   const navigate = useNavigate();
-  const { products, removeProduct } = useProducts();
+  const { products, setProductStatus } = useProducts();
 
   const grouped = {
     opened: products.filter(p => p.status === 'opened'),
@@ -51,7 +51,7 @@ const History = () => {
                   </div>
                   <div className="space-y-3">
                     {items.map(product => (
-                      <ProductCard key={product.id} product={product} onRemove={removeProduct} />
+                      <ProductCard key={product.id} product={product} onSetStatus={setProductStatus} />
                     ))}
                   </div>
                 </div>

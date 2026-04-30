@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { LeafyGreen, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { LeafyGreen, Mail, Lock, User, Eye, EyeOff, UserRound } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Tab = 'login' | 'register';
 
 export default function Auth() {
+  const { enterGuest } = useAuth();
   const [tab, setTab] = useState<Tab>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -130,6 +132,21 @@ export default function Auth() {
             {loading ? 'Chargement…' : tab === 'login' ? 'Se connecter' : 'Créer un compte'}
           </button>
         </form>
+
+        <div className="my-5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">ou</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        <button
+          type="button"
+          onClick={enterGuest}
+          className="w-full flex items-center justify-center gap-2 bg-card border border-border text-foreground py-3 rounded-xl text-sm font-bold hover:bg-muted transition-colors"
+        >
+          <UserRound className="w-4 h-4 text-primary" />
+          Continuer sans compte
+        </button>
       </div>
     </div>
   );

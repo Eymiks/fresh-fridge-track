@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
 import {
   BarChart3,
@@ -8,6 +9,7 @@ import {
   Home,
   History,
   Info,
+  LogIn,
   LogOut,
   Menu,
   Moon,
@@ -40,17 +42,20 @@ function isRouteActive(pathname: string, to: string, exact?: boolean) {
 }
 
 export function MobileMenu() {
+  const { scrollY } = useScroll();
   const navigate = useNavigate();
   const location = useLocation();
-  const { household, members, displayName, signOut, user } = useAuth();
+  const { household, members, displayName, isGuest, exitGuest, signOut, user } = useAuth();
   const { products } = useProducts();
   const { enabled: notificationsEnabled, permission, isSupported } = useNotificationSettings();
   const { themeMode, setThemeMode } = useAppearance();
   const isDark = themeMode === 'dark';
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [productHeaderActive, setProductHeaderActive] = useState(false);
+  const productMenuY = useTransform(scrollY, [110, 180], [-8, 0]);
 
-  const myMember = members.find(member => member.user_id === user?.id);
+  const myMember = isGuest ? null : members.find(member => member.user_id === user?.id);
   const isProductPage = location.pathname.startsWith('/product/');
 
   const activeProducts = useMemo(
@@ -72,6 +77,19 @@ export function MobileMenu() {
     ).length,
     [products]
   );
+
+  useEffect(() => {
+    if (!isProductPage) {
+      setProductHeaderActive(false);
+      return;
+    }
+
+    const syncProductHeader = () => setProductHeaderActive(window.scrollY > 110);
+    syncProductHeader();
+    window.addEventListener('scroll', syncProductHeader, { passive: true });
+
+    return () => window.removeEventListener('scroll', syncProductHeader);
+  }, [isProductPage]);
 
   const goTo = (to: string) => {
     setOpen(false);
@@ -112,24 +130,37 @@ export function MobileMenu() {
     await signOut();
   };
 
+  const handleOpenAuth = () => {
+    setOpen(false);
+    exitGuest();
+  };
+
   return (
     <>
-      <button
+      <motion.button
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Ouvrir le menu"
+        style={isProductPage && productHeaderActive ? { y: productMenuY } : undefined}
         className={cn(
-          'fixed right-5 z-40 flex h-10 w-10 items-center justify-center rounded-xl border shadow-sm backdrop-blur transition-colors active:scale-95',
-          isProductPage
-            ? 'top-6 border-white/25 bg-background/25 text-white hover:bg-background/45 dark:text-foreground'
-            : 'top-11 border-border/70 bg-background/85 text-foreground hover:bg-muted'
+          'fixed right-5 z-40 flex h-10 w-10 items-center justify-center rounded-xl border backdrop-blur transition-colors duration-200 active:scale-95',
+          isProductPage && !productHeaderActive
+            ? 'top-6 border-white/25 bg-background/25 text-white shadow-sm hover:bg-background/45 dark:text-foreground'
+            : isProductPage
+              ? 'top-[calc(env(safe-area-inset-top)+1.25rem)] border-transparent bg-transparent text-foreground shadow-none hover:bg-muted'
+              : 'top-12 border-border/70 bg-background/85 text-foreground shadow-sm hover:bg-muted'
         )}
       >
         <Menu className="h-5 w-5" />
         {alertCount > 0 && (
-          <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background" />
+          <span className={cn(
+            'absolute rounded-full bg-destructive ring-2 ring-background',
+            isProductPage && productHeaderActive
+              ? 'right-2 top-2 h-2 w-2'
+              : 'right-1.5 top-1.5 h-2.5 w-2.5'
+          )} />
         )}
-      </button>
+      </motion.button>
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="right" className="flex w-80 max-w-[88vw] flex-col gap-0 overflow-y-auto p-0">
@@ -154,7 +185,7 @@ export function MobileMenu() {
               <button type="button" onClick={() => goTo('/settings')} className="min-w-0 flex-1 text-left">
                 <p className="truncate font-extrabold text-foreground">{displayName || 'Mon profil'}</p>
                 <p className="truncate text-xs font-semibold text-muted-foreground">
-                  {household?.name ?? 'Foyer'}
+                  {isGuest ? 'Mode invité · Frigo local' : household?.name ?? 'Foyer'}
                 </p>
               </button>
             </div>
@@ -171,8 +202,8 @@ export function MobileMenu() {
                 <p className="mt-1 text-[10px] font-semibold text-muted-foreground">à surveiller</p>
               </div>
               <div className="rounded-xl bg-muted/60 px-2.5 py-2 text-center">
-                <p className="text-base font-extrabold leading-none text-foreground">{members.length}</p>
-                <p className="mt-1 text-[10px] font-semibold text-muted-foreground">membres</p>
+                <p className="text-base font-extrabold leading-none text-foreground">{isGuest ? 1 : members.length}</p>
+                <p className="mt-1 text-[10px] font-semibold text-muted-foreground">{isGuest ? 'local' : 'membres'}</p>
               </div>
             </div>
           </div>
@@ -231,7 +262,7 @@ export function MobileMenu() {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-foreground">{household?.name ?? 'Foyer'}</p>
                 <p className="truncate text-xs text-muted-foreground">
-                  {members.length} membre{members.length > 1 ? 's' : ''}
+                  {isGuest ? 'Mode invité' : `${members.length} membre${members.length > 1 ? 's' : ''}`}
                 </p>
               </div>
             </button>
@@ -245,25 +276,47 @@ export function MobileMenu() {
                 {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 {isDark ? 'Clair' : 'Sombre'}
               </button>
-              <button
-                type="button"
-                onClick={shareInviteCode}
-                disabled={!household}
-                className="flex items-center justify-center gap-2 rounded-xl bg-muted/60 px-3 py-3 text-xs font-bold text-foreground transition-colors hover:bg-muted disabled:opacity-40"
-              >
-                {copied ? <Check className="h-4 w-4 text-success" /> : <Share2 className="h-4 w-4" />}
-                Inviter
-              </button>
+              {isGuest ? (
+                <button
+                  type="button"
+                  onClick={handleOpenAuth}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-primary px-3 py-3 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Compte
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={shareInviteCode}
+                  disabled={!household}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-muted/60 px-3 py-3 text-xs font-bold text-foreground transition-colors hover:bg-muted disabled:opacity-40"
+                >
+                  {copied ? <Check className="h-4 w-4 text-success" /> : <Share2 className="h-4 w-4" />}
+                  Inviter
+                </button>
+              )}
             </div>
 
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-destructive/10 px-4 py-3 text-sm font-bold text-destructive transition-colors hover:bg-destructive/20"
-            >
-              <LogOut className="h-4 w-4" />
-              Se déconnecter
-            </button>
+            {isGuest ? (
+              <button
+                type="button"
+                onClick={handleOpenAuth}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 py-3 text-sm font-bold text-primary transition-colors hover:bg-primary/20"
+              >
+                <LogIn className="h-4 w-4" />
+                Créer un compte / Se connecter
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-destructive/10 px-4 py-3 text-sm font-bold text-destructive transition-colors hover:bg-destructive/20"
+              >
+                <LogOut className="h-4 w-4" />
+                Se déconnecter
+              </button>
+            )}
           </div>
         </SheetContent>
       </Sheet>

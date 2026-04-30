@@ -33,7 +33,7 @@ interface AddProductSheetProps {
 }
 
 export function AddProductSheet({ open, mode, onClose, onAdd }: AddProductSheetProps) {
-  const { household } = useAuth();
+  const { household, isGuest } = useAuth();
   const [name, setName] = useState('');
   const [barcode, setBarcode] = useState('');
   const [expirationDate, setExpirationDate] = useState('');
@@ -132,7 +132,7 @@ export function AddProductSheet({ open, mode, onClose, onAdd }: AddProductSheetP
       toast.error('Erreur de recherche. Entrez le nom manuellement.');
     }
     setLookingUp(false);
-  }, []);
+  }, [household]);
 
   const fetchOFFImages = useCallback(async () => {
     if (!barcode) return;
@@ -166,6 +166,10 @@ export function AddProductSheet({ open, mode, onClose, onAdd }: AddProductSheetP
   };
 
   const uploadImage = async (file: File) => {
+    if (isGuest) {
+      toast.info('Les photos personnelles sont disponibles avec un compte.');
+      return;
+    }
     if (!household) return;
     setLoadingImage(true);
     const ext = file.name.split('.').pop() ?? 'jpg';
@@ -280,7 +284,17 @@ export function AddProductSheet({ open, mode, onClose, onAdd }: AddProductSheetP
               )}
               <button
                 type="button"
-                onClick={() => barcode ? fetchOFFImages() : fileInputRef.current?.click()}
+                onClick={() => {
+                  if (barcode) {
+                    fetchOFFImages();
+                    return;
+                  }
+                  if (isGuest) {
+                    toast.info('En mode invité, seules les images OpenFoodFacts sont disponibles.');
+                    return;
+                  }
+                  fileInputRef.current?.click();
+                }}
                 disabled={loadingImage}
                 className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full bg-background border border-border shadow flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-50"
               >
@@ -410,14 +424,16 @@ export function AddProductSheet({ open, mode, onClose, onAdd }: AddProductSheetP
               </button>
             ))}
           </div>
-          <label className="w-full py-2.5 rounded-xl text-sm font-bold bg-muted text-muted-foreground text-center cursor-pointer hover:bg-muted/80 transition-colors block">
-            Importer une image
-            <input type="file" accept="image/*" className="hidden" onChange={e => {
-              const f = e.target.files?.[0];
-              if (f) { setOffImages([]); setSelectedImage(null); uploadImage(f); }
-              e.target.value = '';
-            }} />
-          </label>
+          {!isGuest && (
+            <label className="w-full py-2.5 rounded-xl text-sm font-bold bg-muted text-muted-foreground text-center cursor-pointer hover:bg-muted/80 transition-colors block">
+              Importer une image
+              <input type="file" accept="image/*" className="hidden" onChange={e => {
+                const f = e.target.files?.[0];
+                if (f) { setOffImages([]); setSelectedImage(null); uploadImage(f); }
+                e.target.value = '';
+              }} />
+            </label>
+          )}
           <div className="flex gap-2 mt-1">
             <button
               onClick={() => { setOffImages([]); setSelectedImage(null); }}

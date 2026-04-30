@@ -44,6 +44,7 @@ export type Database = {
           household_id: string
           user_id: string
           display_name: string
+          avatar_url: string | null
           joined_at: string
         }
         Insert: {
@@ -51,6 +52,7 @@ export type Database = {
           household_id: string
           user_id: string
           display_name: string
+          avatar_url?: string | null
           joined_at?: string
         }
         Update: {
@@ -58,6 +60,7 @@ export type Database = {
           household_id?: string
           user_id?: string
           display_name?: string
+          avatar_url?: string | null
           joined_at?: string
         }
         Relationships: []

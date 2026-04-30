@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, Barcode, Clock, Tag, Pencil, AlertTriangle, CircleCheck, PackageOpen, UtensilsCrossed, RotateCcw, Scale, ShieldAlert, Info, SearchX, RefreshCw, X, Snowflake, BarChart2, AlignLeft, Copy, Check } from 'lucide-react';
 import { format } from 'date-fns';
@@ -15,7 +15,7 @@ import { PageTransition } from '@/components/PageTransition';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { motion, useScroll, useSpring, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
 const statusConfig = {
   fresh: {
@@ -140,26 +140,6 @@ function getNutritionInsights(nutrition: Record<string, number>, rowCount: numbe
 }
 
 type ScoreDialogType = 'nutri' | 'nova' | 'eco' | null;
-
-type SharedElementRect = {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-};
-
-type SharedElementGeometry = {
-  mainImage: SharedElementRect;
-  mainTitle: SharedElementRect;
-  stickyImage: SharedElementRect;
-  stickyTitle: SharedElementRect;
-  mainTitleFontSize: number;
-  stickyTitleFontSize: number;
-  mainTitleLineHeight: number;
-  stickyTitleLineHeight: number;
-};
-
-const lerp = (from: number, to: number, progress: number) => from + (to - from) * progress;
 
 const scoreExplanations = {
   nutri: {
@@ -318,19 +298,15 @@ const ProductDetail = () => {
   const heroScale = useTransform(scrollY, [0, 300], [1.1, 1.3]);
   const heroOpacity = useTransform(scrollY, [0, 250], [1, 0.3]);
   const heroBackOpacity = useTransform(scrollY, [60, 160], [1, 0]);
-  const stickyOpacity = useTransform(scrollY, [90, 180], [0, 1]);
-  const stickyY = useTransform(scrollY, [90, 180], [-10, 0]);
-  const sharedProgressRaw = useTransform(scrollY, [60, 180], [0, 1]);
-  const sharedProgress = useSpring(sharedProgressRaw, { stiffness: 260, damping: 34, mass: 0.25 });
-  const mainElementOpacity = useTransform(sharedProgress, [0, 0.35], [1, 0]);
-  const stickyElementOpacity = useTransform(sharedProgress, [0.65, 1], [0, 1]);
-  const sharedLayerOpacity = useTransform(sharedProgress, [0, 0.08, 0.94, 1], [0, 1, 1, 0]);
-  const sharedButtonOpacity = useTransform(sharedProgress, [0, 0.18], [1, 0]);
+  const stickyOpacity = useTransform(scrollY, [110, 180], [0, 1]);
+  const stickyY = useTransform(scrollY, [110, 180], [-8, 0]);
+  const mainElementOpacity = useTransform(scrollY, [70, 150], [1, 0]);
+  const stickyElementOpacity = useTransform(scrollY, [110, 180], [0, 1]);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { products, loading, removeProduct, updateProduct, setProductStatus } = useProducts();
-  const { household } = useAuth();
+  const { household, isGuest } = useAuth();
   const [editing, setEditing] = useState(false);
   const [loadingImage, setLoadingImage] = useState(false);
   const [offImages, setOffImages] = useState<string[]>([]);
@@ -347,67 +323,10 @@ const ProductDetail = () => {
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [notes, setNotes] = useState('');
   const [ingredientsExpanded, setIngredientsExpanded] = useState(false);
-  const mainImageRef = useRef<HTMLDivElement>(null);
-  const mainTitleRef = useRef<HTMLHeadingElement>(null);
-  const stickyImageRef = useRef<HTMLDivElement>(null);
-  const stickyTitleRef = useRef<HTMLSpanElement>(null);
-  const measureFrameRef = useRef<number | null>(null);
-  const [sharedGeometry, setSharedGeometry] = useState<SharedElementGeometry | null>(null);
 
   const product = products.find(p => p.id === id);
   const productId = product?.id;
   const productNotes = product?.notes;
-
-  const measureSharedElements = useCallback(() => {
-    const mainImage = mainImageRef.current;
-    const mainTitle = mainTitleRef.current;
-    const stickyImage = stickyImageRef.current;
-    const stickyTitle = stickyTitleRef.current;
-
-    if (!mainImage || !mainTitle || !stickyImage || !stickyTitle) return;
-
-    const scrollTop = window.scrollY;
-    const toDocumentRect = (rect: DOMRect): SharedElementRect => ({
-      left: rect.left,
-      top: rect.top + scrollTop,
-      width: rect.width,
-      height: rect.height,
-    });
-    const toViewportRect = (rect: DOMRect): SharedElementRect => ({
-      left: rect.left,
-      top: rect.top,
-      width: rect.width,
-      height: rect.height,
-    });
-
-    const mainTitleStyle = window.getComputedStyle(mainTitle);
-    const stickyTitleStyle = window.getComputedStyle(stickyTitle);
-    const parsePx = (value: string, fallback: number) => {
-      const parsed = Number.parseFloat(value);
-      return Number.isFinite(parsed) ? parsed : fallback;
-    };
-    const mainTitleFontSize = parsePx(mainTitleStyle.fontSize, 28);
-    const stickyTitleFontSize = parsePx(stickyTitleStyle.fontSize, 14);
-
-    setSharedGeometry({
-      mainImage: toDocumentRect(mainImage.getBoundingClientRect()),
-      mainTitle: toDocumentRect(mainTitle.getBoundingClientRect()),
-      stickyImage: toViewportRect(stickyImage.getBoundingClientRect()),
-      stickyTitle: toViewportRect(stickyTitle.getBoundingClientRect()),
-      mainTitleFontSize,
-      stickyTitleFontSize,
-      mainTitleLineHeight: parsePx(mainTitleStyle.lineHeight, mainTitleFontSize * 1.15),
-      stickyTitleLineHeight: parsePx(stickyTitleStyle.lineHeight, stickyTitleFontSize * 1.25),
-    });
-  }, []);
-
-  const scheduleMeasure = useCallback(() => {
-    if (measureFrameRef.current != null) cancelAnimationFrame(measureFrameRef.current);
-    measureFrameRef.current = requestAnimationFrame(() => {
-      measureFrameRef.current = null;
-      measureSharedElements();
-    });
-  }, [measureSharedElements]);
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
@@ -419,68 +338,6 @@ const ProductDetail = () => {
     const unsubscribe = scrollY.on('change', (v) => setShowStickyHeader(v > 90));
     return unsubscribe;
   }, [scrollY]);
-
-  useEffect(() => {
-    if (!productId) return;
-
-    scheduleMeasure();
-    window.addEventListener('resize', scheduleMeasure);
-
-    const observer = new ResizeObserver(scheduleMeasure);
-    [mainImageRef.current, mainTitleRef.current, stickyImageRef.current, stickyTitleRef.current]
-      .filter(Boolean)
-      .forEach((element) => observer.observe(element!));
-
-    return () => {
-      if (measureFrameRef.current != null) cancelAnimationFrame(measureFrameRef.current);
-      window.removeEventListener('resize', scheduleMeasure);
-      observer.disconnect();
-    };
-  }, [scheduleMeasure, productId, product?.imageUrl, product?.name]);
-
-  const sharedImageX = useTransform([scrollY, sharedProgress], ([, progress]) => {
-    if (!sharedGeometry) return 0;
-    return lerp(sharedGeometry.mainImage.left, sharedGeometry.stickyImage.left, Number(progress));
-  });
-  const sharedImageY = useTransform([scrollY, sharedProgress], ([latestScroll, progress]) => {
-    if (!sharedGeometry) return 0;
-    return lerp(sharedGeometry.mainImage.top - Number(latestScroll), sharedGeometry.stickyImage.top, Number(progress));
-  });
-  const sharedImageWidth = useTransform(sharedProgress, (progress) => {
-    if (!sharedGeometry) return 0;
-    return lerp(sharedGeometry.mainImage.width, sharedGeometry.stickyImage.width, progress);
-  });
-  const sharedImageHeight = useTransform(sharedProgress, (progress) => {
-    if (!sharedGeometry) return 0;
-    return lerp(sharedGeometry.mainImage.height, sharedGeometry.stickyImage.height, progress);
-  });
-  const sharedImageRadius = useTransform(sharedProgress, [0, 1], [26, 8]);
-
-  const sharedTitleX = useTransform([scrollY, sharedProgress], ([, progress]) => {
-    if (!sharedGeometry) return 0;
-    return lerp(sharedGeometry.mainTitle.left, sharedGeometry.stickyTitle.left, Number(progress));
-  });
-  const sharedTitleY = useTransform([scrollY, sharedProgress], ([latestScroll, progress]) => {
-    if (!sharedGeometry) return 0;
-    return lerp(sharedGeometry.mainTitle.top - Number(latestScroll), sharedGeometry.stickyTitle.top, Number(progress));
-  });
-  const sharedTitleWidth = useTransform(sharedProgress, (progress) => {
-    if (!sharedGeometry) return 0;
-    return lerp(sharedGeometry.mainTitle.width, sharedGeometry.stickyTitle.width, progress);
-  });
-  const sharedTitleFontSize = useTransform(sharedProgress, (progress) => {
-    if (!sharedGeometry) return 14;
-    return lerp(sharedGeometry.mainTitleFontSize, sharedGeometry.stickyTitleFontSize, progress);
-  });
-  const sharedTitleLineHeight = useTransform(sharedProgress, (progress) => {
-    if (!sharedGeometry) return 18;
-    return lerp(sharedGeometry.mainTitleLineHeight, sharedGeometry.stickyTitleLineHeight, progress);
-  });
-  const sharedTitleHeight = useTransform(sharedProgress, (progress) => {
-    if (!sharedGeometry) return 18;
-    return lerp(sharedGeometry.mainTitleLineHeight, sharedGeometry.stickyTitle.height, progress);
-  });
-  const sharedTitleOpacity = useTransform(sharedProgress, [0, 0.18, 0.92, 1], [0, 1, 1, 0]);
 
   const fetchOFFImages = async () => {
     if (!product.barcode) return;
@@ -523,6 +380,10 @@ const ProductDetail = () => {
   };
 
   const uploadImage = async (file: File) => {
+    if (isGuest) {
+      toast.info('Les photos personnelles sont disponibles avec un compte.');
+      return;
+    }
     if (!household) return;
     setLoadingImage(true);
     const ext = file.name.split('.').pop() ?? 'jpg';
@@ -658,58 +519,22 @@ const ProductDetail = () => {
         {/* Sticky header */}
         <motion.div
           style={{ opacity: stickyOpacity, y: stickyY }}
-          className={`fixed top-0 inset-x-0 z-30 bg-background/85 backdrop-blur-lg border-b border-border ${showStickyHeader ? 'pointer-events-auto' : 'pointer-events-none'}`}
+          className={`fixed inset-x-0 top-0 z-30 px-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] ${showStickyHeader ? 'pointer-events-auto' : 'pointer-events-none'}`}
         >
-          <div className="flex items-center gap-2 px-4 pt-6 pb-2">
-            <button onClick={() => navigate('/')} className="p-1.5 rounded-full hover:bg-muted transition-colors flex-shrink-0">
-              <ArrowLeft className="w-5 h-5 text-foreground" />
+          <div className="flex h-14 items-center gap-2 rounded-2xl border border-border/70 bg-background/90 px-2 pr-14 shadow-lg shadow-foreground/5 backdrop-blur-xl">
+            <button onClick={() => navigate('/')} className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted">
+              <ArrowLeft className="h-5 w-5" />
             </button>
-            <motion.div ref={stickyImageRef} style={{ opacity: stickyElementOpacity }} className="w-7 h-7 rounded-lg overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
+            <motion.div style={{ opacity: stickyElementOpacity }} className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted">
               {product.imageUrl ? (
-                <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" onLoad={scheduleMeasure} />
+                <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
               ) : (
                 <span className="text-sm">🥬</span>
               )}
             </motion.div>
-            <motion.span ref={stickyTitleRef} style={{ opacity: stickyElementOpacity }} className="font-semibold text-sm text-foreground truncate flex-1 min-w-0">{product.name}</motion.span>
+            <motion.span style={{ opacity: stickyElementOpacity }} className="min-w-0 flex-1 truncate text-sm font-extrabold text-foreground">{product.name}</motion.span>
           </div>
         </motion.div>
-
-        {sharedGeometry && (
-          <motion.div className="pointer-events-none fixed inset-0 z-40" style={{ opacity: sharedLayerOpacity }}>
-            <motion.div
-              className="absolute overflow-hidden bg-muted shadow-xl"
-              style={{
-                x: sharedImageX,
-                y: sharedImageY,
-                width: sharedImageWidth,
-                height: sharedImageHeight,
-                borderRadius: sharedImageRadius,
-              }}
-            >
-              {product.imageUrl ? (
-                <img src={product.imageUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-4xl">🥬</div>
-              )}
-            </motion.div>
-            <motion.div
-              className="absolute overflow-hidden font-black text-card-foreground"
-              style={{
-                x: sharedTitleX,
-                y: sharedTitleY,
-                width: sharedTitleWidth,
-                height: sharedTitleHeight,
-                opacity: sharedTitleOpacity,
-                fontSize: sharedTitleFontSize,
-                lineHeight: sharedTitleLineHeight,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              <span className="block overflow-hidden text-ellipsis whitespace-nowrap">{product.name}</span>
-            </motion.div>
-          </motion.div>
-        )}
 
         <div className="relative overflow-hidden bg-background">
           <div className="relative h-[17rem] overflow-hidden md:h-[21rem]">
@@ -725,7 +550,7 @@ const ProductDetail = () => {
             <motion.button
               onClick={() => navigate('/')}
               style={{ opacity: heroBackOpacity }}
-              className={`absolute left-4 top-6 z-10 rounded-full border border-white/25 bg-background/25 p-2.5 text-white shadow-lg backdrop-blur-md transition-colors hover:bg-background/45 dark:text-foreground ${showStickyHeader ? 'pointer-events-none' : ''}`}
+              className={`fixed left-4 top-6 z-40 rounded-full border border-white/25 bg-background/25 p-2.5 text-white shadow-lg backdrop-blur-md transition-colors hover:bg-background/45 dark:text-foreground md:absolute md:z-10 ${showStickyHeader ? 'pointer-events-none' : ''}`}
             >
               <ArrowLeft className="h-5 w-5" />
             </motion.button>
@@ -736,10 +561,10 @@ const ProductDetail = () => {
               <section className="overflow-hidden rounded-[2rem] border border-white/35 bg-card/95 shadow-2xl shadow-foreground/10 backdrop-blur-xl dark:border-white/10">
                 <div className="flex gap-4 p-4 md:p-5">
                   <motion.div className="shrink-0" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.14, type: 'spring', stiffness: 280, damping: 24 }}>
-                    <motion.div ref={mainImageRef} style={{ opacity: mainElementOpacity }} className="relative h-40 w-28 md:h-48 md:w-36">
+                    <motion.div style={{ opacity: mainElementOpacity }} className="relative h-40 w-28 md:h-48 md:w-36">
                       {product.imageUrl ? (
                         <button onClick={() => setShowFullscreen(true)} className="block h-full w-full overflow-hidden rounded-[1.6rem] border-4 border-background bg-muted shadow-xl">
-                          <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" onLoad={scheduleMeasure} />
+                          <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
                         </button>
                       ) : (
                         <div className="flex h-full w-full items-center justify-center rounded-[1.6rem] border-4 border-background bg-muted text-4xl shadow-xl">
@@ -747,28 +572,40 @@ const ProductDetail = () => {
                         </div>
                       )}
                       <motion.button
-                        onClick={() => product.barcode ? fetchOFFImages() : fileInputRef.current?.click()}
+                        onClick={() => {
+                          if (product.barcode) {
+                            fetchOFFImages();
+                            return;
+                          }
+                          if (isGuest) {
+                            toast.info('En mode invité, seules les images OpenFoodFacts sont disponibles.');
+                            return;
+                          }
+                          fileInputRef.current?.click();
+                        }}
                         disabled={loadingImage}
-                        style={{ opacity: sharedButtonOpacity }}
+                        style={{ opacity: mainElementOpacity }}
                         className="absolute -bottom-2 -right-2 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/95 shadow-xl backdrop-blur-sm transition-all hover:scale-105 hover:bg-background disabled:opacity-50"
                         aria-label="Changer l'image du produit"
                       >
                         <RefreshCw className={`h-4 w-4 text-muted-foreground ${loadingImage ? 'animate-spin' : ''}`} />
                       </motion.button>
                     </motion.div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f); e.target.value = ''; }}
-                    />
+                    {!isGuest && (
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f); e.target.value = ''; }}
+                      />
+                    )}
                   </motion.div>
 
                   <div className="flex min-w-0 flex-1 flex-col justify-between py-1">
                     <div>
                       <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.2em] text-muted-foreground">Fiche produit</p>
-                      <motion.h1 ref={mainTitleRef} style={{ opacity: mainElementOpacity }} className="text-2xl font-black leading-tight text-card-foreground md:text-4xl">{product.name}</motion.h1>
+                      <motion.h1 style={{ opacity: mainElementOpacity }} className="text-2xl font-black leading-tight text-card-foreground md:text-4xl">{product.name}</motion.h1>
                       <p className="mt-2 text-sm font-semibold text-muted-foreground">
                         {[product.brand ? product.brand.charAt(0).toUpperCase() + product.brand.slice(1) : '', product.quantity].filter(Boolean).join(' · ') || 'Produit du foyer'}
                       </p>
@@ -1189,14 +1026,16 @@ const ProductDetail = () => {
                 </button>
               ))}
             </div>
-            <label className="w-full py-2.5 rounded-xl text-sm font-bold bg-muted text-muted-foreground text-center cursor-pointer hover:bg-muted/80 transition-colors block">
-              Importer une image
-              <input type="file" accept="image/*" className="hidden" onChange={e => {
-                const f = e.target.files?.[0];
-                if (f) { setOffImages([]); setSelectedImage(null); uploadImage(f); }
-                e.target.value = '';
-              }} />
-            </label>
+            {!isGuest && (
+              <label className="w-full py-2.5 rounded-xl text-sm font-bold bg-muted text-muted-foreground text-center cursor-pointer hover:bg-muted/80 transition-colors block">
+                Importer une image
+                <input type="file" accept="image/*" className="hidden" onChange={e => {
+                  const f = e.target.files?.[0];
+                  if (f) { setOffImages([]); setSelectedImage(null); uploadImage(f); }
+                  e.target.value = '';
+                }} />
+              </label>
+            )}
             <div className="flex gap-2 mt-1">
               <button onClick={() => { setOffImages([]); setSelectedImage(null); }} className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-muted text-muted-foreground hover:bg-muted/80 transition-colors">Annuler</button>
               <button

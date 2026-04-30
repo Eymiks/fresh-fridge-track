@@ -10,6 +10,7 @@ import {
   Copy,
   Home,
   Info,
+  LogIn,
   LogOut,
   Monitor,
   Moon,
@@ -77,7 +78,7 @@ function Section({
 export default function Settings() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { household, members, displayName, signOut, user, refreshHousehold } = useAuth();
+  const { household, members, displayName, isGuest, exitGuest, signOut, user, refreshHousehold } = useAuth();
   const {
     enabled,
     days,
@@ -99,9 +100,10 @@ export default function Settings() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
 
-  const myMember = members.find(m => m.user_id === user?.id);
+  const myMember = isGuest ? null : members.find(m => m.user_id === user?.id);
   const isOwner = household?.created_by === user?.id;
   const removingMember = members.find(m => m.user_id === removingMemberId);
+  const profileSubtitle = isGuest ? 'Mode invité · Frigo local' : `${displayName} · ${household?.name ?? ''}`;
 
   const handleAvatarUpload = async (file: File) => {
     if (!user || !household) return;
@@ -250,9 +252,7 @@ export default function Settings() {
                 <SettingsIcon className="w-4 h-4 text-primary shrink-0" />
                 <h1 className="text-xl font-extrabold text-foreground truncate">Paramètres</h1>
               </div>
-              <p className="text-xs font-semibold text-muted-foreground truncate">
-                {displayName} · {household?.name}
-              </p>
+              <p className="text-xs font-semibold text-muted-foreground truncate">{profileSubtitle}</p>
             </div>
           </div>
         </div>
@@ -260,17 +260,19 @@ export default function Settings() {
         <main className="max-w-5xl mx-auto px-5 py-5 grid gap-4 lg:grid-cols-2">
           <Section title="Profil" icon={User}>
             <div className="flex items-center gap-4">
-              <label className="relative shrink-0 cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={e => {
-                    const file = e.target.files?.[0];
-                    if (file) handleAvatarUpload(file);
-                    e.target.value = '';
-                  }}
-                />
+              <label className={`relative shrink-0 ${isGuest ? '' : 'cursor-pointer'}`}>
+                {!isGuest && (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) handleAvatarUpload(file);
+                      e.target.value = '';
+                    }}
+                  />
+                )}
                 {myMember?.avatar_url ? (
                   <img
                     src={myMember.avatar_url}
@@ -284,13 +286,20 @@ export default function Settings() {
                     </span>
                   </div>
                 )}
-                <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-card border-2 border-background flex items-center justify-center shadow-sm ${avatarUploading ? 'animate-pulse' : ''}`}>
-                  <Camera className="w-3 h-3 text-muted-foreground" />
-                </div>
+                {!isGuest && (
+                  <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-card border-2 border-background flex items-center justify-center shadow-sm ${avatarUploading ? 'animate-pulse' : ''}`}>
+                    <Camera className="w-3 h-3 text-muted-foreground" />
+                  </div>
+                )}
               </label>
 
               <div className="min-w-0 flex-1 space-y-2">
-                {editingDisplayName ? (
+                {isGuest ? (
+                  <div>
+                    <p className="font-extrabold text-foreground truncate">Mode invité</p>
+                    <p className="text-xs text-muted-foreground">Vos produits restent sur cet appareil.</p>
+                  </div>
+                ) : editingDisplayName ? (
                   <div className="flex items-center gap-2">
                     <input
                       value={displayNameValue}
@@ -331,7 +340,7 @@ export default function Settings() {
                     </button>
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground truncate">{user?.email ?? 'Email non disponible'}</p>
+                {!isGuest && <p className="text-xs text-muted-foreground truncate">{user?.email ?? 'Email non disponible'}</p>}
               </div>
             </div>
           </Section>
@@ -461,8 +470,9 @@ export default function Settings() {
             </div>
           </Section>
 
-          <Section title="Foyer" icon={Home}>
-            <div className="space-y-4">
+          {!isGuest && (
+            <Section title="Foyer" icon={Home}>
+              <div className="space-y-4">
               {household && (
                 <div className="flex items-center gap-3 rounded-xl bg-muted/60 px-4 py-3">
                   <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
@@ -588,8 +598,9 @@ export default function Settings() {
                   ))}
                 </div>
               </div>
-            </div>
-          </Section>
+              </div>
+            </Section>
+          )}
 
           <Section title="Application" icon={Info} className="lg:col-span-2">
             <div className="grid gap-3 sm:grid-cols-2">
@@ -604,13 +615,23 @@ export default function Settings() {
                 <Info className="w-4 h-4 text-muted-foreground shrink-0" />
               </button>
 
-              <button
-                onClick={signOut}
-                className="flex items-center justify-center gap-2 rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm font-bold text-destructive hover:bg-destructive/20 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Se déconnecter
-              </button>
+              {isGuest ? (
+                <button
+                  onClick={exitGuest}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Créer un compte / Se connecter
+                </button>
+              ) : (
+                <button
+                  onClick={signOut}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm font-bold text-destructive hover:bg-destructive/20 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Se déconnecter
+                </button>
+              )}
             </div>
           </Section>
         </main>
