@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useProducts } from '@/hooks/useProducts';
 import { ProductCard } from '@/components/ProductCard';
 import { AddProductSheet } from '@/components/AddProductSheet';
-import { getExpirationStatus, getEffectiveExpirationDate, PRODUCT_CATEGORIES } from '@/types/product';
+import { ProductEditorPayload, ProductEditorSheet } from '@/components/ProductEditorSheet';
+import { getExpirationStatus, getEffectiveExpirationDate, PRODUCT_CATEGORIES, Product } from '@/types/product';
 import { PageTransition } from '@/components/PageTransition';
 import { useAppearance } from '@/contexts/AppearanceContext';
 
@@ -48,6 +49,7 @@ const Index = () => {
   const { products, loading, addProduct, removeProduct, setProductStatus, updateProduct } = useProducts();
   const [showBubble, setShowBubble] = useState(false);
   const [addMode, setAddMode] = useState<AddMode | null>(null);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sortBy, setSortBy] = useState<SortBy>('expiration');
@@ -100,6 +102,7 @@ const Index = () => {
     products.filter(p => p.status !== 'consumed' && p.status !== 'thrown'),
     [products]
   );
+  const editingProduct = editingProductId ? products.find(product => product.id === editingProductId) : undefined;
 
   const handleModeSelect = (mode: AddMode) => {
     setShowBubble(false);
@@ -143,6 +146,7 @@ const Index = () => {
     product: p,
     onSetStatus: setProductStatus,
     onUpdateDate: (id: string, date: string) => updateProduct(id, { expirationDate: date }),
+    onEditProduct: (id: string) => setEditingProductId(id),
     selectionMode,
     isSelected: selectedIds.has(p.id),
     onLongPress: enterSelection,
@@ -566,6 +570,18 @@ const Index = () => {
         </AnimatePresence>
 
         <AddProductSheet open={addMode !== null} mode={addMode || 'single'} onClose={() => setAddMode(null)} onAdd={addProduct} />
+        {editingProduct && (
+          <ProductEditorSheet
+            open={editingProductId !== null}
+            mode="edit"
+            product={editingProduct}
+            onClose={() => setEditingProductId(null)}
+            onSubmit={async (updates: ProductEditorPayload) => {
+              await updateProduct(editingProduct.id, updates as Partial<Omit<Product, 'id' | 'addedAt'>>);
+              setEditingProductId(null);
+            }}
+          />
+        )}
       </div>
     </PageTransition>
   );

@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { Loader2, X, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { parseExpirationDate, preprocessDateImage } from '@/lib/dateOcr';
 
 interface DateScannerProps {
   onDateFound: (date: string) => void;
@@ -11,12 +12,15 @@ interface DateScannerProps {
 export function DateScanner({ onDateFound, onClose }: DateScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const targetRef = useRef<HTMLDivElement>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const isScanningRef = useRef(false);
   const foundRef = useRef(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastErrorToastRef = useRef(0);
+  const lastCloudFallbackRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,9 +36,9 @@ export function DateScanner({ onDateFound, onClose }: DateScannerProps) {
         // Start auto-scanning after camera is ready
         intervalRef.current = setInterval(() => {
           if (!isScanningRef.current && !foundRef.current) {
-            captureAndAnalyze();
+            captureAndAnalyze(false);
           }
-        }, 3000);
+        }, 4500);
       } catch {
         if (!cancelled) setError("Impossible d'accéder à la caméra.");
       }
@@ -47,53 +51,136 @@ export function DateScanner({ onDateFound, onClose }: DateScannerProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const captureAndAnalyze = useCallback(async () => {
+  const showFriendlyScanError = useCallback((message: string, force = false) => {
+    const now = Date.now();
+    if (!force && now - lastErrorToastRef.current < 10000) return;
+    lastErrorToastRef.current = now;
+    toast.error(message, { duration: 3000 });
+  }, []);
+
+  const readFunctionError = useCallback(async (fnError: unknown, fallback?: string) => {
+    const context = (fnError as { context?: Response })?.context;
+    if (!context) return fallback;
+
+    try {
+      const body = await context.clone().json();
+      return typeof body?.error === 'string' ? body.error : fallback;
+    } catch {
+      return fallback;
+    }
+  }, []);
+
+  const captureTargetCanvas = useCallback(() => {
+    const video = videoRef.current;
+    const target = targetRef.current;
+    if (!video || !target || video.videoWidth === 0 || video.videoHeight === 0) return null;
+
+    const videoRect = video.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const scale = Math.max(videoRect.width / video.videoWidth, videoRect.height / video.videoHeight);
+    const renderedWidth = video.videoWidth * scale;
+    const renderedHeight = video.videoHeight * scale;
+    const offsetX = (videoRect.width - renderedWidth) / 2;
+    const offsetY = (videoRect.height - renderedHeight) / 2;
+
+    const sourceX = Math.max(0, Math.floor((targetRect.left - videoRect.left - offsetX) / scale));
+    const sourceY = Math.max(0, Math.floor((targetRect.top - videoRect.top - offsetY) / scale));
+    const sourceWidth = Math.min(video.videoWidth - sourceX, Math.ceil(targetRect.width / scale));
+    const sourceHeight = Math.min(video.videoHeight - sourceY, Math.ceil(targetRect.height / scale));
+
+    if (sourceWidth <= 0 || sourceHeight <= 0) return null;
+
+    const canvas = canvasRef.current ?? document.createElement('canvas');
+    canvas.width = sourceWidth;
+    canvas.height = sourceHeight;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return null;
+
+    ctx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, sourceWidth, sourceHeight);
+    return canvas;
+  }, []);
+
+  const runLocalOcr = useCallback(async (canvas: HTMLCanvasElement) => {
+    const processedCanvas = preprocessDateImage(canvas);
+    const Tesseract = await import('tesseract.js');
+    const worker = await Tesseract.createWorker('eng');
+
+    try {
+      await worker.setParameters({
+        tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÂÄÇÉÈÊËÎÏÔÖÙÛÜàâäçéèêëîïôöùûü/- .',
+        tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
+        preserve_interword_spaces: '1',
+      });
+      const result = await worker.recognize(processedCanvas);
+      return result.data.text;
+    } finally {
+      await worker.terminate();
+    }
+  }, []);
+
+  const runCloudFallback = useCallback(async (canvas: HTMLCanvasElement) => {
+    const now = Date.now();
+    if (now - lastCloudFallbackRef.current < 30000) {
+      throw new Error('fallback-cooldown');
+    }
+    lastCloudFallbackRef.current = now;
+
+    const imageBase64 = canvas.toDataURL('image/jpeg', 0.72);
+    const { data, error: fnError } = await supabase.functions.invoke('ocr-date', {
+      body: { image: imageBase64 },
+    });
+
+    if (fnError || data?.error) {
+      const rawMessage = data?.error || await readFunctionError(fnError, fnError?.message);
+      throw new Error(rawMessage || 'cloud-fallback-failed');
+    }
+
+    return typeof data?.date === 'string' ? data.date : null;
+  }, [readFunctionError]);
+
+  const captureAndAnalyze = useCallback(async (showErrors = true) => {
     if (!videoRef.current || !canvasRef.current || isScanningRef.current || foundRef.current) return;
     isScanningRef.current = true;
     setIsScanning(true);
 
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    if (video.videoWidth === 0 || video.videoHeight === 0) {
-      isScanningRef.current = false;
-      setIsScanning(false);
-      return;
-    }
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) { isScanningRef.current = false; setIsScanning(false); return; }
-    ctx.drawImage(video, 0, 0);
-
-    const imageBase64 = canvas.toDataURL('image/jpeg', 0.8);
-
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('ocr-date', {
-        body: { image: imageBase64 },
-      });
-
-      if (fnError || data?.error) {
-        const msg = data?.error || fnError?.message || 'Erreur OCR';
-        toast.error(msg, { duration: 4000 });
+      const canvas = captureTargetCanvas();
+      if (!canvas) {
         isScanningRef.current = false;
         setIsScanning(false);
         return;
       }
 
-      if (data.date) {
+      const text = await runLocalOcr(canvas);
+      const parsed = parseExpirationDate(text);
+      let date = parsed?.date ?? null;
+
+      if (!date && showErrors) {
+        try {
+          date = await runCloudFallback(canvas);
+        } catch (fallbackError) {
+          if ((fallbackError as Error).message === 'fallback-cooldown') {
+            showFriendlyScanError('Réessayez dans quelques secondes ou saisissez la date manuellement.', true);
+          }
+        }
+      }
+
+      if (date) {
         foundRef.current = true;
         if (intervalRef.current) clearInterval(intervalRef.current);
         streamRef.current?.getTracks().forEach(t => t.stop());
-        onDateFound(data.date);
+        onDateFound(date);
       } else {
+        if (showErrors) showFriendlyScanError('Date non lisible. Recadrez-la ou saisissez-la manuellement.', true);
         isScanningRef.current = false;
         setIsScanning(false);
       }
     } catch {
+      if (showErrors) showFriendlyScanError('Analyse locale indisponible. Réessayez avec une meilleure photo.', true);
       isScanningRef.current = false;
       setIsScanning(false);
     }
-  }, [onDateFound]);
+  }, [captureTargetCanvas, onDateFound, runCloudFallback, runLocalOcr, showFriendlyScanError]);
 
   const handleClose = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -127,7 +214,7 @@ export function DateScanner({ onDateFound, onClose }: DateScannerProps) {
             <canvas ref={canvasRef} className="hidden" />
 
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-              <div className="w-72 h-40 relative">
+              <div ref={targetRef} className="w-72 h-40 relative">
                 <div className="absolute top-0 left-0 w-8 h-8 border-primary rounded-tl-lg" style={{ borderWidth: '3px', borderRight: 'none', borderBottom: 'none' }} />
                 <div className="absolute top-0 right-0 w-8 h-8 border-primary rounded-tr-lg" style={{ borderWidth: '3px', borderLeft: 'none', borderBottom: 'none' }} />
                 <div className="absolute bottom-0 left-0 w-8 h-8 border-primary rounded-bl-lg" style={{ borderWidth: '3px', borderRight: 'none', borderTop: 'none' }} />
@@ -140,7 +227,7 @@ export function DateScanner({ onDateFound, onClose }: DateScannerProps) {
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                 <div className="bg-background/95 rounded-xl px-5 py-3 flex items-center gap-2">
                   <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  <span className="text-sm font-bold">Analyse IA en cours...</span>
+                  <span className="text-sm font-bold">Lecture locale en cours...</span>
                 </div>
               </div>
             )}
@@ -153,7 +240,7 @@ export function DateScanner({ onDateFound, onClose }: DateScannerProps) {
           {isScanning ? 'Analyse en cours…' : 'Cadrez la date de péremption, la détection est automatique'}
         </p>
         <button
-          onClick={captureAndAnalyze}
+          onClick={() => captureAndAnalyze(true)}
           disabled={isScanning}
           className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >

@@ -1,16 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, Barcode, Clock, Tag, Pencil, AlertTriangle, CircleCheck, PackageOpen, UtensilsCrossed, RotateCcw, Scale, ShieldAlert, Info, SearchX, RefreshCw, X, Snowflake, BarChart2, AlignLeft, Copy, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useProducts } from '@/hooks/useProducts';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { getExpirationStatus, getDaysUntilExpiration, getEffectiveExpirationDate, ProductStatus, PRODUCT_CATEGORIES, getPostExpiryNote, getRecommendedDaysAfterOpening, getFreezeDuration } from '@/types/product';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { getExpirationStatus, getDaysUntilExpiration, getEffectiveExpirationDate, Product, ProductStatus, PRODUCT_CATEGORIES, getPostExpiryNote, getRecommendedDaysAfterOpening, getFreezeDuration } from '@/types/product';
+import { ProductEditorPayload, ProductEditorSheet } from '@/components/ProductEditorSheet';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { PageTransition } from '@/components/PageTransition';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -306,16 +303,7 @@ const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { products, loading, removeProduct, updateProduct, setProductStatus } = useProducts();
-  const { household, isGuest } = useAuth();
   const [editing, setEditing] = useState(false);
-  const [loadingImage, setLoadingImage] = useState(false);
-  const [offImages, setOffImages] = useState<string[]>([]);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [editName, setEditName] = useState('');
-  const [editDate, setEditDate] = useState('');
-  const [editBrand, setEditBrand] = useState('');
-  const [editCategory, setEditCategory] = useState('');
   const [scoreDialog, setScoreDialog] = useState<ScoreDialogType>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
@@ -338,62 +326,6 @@ const ProductDetail = () => {
     const unsubscribe = scrollY.on('change', (v) => setShowStickyHeader(v > 90));
     return unsubscribe;
   }, [scrollY]);
-
-  const fetchOFFImages = async () => {
-    if (!product.barcode) return;
-    setLoadingImage(true);
-    try {
-      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${product.barcode}.json`);
-      const data = await res.json();
-      const p = data?.product;
-      if (!p) { toast.error('Produit introuvable sur OpenFoodFacts'); setLoadingImage(false); return; }
-      const candidates = [
-        p.image_url, p.image_front_url,
-        p.image_nutrition_url, p.image_ingredients_url, p.image_packaging_url,
-      ].filter(Boolean) as string[];
-      const unique = [...new Set(candidates)];
-      if (unique.length === 0) {
-        toast.error('Aucune image disponible sur OpenFoodFacts');
-      } else {
-        setOffImages(unique);
-        setSelectedImage(unique[0]);
-      }
-    } catch {
-      toast.error('Erreur lors de la récupération des images');
-    }
-    setLoadingImage(false);
-  };
-
-  const applyImage = async (imageUrl: string) => {
-    await Promise.all([
-      updateProduct(product.id, { imageUrl }),
-      product.barcode && household
-        ? supabase.from('products').update({ image_url: imageUrl })
-            .eq('household_id', household.id)
-            .eq('barcode', product.barcode)
-            .neq('id', product.id)
-        : Promise.resolve(),
-    ]);
-    setOffImages([]);
-    setSelectedImage(null);
-    toast.success('Image mise à jour');
-  };
-
-  const uploadImage = async (file: File) => {
-    if (isGuest) {
-      toast.info('Les photos personnelles sont disponibles avec un compte.');
-      return;
-    }
-    if (!household) return;
-    setLoadingImage(true);
-    const ext = file.name.split('.').pop() ?? 'jpg';
-    const path = `${household.id}/${product.id}_${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: true });
-    if (error) { toast.error(`Upload: ${error.message}`); setLoadingImage(false); return; }
-    const { data } = supabase.storage.from('product-images').getPublicUrl(path);
-    await applyImage(data.publicUrl);
-    setLoadingImage(false);
-  };
 
   if (loading && !product) return null;
   if (!product) {
@@ -420,16 +352,8 @@ const ProductDetail = () => {
 
   const handleRemove = () => { removeProduct(product.id); navigate('/'); };
   const categoryLabel = product.category ? (PRODUCT_CATEGORIES.find(c => c.key === product.category)?.label || product.category) : '';
-  const openEdit = () => {
-    setEditName(product.name);
-    setEditDate(product.expirationDate.split('T')[0]);
-    setEditBrand(product.brand || '');
-    setEditCategory(product.category || '');
-    setEditing(true);
-  };
-  const handleSave = () => {
-    if (!editName.trim() || !editDate) return;
-    updateProduct(product.id, { name: editName.trim(), expirationDate: editDate, brand: editBrand.trim() || undefined, category: editCategory.trim() || undefined });
+  const handleEditSubmit = async (updates: ProductEditorPayload) => {
+    await updateProduct(product.id, updates as Partial<Omit<Product, 'id' | 'addedAt'>>);
     setEditing(false);
   };
   const handleStatusChange = (newStatus: ProductStatus) => {
@@ -572,34 +496,14 @@ const ProductDetail = () => {
                         </div>
                       )}
                       <motion.button
-                        onClick={() => {
-                          if (product.barcode) {
-                            fetchOFFImages();
-                            return;
-                          }
-                          if (isGuest) {
-                            toast.info('En mode invité, seules les images OpenFoodFacts sont disponibles.');
-                            return;
-                          }
-                          fileInputRef.current?.click();
-                        }}
-                        disabled={loadingImage}
+                        onClick={() => setEditing(true)}
                         style={{ opacity: mainElementOpacity }}
-                        className="absolute -bottom-2 -right-2 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/95 shadow-xl backdrop-blur-sm transition-all hover:scale-105 hover:bg-background disabled:opacity-50"
+                        className="absolute -bottom-2 -right-2 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/95 shadow-xl backdrop-blur-sm transition-all hover:scale-105 hover:bg-background"
                         aria-label="Changer l'image du produit"
                       >
-                        <RefreshCw className={`h-4 w-4 text-muted-foreground ${loadingImage ? 'animate-spin' : ''}`} />
+                        <RefreshCw className="h-4 w-4 text-muted-foreground" />
                       </motion.button>
                     </motion.div>
-                    {!isGuest && (
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f); e.target.value = ''; }}
-                      />
-                    )}
                   </motion.div>
 
                   <div className="flex min-w-0 flex-1 flex-col justify-between py-1">
@@ -977,7 +881,7 @@ const ProductDetail = () => {
             </motion.div>
 
             <div className="mt-5 grid gap-2 pb-2 sm:grid-cols-2">
-              <button onClick={openEdit} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3.5 font-extrabold text-primary-foreground transition-colors hover:bg-primary/90">
+              <button onClick={() => setEditing(true)} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3.5 font-extrabold text-primary-foreground transition-colors hover:bg-primary/90">
                 <Pencil className="h-4 w-4" /> Modifier
               </button>
               <button onClick={() => setConfirmDelete(true)} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 px-4 py-3.5 font-extrabold text-destructive transition-colors hover:bg-destructive/20">
@@ -997,58 +901,6 @@ const ProductDetail = () => {
           </div>
         )}
 
-        {/* Image picker from OpenFoodFacts */}
-        <Dialog open={offImages.length > 0} onOpenChange={(o) => { if (!o) { setOffImages([]); setSelectedImage(null); } }}>
-          <DialogContent className="max-w-sm rounded-2xl">
-            <DialogHeader>
-              <DialogTitle>Choisir une image</DialogTitle>
-              <DialogDescription>Sélectionnez une image depuis OpenFoodFacts.</DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-3 gap-2 py-2">
-              {offImages.map((url) => (
-                <button
-                  key={url}
-                  onClick={() => setSelectedImage(url)}
-                  className={`relative rounded-xl overflow-hidden border-2 transition-colors aspect-square ${
-                    selectedImage === url ? 'border-primary' : 'border-transparent'
-                  }`}
-                >
-                  <img src={url} alt="" className="w-full h-full object-cover" />
-                  {selectedImage === url && (
-                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                      <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-            {!isGuest && (
-              <label className="w-full py-2.5 rounded-xl text-sm font-bold bg-muted text-muted-foreground text-center cursor-pointer hover:bg-muted/80 transition-colors block">
-                Importer une image
-                <input type="file" accept="image/*" className="hidden" onChange={e => {
-                  const f = e.target.files?.[0];
-                  if (f) { setOffImages([]); setSelectedImage(null); uploadImage(f); }
-                  e.target.value = '';
-                }} />
-              </label>
-            )}
-            <div className="flex gap-2 mt-1">
-              <button onClick={() => { setOffImages([]); setSelectedImage(null); }} className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-muted text-muted-foreground hover:bg-muted/80 transition-colors">Annuler</button>
-              <button
-                onClick={() => selectedImage && applyImage(selectedImage)}
-                disabled={!selectedImage}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
-              >
-                Appliquer
-              </button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
         {/* Delete confirmation */}
         <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
           <AlertDialogContent className="max-w-sm rounded-2xl">
@@ -1065,32 +917,13 @@ const ProductDetail = () => {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Edit Sheet */}
-        <Sheet open={editing} onOpenChange={setEditing}>
-          <SheetContent side="bottom" className="rounded-t-2xl max-h-[85dvh] overflow-y-auto">
-            <SheetHeader><SheetTitle>Modifier le produit</SheetTitle></SheetHeader>
-            <div className="space-y-4 mt-4 pb-safe">
-              <div><Label htmlFor="edit-name">Nom</Label><Input id="edit-name" value={editName} onChange={e => setEditName(e.target.value)} onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)} /></div>
-              <div><Label htmlFor="edit-date">Date de péremption</Label><Input id="edit-date" type="date" value={editDate} onChange={e => setEditDate(e.target.value)} /></div>
-              <div><Label htmlFor="edit-brand">Marque</Label><Input id="edit-brand" value={editBrand} onChange={e => setEditBrand(e.target.value)} onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)} /></div>
-              <div className="relative">
-                <Label htmlFor="edit-category">Catégorie</Label>
-                <select
-                  id="edit-category"
-                  value={editCategory}
-                  onChange={e => setEditCategory(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-muted border border-border text-sm appearance-none"
-                >
-                  <option value="">Aucune</option>
-                  {PRODUCT_CATEGORIES.filter(c => c.key !== 'all').map(c => (
-                    <option key={c.key} value={c.key}>{c.label}</option>
-                  ))}
-                </select>
-              </div>
-              <button onClick={handleSave} className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-colors">Enregistrer</button>
-            </div>
-          </SheetContent>
-        </Sheet>
+        <ProductEditorSheet
+          open={editing}
+          mode="edit"
+          product={product}
+          onClose={() => setEditing(false)}
+          onSubmit={handleEditSubmit}
+        />
 
         {/* Opening days dialog */}
         <Dialog open={openDialog} onOpenChange={setOpenDialog}>

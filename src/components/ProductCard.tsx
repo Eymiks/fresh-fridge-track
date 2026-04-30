@@ -33,6 +33,7 @@ interface ProductCardProps {
   product: Product;
   onSetStatus: (id: string, status: 'consumed' | 'thrown') => void;
   onUpdateDate?: (id: string, date: string) => void;
+  onEditProduct?: (id: string) => void;
   selectionMode?: boolean;
   isSelected?: boolean;
   onLongPress?: (id: string) => void;
@@ -69,6 +70,7 @@ function ProductCardInner({
   product,
   onSetStatus,
   onUpdateDate,
+  onEditProduct,
   selectionMode = false,
   isSelected = false,
   onLongPress,
@@ -152,8 +154,20 @@ function ProductCardInner({
   };
 
   const openDateDialog = () => {
+    if (onEditProduct) {
+      onEditProduct(product.id);
+      return;
+    }
     setPendingDate(product.expirationDate ?? '');
     setShowDateDialog(true);
+  };
+
+  const openEditor = () => {
+    if (onEditProduct) {
+      onEditProduct(product.id);
+      return;
+    }
+    navigate(`/product/${product.id}`);
   };
 
   const confirmDateUpdate = () => {
@@ -266,7 +280,7 @@ function ProductCardInner({
                         <CalendarDays className="w-4 h-4 mr-2" />
                         Modifier la date
                       </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => navigate(`/product/${product.id}`)}>
+                      <DropdownMenuItem onSelect={openEditor}>
                         <Pencil className="w-4 h-4 mr-2" />
                         Modifier
                       </DropdownMenuItem>
@@ -306,7 +320,7 @@ function ProductCardInner({
                         <CalendarDays className="w-4 h-4 mr-2" />
                         Modifier la date
                       </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => navigate(`/product/${product.id}`)}>
+                      <DropdownMenuItem onSelect={openEditor}>
                         <Pencil className="w-4 h-4 mr-2" />
                         Modifier
                       </DropdownMenuItem>
