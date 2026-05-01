@@ -37,8 +37,17 @@ bun run test:watch                   # vitest (watch mode)
 - Fetches all products for the household once on mount.
 - Subscribes to a Supabase Realtime `postgres_changes` channel. The channel name **must** include a per-instance suffix (`instanceId = useRef(Math.random()...)`) to avoid "cannot add postgres_changes callbacks after subscribe()" when two instances share the same channel name.
 - Returns `sortedProducts` (sorted by expiration date ascending) via `useMemo`.
+- In guest mode (`isGuest` flag from `AuthContext`), delegates all CRUD to `src/lib/guestProducts.ts` (localStorage-backed).
 
-All DB ↔ domain mapping lives in `dbToProduct` / `productToDbUpdate`. Never bypass these when reading/writing product rows.
+All DB ↔ domain mapping lives in `src/lib/productDb.ts`: `dbToProduct`, `productToDbInsert`, `productToDbUpdate`. Never bypass these when reading/writing product rows.
+
+### Guest mode
+
+`src/lib/guestProducts.ts` provides a full localStorage-backed CRUD layer for unauthenticated users:
+- Key functions: `readGuestProducts`, `addGuestProduct`, `updateGuestProduct`, `removeGuestProduct`, `setGuestProductStatus`, `clearGuestProducts`, `hasGuestProducts`.
+- `localStorage` key: `freshtrack-guest-products`.
+- `AuthContext` exposes `isGuest: boolean`. When `isGuest` is true, `useProducts` routes all operations through `guestProducts.ts` instead of Supabase.
+- `GuestImportDialog` (`src/components/GuestImportDialog.tsx`) is rendered inside `AppRoutes` and prompts the user to import guest products after sign-in.
 
 ### Product model & status lifecycle
 
@@ -68,15 +77,26 @@ When reverting a product from consumed/thrown back to `active`, `setProductStatu
 | `ProductDetail.tsx` | `/product/:id` | Full product view with status controls, opening dialog, image picker, nutritional badges (Nutri-Score/NOVA/Eco-Score), post-expiry tip, ingredients |
 | `Stats.tsx` | `/stats` | Anti-gaspi score, utilization rate, monthly charts (Recharts), top thrown products, per-category rates |
 | `History.tsx` | `/history` | Products with status consumed/thrown/opened |
-| `Notifications.tsx` | `/notifications` | Active expiry alerts + notification preference settings |
-| `HouseholdSettings.tsx` | `/household` | **"Mon profil"** section (avatar upload + display name inline-edit) + household name (owner only) + invite code + members list with avatars + owner remove-member action |
+| `Notifications.tsx` | `/notifications` | Active expiry alerts + notification preference settings (incl. guest mode toggle) |
+| `Settings.tsx` | `/settings` | **"Mon profil"** section (avatar upload + display name inline-edit) + household name (owner only) + invite code + members list + appearance settings (theme/accent/density) |
 | `HouseholdSetup.tsx` | — | Create or join household (shown when user has no household) |
 | `Auth.tsx` | — | Email/password sign-in and sign-up |
 | `Credits.tsx` | `/credits` | Attribution |
 
+Note: `/household` redirects to `/settings` via `<Navigate to="/settings" replace />`.
+
 ### PWA & notifications
 
 `src/lib/swNotify.ts` exports `showNotification(title, options)` which routes notifications through the active Service Worker registration (required for iOS PWA). `NotificationChecker` (`src/components/NotificationChecker.tsx`) is a side-effect-only component rendered inside `AppRoutes`; it checks expiring products once per day using `localStorage` to track which IDs have already been notified.
+
+### Appearance
+
+All appearance settings are managed by `AppearanceContext` (`src/contexts/AppearanceContext.tsx`). Never write local appearance logic — always use `useAppearance()`.
+
+- `themeMode`: `'light' | 'dark' | 'system'` — persisted to `localStorage` key `frigo-theme-mode`. Applies `dark` class on `document.documentElement`. Legacy key `frigo-dark-mode` is still read on first load for backwards compatibility.
+- `accentColor`: `'green' | 'blue' | 'violet' | 'orange' | 'rose' | 'cyan'` — persisted to `frigo-accent-color`. Updates `--primary` and `--ring` CSS variables.
+- `density`: `'compact' | 'normal' | 'spacious'` — persisted to `frigo-density`.
+- `reduceMotion`: `boolean` — persisted to `frigo-reduce-motion`. Adds `reduce-motion` class on `document.documentElement`.
 
 ### UI conventions
 
@@ -85,11 +105,15 @@ When reverting a product from consumed/thrown back to `active`, `setProductStatu
 - Page transitions: every page wraps its content in `<PageTransition>` (`src/components/PageTransition.tsx`). A module-level `lastAnimatedPath` variable prevents the entrance animation from replaying when Chrome fires `onAuthStateChange` on tab focus.
 - Layout: `<Layout>` in `App.tsx` renders `<DesktopSidebar>` on non-mobile; mobile gets a bottom nav via `NavLink` components. Use `useIsMobile()` to gate desktop-only UI.
 - Toasts: use `sonner` (`import { toast } from 'sonner'`), not the legacy shadcn toaster.
-- Dark mode: toggled via `document.documentElement.classList.toggle('dark')`, persisted to `localStorage` key `frigo-dark-mode`.
+- Dark mode: managed by `AppearanceContext` — never toggle `document.documentElement.classList` manually.
 
 ### Barcode / date scanning
 
-`AddProductSheet` (`src/components/AddProductSheet.tsx`) orchestrates a multi-step flow: barcode scan → date scan → form. After a barcode scan it calls the OpenFoodFacts API directly (no backend proxy) and falls back gracefully if not found. `BarcodeScanner` and `DateScanner` are wrappers around `html5-qrcode`.
+`AddProductSheet` (`src/components/AddProductSheet.tsx`) is a thin wrapper that delegates the full create/edit flow to `ProductEditorSheet` (`src/components/ProductEditorSheet.tsx`). `ProductEditorSheet` orchestrates: barcode scan → date scan → form. After a barcode scan it calls the OpenFoodFacts API directly (no backend proxy) and falls back gracefully if not found. `BarcodeScanner` and `DateScanner` are wrappers around `html5-qrcode`.
+
+Date OCR uses a two-layer approach:
+1. **Local** (`src/lib/dateOcr.ts`): `parseExpirationDate(text)` parses raw OCR text, supports all common formats (DD/MM/YY, MM/YYYY, word months, etc.). `preprocessDateImage(canvas)` applies contrast/scaling before passing to Tesseract.js.
+2. **Edge Function fallback**: `supabase/functions/ocr-date/` calls Gemini 2.5 Flash when local OCR yields no result.
 
 ### Testing
 
