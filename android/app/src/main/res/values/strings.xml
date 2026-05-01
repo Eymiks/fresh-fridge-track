@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FreshTrack</string>
+    <string name="notification_channel_expiration_name">Expiration des produits</string>
+    <string name="notification_channel_expiration_desc">Alertes pour les produits qui arrivent à expiration</string>
+</resources>

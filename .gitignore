@@ -40,6 +40,17 @@ bun.lockb
 # Supabase CLI temp
 supabase/.temp/
 
+# Android generated files and local secrets
+android/.gradle/
+android/**/build/
+android/local.properties
+*.apk
+*.aab
+*.ap_
+*.jks
+*.keystore
+key.properties
+
 # Tests output
 test-results/
 playwright-report/
