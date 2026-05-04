@@ -62,6 +62,13 @@ class HouseholdSettingsViewModel @Inject constructor(
             .onFailure { e -> _ui.update { it.copy(error = e.message) } }
     }
 
+    fun uploadAvatar(householdId: String, userId: String, bytes: ByteArray, ext: String) = viewModelScope.launch {
+        _ui.update { it.copy(isLoading = true) }
+        runCatching { householdRepository.uploadAvatar(householdId, userId, bytes, ext) }
+            .onSuccess { _ui.update { it.copy(isLoading = false, successMessage = "Avatar mis à jour") } }
+            .onFailure { e -> _ui.update { it.copy(isLoading = false, error = e.message) } }
+    }
+
     fun signOut() = viewModelScope.launch { authRepository.signOut() }
 
     fun clearMessages() = _ui.update { it.copy(error = null, successMessage = null) }

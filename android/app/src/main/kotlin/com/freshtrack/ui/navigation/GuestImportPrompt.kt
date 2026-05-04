@@ -105,16 +105,16 @@ fun GuestImportPrompt(
         onDismissRequest = {
             if (!ui.isImporting) vm.dismissForNow()
         },
-        title = { Text("Importer le frigo invite ?") },
+        title = { Text("Importer le frigo invité ?") },
         text = {
             Text(
                 buildString {
                     append(ui.guestCount)
                     append(" produit")
                     if (ui.guestCount > 1) append("s")
-                    append(" cree")
+                    append(" créé")
                     if (ui.guestCount > 1) append("s")
-                    append(" en mode invite peuvent etre ajoutes a votre foyer.")
+                    append(" en mode invité peuvent être ajoutés à votre foyer.")
                     ui.error?.let { append("\n\n").append(it) }
                 }
             )
@@ -139,7 +139,7 @@ fun GuestImportPrompt(
                 onClick = vm::discardProducts,
                 enabled = !ui.isImporting
             ) {
-                Text("Supprimer")
+                Text("Ignorer")
             }
         }
     )

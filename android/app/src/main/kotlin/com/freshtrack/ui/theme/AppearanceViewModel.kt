@@ -29,6 +29,11 @@ class AppearanceViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, AppearanceState())
 
+    val notifEnabled = prefs.notifEnabled
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val notifDays = prefs.notifDays
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 3)
+
     fun setThemeMode(mode: ThemeMode) = viewModelScope.launch {
         prefs.setThemeMode(mode.name.lowercase())
     }
@@ -40,5 +45,11 @@ class AppearanceViewModel @Inject constructor(
     }
     fun setReduceMotion(reduce: Boolean) = viewModelScope.launch {
         prefs.setReduceMotion(reduce)
+    }
+    fun setNotifEnabled(value: Boolean) = viewModelScope.launch {
+        prefs.setNotifEnabled(value)
+    }
+    fun setNotifDays(value: Int) = viewModelScope.launch {
+        prefs.setNotifDays(value)
     }
 }

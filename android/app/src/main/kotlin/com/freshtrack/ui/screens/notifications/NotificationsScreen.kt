@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -34,7 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.freshtrack.ui.screens.index.ProductCard
-import kotlin.math.roundToInt
 
 @Composable
 fun NotificationsScreen(
@@ -99,20 +97,16 @@ fun NotificationsScreen(
 
                 if (settings.enabled) {
                     Spacer(Modifier.height(16.dp))
-                    Text("Délai d'alerte", fontWeight = FontWeight.Medium)
-                    Text("Alerter ${settings.days} jour(s) avant l'expiration",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Slider(
-                        value = settings.days.toFloat(),
-                        onValueChange = { vm.setDays(it.roundToInt()) },
-                        valueRange = 1f..14f,
-                        steps = 12
-                    )
-                    Row(Modifier.fillMaxWidth()) {
-                        Text("1j", style = MaterialTheme.typography.labelSmall)
-                        Spacer(Modifier.weight(1f))
-                        Text("14j", style = MaterialTheme.typography.labelSmall)
+                    Text("Rappel avant expiration", fontWeight = FontWeight.Medium)
+                    Spacer(Modifier.height(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(1, 3, 7).forEach { option ->
+                            FilterChip(
+                                selected = settings.days == option,
+                                onClick = { vm.setDays(option) },
+                                label = { Text(if (option == 1) "1 jour" else "$option jours") }
+                            )
+                        }
                     }
                 }
             }

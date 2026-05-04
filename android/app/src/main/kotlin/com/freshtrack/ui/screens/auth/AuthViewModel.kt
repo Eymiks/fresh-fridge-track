@@ -47,5 +47,7 @@ class AuthViewModel @Inject constructor(
 
     fun leaveGuestMode() = viewModelScope.launch { authRepository.disableGuestMode() }
 
+    fun signOut() = viewModelScope.launch { authRepository.signOut() }
+
     fun clearError() = _ui.update { it.copy(error = null) }
 }

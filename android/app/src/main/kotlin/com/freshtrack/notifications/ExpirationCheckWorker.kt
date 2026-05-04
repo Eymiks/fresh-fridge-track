@@ -81,7 +81,7 @@ class ExpirationCheckWorker @AssistedInject constructor(
             }
 
             val notification = NotificationCompat.Builder(applicationContext, NotificationChannels.CHANNEL_EXPIRATION)
-                .setSmallIcon(android.R.drawable.ic_popup_reminder)
+                .setSmallIcon(com.freshtrack.R.drawable.ic_notification)
                 .setContentTitle(product.name)
                 .setContentText(message)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -95,7 +95,7 @@ class ExpirationCheckWorker @AssistedInject constructor(
 
         if (toNotify.size > 1) {
             val summary = NotificationCompat.Builder(applicationContext, NotificationChannels.CHANNEL_EXPIRATION)
-                .setSmallIcon(android.R.drawable.ic_popup_reminder)
+                .setSmallIcon(com.freshtrack.R.drawable.ic_notification)
                 .setContentTitle("${toNotify.size} produits à surveiller")
                 .setStyle(NotificationCompat.InboxStyle().setSummaryText("Dates de péremption"))
                 .setGroup(GROUP_KEY)

@@ -1,5 +1,6 @@
 package com.freshtrack.ui.screens.detail
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -22,7 +24,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +34,8 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -178,11 +181,11 @@ fun ProductDetailScreen(
                     }
                 }
 
-                // Badges scores
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    product.nutriScore?.let { FilterChip(selected = false, onClick = {}, label = { Text("Nutri-Score ${it.uppercase()}") }) }
-                    product.novaGroup?.let { FilterChip(selected = false, onClick = {}, label = { Text("NOVA $it") }) }
-                    product.ecoScore?.let { FilterChip(selected = false, onClick = {}, label = { Text("Eco-Score ${it.uppercase()}") }) }
+                // Badges scores (M10)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    product.nutriScore?.let { NutriScoreBadge(it) }
+                    product.novaGroup?.let { NovaGroupBadge(it) }
+                    product.ecoScore?.let { EcoScoreBadge(it) }
                 }
 
                 Spacer(Modifier.height(12.dp))
@@ -255,7 +258,10 @@ fun ProductDetailScreen(
                         }
                         if (!product.allergens.isNullOrBlank()) {
                             Text("Allergènes", fontWeight = FontWeight.SemiBold)
-                            Text(product.allergens, style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                translateAllergens(product.allergens),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                             Spacer(Modifier.height(8.dp))
                         }
                         if (!product.ingredients.isNullOrBlank()) {
@@ -426,6 +432,92 @@ private fun parseNutritionRows(raw: String?): List<NutritionRow> {
 
 private fun formatNutritionValue(value: Double): String =
     if (value % 1.0 == 0.0) value.toInt().toString() else "%.1f".format(value)
+
+// ── Score badges (M10) ───────────────────────────────────────────────────────
+
+@Composable
+private fun ScoreBadge(letter: String, bg: Color, fg: Color = Color.White) {
+    Box(
+        Modifier.size(26.dp).clip(RoundedCornerShape(4.dp)).background(bg),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(letter, color = fg, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun NutriScoreBadge(score: String) {
+    val (bg, fg) = when (score.uppercase()) {
+        "A" -> Color(0xFF1B5E20) to Color.White
+        "B" -> Color(0xFF558B2F) to Color.White
+        "C" -> Color(0xFFF9A825) to Color.Black
+        "D" -> Color(0xFFE65100) to Color.White
+        "E" -> Color(0xFFB71C1C) to Color.White
+        else -> return
+    }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        ScoreBadge(score.uppercase(), bg, fg)
+        Text("Nutri-Score ${score.uppercase()}", style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun NovaGroupBadge(group: Int) {
+    val (bg, fg) = when (group) {
+        1 -> Color(0xFF1B5E20) to Color.White
+        2 -> Color(0xFF558B2F) to Color.White
+        3 -> Color(0xFFE65100) to Color.White
+        4 -> Color(0xFFB71C1C) to Color.White
+        else -> return
+    }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        ScoreBadge(group.toString(), bg, fg)
+        Text("NOVA $group", style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun EcoScoreBadge(score: String) {
+    val (bg, fg) = when (score.uppercase()) {
+        "A" -> Color(0xFF1B5E20) to Color.White
+        "B" -> Color(0xFF558B2F) to Color.White
+        "C" -> Color(0xFFF9A825) to Color.Black
+        "D" -> Color(0xFFE65100) to Color.White
+        "E" -> Color(0xFFB71C1C) to Color.White
+        else -> return
+    }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        ScoreBadge(score.uppercase(), bg, fg)
+        Text("Éco-Score ${score.uppercase()}", style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+// ── Allergen translation (M11) ───────────────────────────────────────────────
+
+private val allergenTranslations = mapOf(
+    "en:gluten" to "Gluten",
+    "en:crustaceans" to "Crustacés",
+    "en:eggs" to "Œufs",
+    "en:fish" to "Poisson",
+    "en:peanuts" to "Arachides",
+    "en:soybeans" to "Soja",
+    "en:milk" to "Lait",
+    "en:nuts" to "Fruits à coque",
+    "en:celery" to "Céleri",
+    "en:mustard" to "Moutarde",
+    "en:sesame" to "Sésame",
+    "en:sulphites" to "Sulfites",
+    "en:lupin" to "Lupin",
+    "en:molluscs" to "Mollusques"
+)
+
+private fun translateAllergens(raw: String): String =
+    raw.split(",")
+        .map { it.trim().lowercase() }
+        .joinToString(", ") { code ->
+            allergenTranslations[code]
+                ?: code.substringAfter(":").replaceFirstChar { it.uppercase() }
+        }
 
 @Composable
 private fun OpeningDialog(
