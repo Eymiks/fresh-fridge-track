@@ -118,3 +118,117 @@ Date OCR uses a two-layer approach:
 ### Testing
 
 Tests live in `src/**/*.{test,spec}.{ts,tsx}` and run in jsdom via vitest. There is currently minimal test coverage; `src/test/setup.ts` imports `@testing-library/jest-dom` matchers.
+
+---
+
+## Android — État d'implémentation (2026-05-05)
+
+L'application Android native (`android/`) vise la parité complète avec la PWA. Architecture : Kotlin + Jetpack Compose, Hilt, Room, Supabase, CameraX + ML Kit, WorkManager, Vico (charts).
+
+### Phases terminées
+
+**Phase 1 — Stabilisation Room**
+- `FreshTrackDatabase.kt` : `exportSchema = true` (génère les JSON de schéma versionnés)
+- `DatabaseModule.kt` : suppression de `.fallbackToDestructiveMigration()` — évite la perte de données en production lors des mises à jour d'APK
+- `build.gradle.kts` : argument KSP `room.schemaLocation` → `$projectDir/schemas`
+
+**Phase 2 — Mode multi-scan**
+- `AppNavigation.kt` : 3 nouvelles routes (`BARCODE_SCANNER_MULTI`, `DATE_SCANNER_MULTI`, `ADD_PRODUCT_MULTI`) + helpers `dateScannerMulti()`, `addProductMulti()`. Les dates dans les URLs utilisent `_` à la place de `/` pour éviter les conflits de routing.
+- `IndexScreen.kt` : paramètre `onMultiScanClick`, état `fabExpanded`, composables `FabBubbleMenu` + `BubbleOption` avec spring animation (2 bulles : "Un produit" / "Plusieurs produits").
+- `BarcodeScannerScreen.kt` : paramètre `isMultiScan` — en mode multi, navigue vers `DATE_SCANNER_MULTI` sans popper le scanner barcode du back-stack.
+- `DateScannerScreen.kt` : paramètre `isMultiScan` — en mode multi, navigue vers `ADD_PRODUCT_MULTI` avec `popUpTo(DATE_SCANNER_MULTI)` au lieu de passer par `savedStateHandle`.
+- `AddProductScreen.kt` : paramètres `isMultiMode` + `initialDate`. Affiche "Ajouter & scanner le suivant" (reset vers `BARCODE_SCANNER_MULTI` fresh) + "Terminer" (`popBackStack` jusqu'à `BARCODE_SCANNER_MULTI` inclusive) en mode multi.
+
+### Phases restantes
+
+| Phase | Description | Fichiers principaux |
+|-------|-------------|---------------------|
+| 3 | Stats visuelles : jauge semicircle (Canvas Compose), barre de vie produits urgents, medals 🥇🥈🥉 | `StatsScreen.kt` |
+| 4 | ProductDetail : sticky header au scroll, grille 3 boutons côte à côte, auto-save notes | `ProductDetailScreen.kt` |
+| 5 | History : 3 sections colorées (Ouverts/Consommés/Jetés). Notifications : carte "permission refusée" + lien paramètres Android | `HistoryScreen.kt`, `NotificationsScreen.kt` |
+| 6 | Sélection image OFF (5 choix), email dans profil, bannière hors ligne, retry OCR avec backoff | `AddProductScreen.kt`, `AddProductViewModel.kt`, `SettingsScreen.kt` |
+
+---
+
+## Android — Référence fonctionnalités PWA
+
+Ce guide documente les comportements de la PWA à reproduire sur Android. Toujours consulter cette section avant d'implémenter ou modifier un écran Android.
+
+### Index (frigo principal)
+
+- **Header dynamique** : fond rouge si produits périmés, orange si produits bientôt périmés, primaire sinon. Affiche compteur d'alertes.
+- **3 stat-cards cliquables** : Périmés / Bientôt / Frais — cliquer applique un filtre rapide.
+- **Sections collapsibles** : Périmés / Bientôt périmés / Frais, chacune pliable/dépliable.
+- **Swipe** : gauche = consommé, droite = jeté.
+- **Long-press multi-select** : 500ms, tolérance 8px de mouvement. Barre batch en bas (supprimer, changer statut).
+- **FAB bubble menu** : FAB "+" s'anime en "×" et fait apparaître 2 bulles en spring : "Un produit" et "Plusieurs produits".
+- **Pull-to-refresh**, skeleton loading, état vide animé.
+
+### ProductDetail
+
+- **Hero scroll** : image plein-largeur (300dp) avec gradient selon statut (rouge/orange/vert).
+- **Sticky header** : apparaît après ~110dp de scroll — affiche bouton retour, miniature image, nom du produit (backdrop blur sur PWA). Sur Android : header compact dans la TopAppBar ou overlay dynamique.
+- **Actions produit** : grille 3 boutons côte à côte, toujours visibles : [Ouvert] [Consommé] [Jeté]. Bouton "Remettre actif" séparé pour les produits archivés.
+- **Accordéons** (PWA) vs **Tabs** (Android acceptable) : sur la PWA, 3 accordéons verticaux (Nutrition & Allergènes / Ingrédients / Détails & Historique). Sur Android, tabs sont une adaptation native valide.
+- **Notes auto-save** : sauvegarder automatiquement à la perte de focus (`onFocusChanged hasFocus=false`), pas de bouton "Sauvegarder" explicite.
+- **Boutons Modifier/Supprimer** : full-width en bas de page sur la PWA. Sur Android, icônes dans TopAppBar acceptable.
+
+### Stats
+
+**Onglet Frigo** :
+- Barre de distribution 3 segments (Frais / Bientôt / Périmés).
+- Produits urgents : chaque item affiche une barre de vie animée — largeur = `daysLeft / totalLifeDays * 100%`. Couleur : verte si >50%, orange si 20-50%, rouge si <20%.
+
+**Onglet Anti-Gaspi** :
+- Jauge demi-cercle (SVG/Canvas) colorée dynamiquement : vert si score >75%, orange si 50-75%, rouge si <50%. Texte d'évaluation ("Excellent !", "Bien !", "À améliorer").
+- Score mensuel + trend vs mois précédent + streak + taux d'utilisation.
+- Chart aire sur 6 mois (Vico sur Android, Recharts sur PWA).
+- Top gaspillés avec medals : 🥇🥈🥉 pour le top 3.
+
+**Onglet Tendances** :
+- Chart barres groupées (ajoutés / consommés / jetés par mois).
+- Durée moyenne de conservation.
+- Top récurrents avec medals 🥇🥈🥉.
+
+### History
+
+- 3 sections distinctes avec icônes colorées :
+  - "Ouverts" : icône `PackageOpen`, couleur primary
+  - "Consommés" : icône `UtensilsCrossed`, couleur success/green
+  - "Jetés" : icône `Trash2`, couleur destructive/red
+- Les filtres chips peuvent masquer les sections entières (pas seulement les items).
+
+### Notifications
+
+- Filtres Tout / Périmés / Bientôt (chips).
+- Toggle notifications + choix délai (1/3/7 jours avant péremption).
+- Si permission notifications refusée définitivement → Card rouge "Notifications bloquées" + bouton "Ouvrir les paramètres" (`Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)`).
+
+### Settings
+
+- Section "Mon profil" : avatar, pseudo (édition inline), **email affiché** (à récupérer depuis `AuthRepository`).
+- Apparence : thème (clair/sombre/système), couleur accent, densité, réduire animations.
+- Foyer : nom du foyer (owner seulement), code invitation (copier + partager), liste membres + suppression.
+
+### Mode multi-scan (flux complet)
+
+```
+FAB → "Plusieurs produits"
+  → BarcodeScannerScreen (isMultiScan=true)
+  → DateScannerScreen (isMultiScan=true, barcode=xxx)
+  → AddProductScreen (isMultiMode=true, barcode=xxx, initialDate=dd/MM/yyyy)
+  → "Ajouter & scanner le suivant" → navigate BARCODE_SCANNER_MULTI (popUpTo inclusive)
+  → [répète depuis BarcodeScannerScreen]
+  → "Terminer" → popBackStack jusqu'à BARCODE_SCANNER_MULTI inclusive
+```
+
+Sentinelles URL : barcode vide → `"-"`, date vide → `"-"`. Les dates utilisent `_` à la place de `/` dans l'URL.
+
+### Indicateur hors ligne
+
+Bannière jaune en haut de l'Index (ou MainScreen) : "Hors ligne — les données affichées peuvent être obsolètes". Utiliser `ConnectivityManager` + `registerNetworkCallback` sur Android.
+
+### Barcode / date scanning
+
+- Lookup OpenFoodFacts après scan barcode : récupère jusqu'à 5 images (principale, recto, nutrition, ingrédients, packaging). Afficher un dialog de sélection avec previews — ne pas auto-sélectionner la première.
+- OCR date : d'abord ML Kit local (`TextRecognition`), puis Edge Function Gemini 2.5 Flash si pas de résultat (cooldown 30s). Ajouter retry avec backoff exponentiel (2 tentatives, délai 2s) sur l'Edge Function.

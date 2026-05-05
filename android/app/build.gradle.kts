@@ -54,6 +54,10 @@ android {
     }
 }
 
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 configurations.all {
     resolutionStrategy {
         // browser:1.9+ requires compileSdk 36; force 1.8.0 until we upgrade AGP/compileSdk

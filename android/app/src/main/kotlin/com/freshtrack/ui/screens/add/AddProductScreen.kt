@@ -35,6 +35,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,12 +65,19 @@ import kotlinx.coroutines.withContext
 fun AddProductScreen(
     navController: NavController,
     barcode: String,
+    isMultiMode: Boolean = false,
+    initialDate: String = "",
     vm: AddProductViewModel = hiltViewModel()
 ) {
     val ui by vm.ui.collectAsState()
     val isGuest by vm.isGuest.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    // Pré-remplir la date détectée par le scanner (mode multi)
+    LaunchedEffect(initialDate) {
+        if (initialDate.isNotBlank()) vm.setExpirationDate(initialDate)
+    }
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
 
@@ -113,7 +121,11 @@ fun AddProductScreen(
     var categoryExpanded by remember { mutableStateOf(false) }
     val categories = remember { PRODUCT_CATEGORIES.filter { it.key != "all" } }
     val currentCategory = categories.firstOrNull { it.key == ui.category }
-    val screenTitle = if (ui.isEditing) "Modifier le produit" else "Ajouter un produit"
+    val screenTitle = when {
+        ui.isEditing -> "Modifier le produit"
+        isMultiMode -> "Ajouter — mode chaîne"
+        else -> "Ajouter un produit"
+    }
 
     Scaffold(
         topBar = {
@@ -414,28 +426,62 @@ fun AddProductScreen(
 
             Spacer(Modifier.height(8.dp))
 
-            // Bouton sauvegarder
-            Button(
-                onClick = {
-                    vm.save { navController.popBackStack() }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !ui.isSaving && ui.name.isNotBlank() && ui.expirationDate.isNotBlank()
-            ) {
-                if (ui.isSaving) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.padding(end = 8.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
+            if (isMultiMode && !ui.isEditing) {
+                // Bouton "Ajouter & scanner le suivant"
+                Button(
+                    onClick = {
+                        vm.save {
+                            // Réinitialiser en naviguant vers un BARCODE_SCANNER_MULTI frais
+                            navController.navigate(Routes.BARCODE_SCANNER_MULTI) {
+                                popUpTo(Routes.BARCODE_SCANNER_MULTI) { inclusive = true }
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !ui.isSaving && ui.name.isNotBlank() && ui.expirationDate.isNotBlank()
+                ) {
+                    if (ui.isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.padding(end = 8.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                    }
+                    Text(if (ui.isSaving) "Enregistrement…" else "Ajouter & scanner le suivant")
+                }
+                // Bouton "Terminer" (quitter le mode multi-scan)
+                TextButton(
+                    onClick = {
+                        navController.popBackStack(Routes.BARCODE_SCANNER_MULTI, true)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Terminer")
+                }
+            } else {
+                // Bouton sauvegarder classique
+                Button(
+                    onClick = {
+                        vm.save { navController.popBackStack() }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !ui.isSaving && ui.name.isNotBlank() && ui.expirationDate.isNotBlank()
+                ) {
+                    if (ui.isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.padding(end = 8.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                    }
+                    Text(
+                        when {
+                            ui.isSaving -> "Enregistrement…"
+                            ui.isEditing -> "Enregistrer les modifications"
+                            else -> "Ajouter au frigo"
+                        }
                     )
                 }
-                Text(
-                    when {
-                        ui.isSaving -> "Enregistrement…"
-                        ui.isEditing -> "Enregistrer les modifications"
-                        else -> "Ajouter au frigo"
-                    }
-                )
             }
         }
     }

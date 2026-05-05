@@ -58,6 +58,7 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.freshtrack.domain.format.normalizeDateInput
+import com.freshtrack.ui.navigation.Routes
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -206,6 +207,7 @@ fun parseExpirationDate(rawText: String): String? {
 fun DateScannerScreen(
     navController: NavController,
     barcode: String,
+    isMultiScan: Boolean = false,
     vm: DateScannerViewModel = hiltViewModel()
 ) {
     var hasPermission by remember { mutableStateOf(false) }
@@ -226,8 +228,16 @@ fun DateScannerScreen(
     fun acceptDate(date: String) {
         if (!dateAccepted) {
             dateAccepted = true
-            navController.previousBackStackEntry?.savedStateHandle?.set("detected_date", normalizeDateInput(date))
-            navController.popBackStack()
+            val normalized = normalizeDateInput(date)
+            if (isMultiScan) {
+                // Mode multi : naviguer en avant vers le formulaire avec barcode + date
+                navController.navigate(Routes.addProductMulti(barcode, normalized)) {
+                    popUpTo(Routes.DATE_SCANNER_MULTI) { inclusive = true }
+                }
+            } else {
+                navController.previousBackStackEntry?.savedStateHandle?.set("detected_date", normalized)
+                navController.popBackStack()
+            }
         }
     }
 

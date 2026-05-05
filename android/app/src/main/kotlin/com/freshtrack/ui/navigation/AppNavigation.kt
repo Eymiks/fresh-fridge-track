@@ -56,11 +56,19 @@ object Routes {
     const val ADD_PRODUCT = "add_product/{barcode}"
     const val EDIT_PRODUCT = "edit_product/{productId}"
 
+    // Multi-scan : barcode → date → formulaire → "Ajouter & scanner le suivant"
+    const val BARCODE_SCANNER_MULTI = "barcode_scanner_multi"
+    const val DATE_SCANNER_MULTI = "date_scanner_multi/{barcode}"
+    const val ADD_PRODUCT_MULTI = "add_product_multi/{barcode}/{date}"
+
     fun productDetail(id: String) = "product/$id"
     fun dateScanner(barcode: String = "") = "date_scanner/$barcode"
     fun addProduct(barcode: String = "") =
         if (barcode.isBlank()) ADD_PRODUCT_MANUAL else "add_product/$barcode"
     fun editProduct(id: String) = "edit_product/$id"
+    fun dateScannerMulti(barcode: String) = "date_scanner_multi/$barcode"
+    fun addProductMulti(barcode: String, date: String) =
+        "add_product_multi/${barcode.ifBlank { "-" }}/${date.replace("/", "_").ifBlank { "-" }}"
 }
 
 data class BottomTab(val route: String, val label: String, val icon: @Composable () -> Unit)
@@ -115,6 +123,25 @@ fun AppNavigation() {
         composable(Routes.EDIT_PRODUCT) {
             AddProductScreen(navController, "")
         }
+        composable(Routes.BARCODE_SCANNER_MULTI) {
+            BarcodeScannerScreen(navController, isMultiScan = true)
+        }
+        composable(Routes.DATE_SCANNER_MULTI) { back ->
+            DateScannerScreen(
+                navController,
+                barcode = back.arguments?.getString("barcode") ?: "",
+                isMultiScan = true
+            )
+        }
+        composable(Routes.ADD_PRODUCT_MULTI) { back ->
+            val rawDate = back.arguments?.getString("date") ?: "-"
+            AddProductScreen(
+                navController,
+                barcode = (back.arguments?.getString("barcode") ?: "-").let { if (it == "-") "" else it },
+                isMultiMode = true,
+                initialDate = if (rawDate == "-") "" else rawDate.replace("_", "/")
+            )
+        }
         composable(Routes.HOUSEHOLD_SETTINGS) { HouseholdSettingsScreen(navController) }
         composable(Routes.SETTINGS) { SettingsScreen(navController) }
         composable(Routes.CREDITS) { CreditsScreen(navController) }
@@ -160,6 +187,7 @@ private fun MainScreen(rootNavController: androidx.navigation.NavController) {
                 IndexScreen(
                     onProductClick = { id -> rootNavController.navigate(Routes.productDetail(id)) },
                     onScanClick = { rootNavController.navigate(Routes.BARCODE_SCANNER) },
+                    onMultiScanClick = { rootNavController.navigate(Routes.BARCODE_SCANNER_MULTI) },
                     onSettingsClick = { rootNavController.navigate(Routes.SETTINGS) },
                     onEditProduct = { id -> rootNavController.navigate(Routes.editProduct(id)) }
                 )

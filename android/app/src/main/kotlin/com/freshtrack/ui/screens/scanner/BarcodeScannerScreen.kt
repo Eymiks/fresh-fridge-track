@@ -56,7 +56,7 @@ import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BarcodeScannerScreen(navController: NavController) {
+fun BarcodeScannerScreen(navController: NavController, isMultiScan: Boolean = false) {
     var hasPermission by remember { mutableStateOf(false) }
     var barcodeDetected by remember { mutableStateOf(false) }
 
@@ -68,10 +68,12 @@ fun BarcodeScannerScreen(navController: NavController) {
         permissionLauncher.launch(Manifest.permission.CAMERA)
     }
 
+    val selfRoute = if (isMultiScan) Routes.BARCODE_SCANNER_MULTI else Routes.BARCODE_SCANNER
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Scanner un code-barres") },
+                title = { Text(if (isMultiScan) "Scanner — produit suivant" else "Scanner un code-barres") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Retour")
@@ -86,20 +88,29 @@ fun BarcodeScannerScreen(navController: NavController) {
                     onBarcodeDetected = { barcode ->
                         if (!barcodeDetected) {
                             barcodeDetected = true
-                            navController.navigate(Routes.addProduct(barcode)) {
-                                popUpTo(Routes.BARCODE_SCANNER) { inclusive = true }
+                            if (isMultiScan) {
+                                // Mode multi : aller au scanner de date sans popper le scanner barcode
+                                navController.navigate(Routes.dateScannerMulti(barcode))
+                            } else {
+                                navController.navigate(Routes.addProduct(barcode)) {
+                                    popUpTo(selfRoute) { inclusive = true }
+                                }
                             }
                         }
                     }
                 )
                 ScannerActions(
                     modifier = Modifier.align(Alignment.BottomCenter),
-                    prompt = "Pointez vers un code-barres",
+                    prompt = if (isMultiScan) "Pointez vers le code-barres du produit" else "Pointez vers un code-barres",
                     detail = "Le scan démarre automatiquement dès qu'un code est lisible.",
                     promptColor = MaterialTheme.colorScheme.onSurface,
                     onManualClick = {
-                        navController.navigate(Routes.addProduct()) {
-                            popUpTo(Routes.BARCODE_SCANNER) { inclusive = true }
+                        if (isMultiScan) {
+                            navController.navigate(Routes.addProductMulti("", ""))
+                        } else {
+                            navController.navigate(Routes.addProduct()) {
+                                popUpTo(selfRoute) { inclusive = true }
+                            }
                         }
                     },
                     onPermissionClick = null
@@ -111,8 +122,12 @@ fun BarcodeScannerScreen(navController: NavController) {
                     detail = "Autorisez la caméra pour scanner un code-barres, ou ajoutez le produit à la main.",
                     promptColor = MaterialTheme.colorScheme.onSurface,
                     onManualClick = {
-                        navController.navigate(Routes.addProduct()) {
-                            popUpTo(Routes.BARCODE_SCANNER) { inclusive = true }
+                        if (isMultiScan) {
+                            navController.navigate(Routes.addProductMulti("", ""))
+                        } else {
+                            navController.navigate(Routes.addProduct()) {
+                                popUpTo(selfRoute) { inclusive = true }
+                            }
                         }
                     },
                     onPermissionClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }

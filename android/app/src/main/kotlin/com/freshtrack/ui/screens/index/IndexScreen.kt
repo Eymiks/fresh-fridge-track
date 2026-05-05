@@ -1,9 +1,13 @@
 package com.freshtrack.ui.screens.index
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
@@ -56,6 +60,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -96,6 +101,7 @@ import com.freshtrack.ui.theme.LocalAppearance
 fun IndexScreen(
     onProductClick: (String) -> Unit,
     onScanClick: () -> Unit,
+    onMultiScanClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onEditProduct: (String) -> Unit = {},
     vm: IndexViewModel = hiltViewModel()
@@ -107,6 +113,7 @@ fun IndexScreen(
 
     var searchActive by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
+    var fabExpanded by remember { mutableStateOf(false) }
 
     var expiredCollapsed by rememberSaveable { mutableStateOf(false) }
     var soonCollapsed by rememberSaveable { mutableStateOf(false) }
@@ -199,9 +206,12 @@ fun IndexScreen(
         },
         floatingActionButton = {
             if (!ui.isSelectionMode) {
-                FloatingActionButton(onClick = onScanClick) {
-                    Icon(Icons.Default.Add, "Ajouter un produit")
-                }
+                FabBubbleMenu(
+                    expanded = fabExpanded,
+                    onToggle = { fabExpanded = !fabExpanded },
+                    onSingleProduct = { fabExpanded = false; onScanClick() },
+                    onMultiProduct = { fabExpanded = false; onMultiScanClick() }
+                )
             }
         },
         bottomBar = {
@@ -826,5 +836,84 @@ fun ProductCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun FabBubbleMenu(
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    onSingleProduct: () -> Unit,
+    onMultiProduct: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.End,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn(spring(stiffness = Spring.StiffnessMedium)) +
+                    scaleIn(spring(stiffness = Spring.StiffnessMedium), initialScale = 0.7f),
+            exit = fadeOut(tween(150)) + scaleOut(tween(150), targetScale = 0.7f)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                BubbleOption(
+                    label = "Plusieurs produits",
+                    onClick = onMultiProduct,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                BubbleOption(
+                    label = "Un produit",
+                    onClick = onSingleProduct,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+
+        FloatingActionButton(onClick = onToggle) {
+            AnimatedVisibility(
+                visible = expanded,
+                enter = fadeIn(tween(100)) + scaleIn(tween(100)),
+                exit = fadeOut(tween(100)) + scaleOut(tween(100))
+            ) {
+                Icon(Icons.Default.Close, "Fermer")
+            }
+            AnimatedVisibility(
+                visible = !expanded,
+                enter = fadeIn(tween(100)) + scaleIn(tween(100)),
+                exit = fadeOut(tween(100)) + scaleOut(tween(100))
+            ) {
+                Icon(Icons.Default.Add, "Ajouter un produit")
+            }
+        }
+    }
+}
+
+@Composable
+private fun BubbleOption(
+    label: String,
+    onClick: () -> Unit,
+    containerColor: androidx.compose.ui.graphics.Color,
+    contentColor: androidx.compose.ui.graphics.Color
+) {
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.medium,
+        color = containerColor,
+        tonalElevation = 6.dp,
+        shadowElevation = 4.dp
+    ) {
+        Text(
+            text = label,
+            color = contentColor,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+        )
     }
 }
