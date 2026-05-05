@@ -64,7 +64,15 @@ class HouseholdRepository @Inject constructor(private val supabase: SupabaseClie
         val path = "$householdId/avatar_$userId.$ext"
         val bucket = supabase.storage.from("product-images")
         bucket.upload(path, bytes, options = { upsert = true })
-        return bucket.publicUrl(path)
+        val publicUrl = bucket.publicUrl(path)
+        supabase.from("household_members")
+            .update(mapOf("avatar_url" to publicUrl)) {
+                filter {
+                    eq("household_id", householdId)
+                    eq("user_id", userId)
+                }
+            }
+        return publicUrl
     }
 
     suspend fun getMembers(householdId: String): List<Member> =

@@ -9,6 +9,10 @@ import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.model.ProductStatus
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 fun ProductRow.toEntity(): ProductEntity = ProductEntity(
     id = id, householdId = householdId, name = name, barcode = barcode,
@@ -88,3 +92,34 @@ fun Product.toUpdateRow(): ProductUpdateRow = ProductUpdateRow(
     frozenUntil = frozenUntil?.toString(),
     nutritionData = nutritionData
 )
+
+fun Product.toUpdateJsonObject(): JsonObject = buildJsonObject {
+    fun putNullableString(key: String, value: String?) {
+        if (value == null) put(key, JsonNull) else put(key, value)
+    }
+
+    fun putNullableInt(key: String, value: Int?) {
+        if (value == null) put(key, JsonNull) else put(key, value)
+    }
+
+    put("name", name)
+    putNullableString("barcode", barcode)
+    put("expiration_date", expirationDate.toString())
+    putNullableString("image_url", imageUrl)
+    putNullableString("brand", brand)
+    putNullableString("nutri_score", nutriScore)
+    putNullableString("category", category)
+    putNullableString("subcategory", subcategory)
+    put("status", status.name.lowercase())
+    putNullableString("status_changed_at", statusChangedAt?.toString())
+    putNullableString("quantity", quantity)
+    putNullableInt("nova_group", novaGroup)
+    putNullableString("eco_score", ecoScore)
+    putNullableString("allergens", allergens)
+    putNullableString("ingredients", ingredients)
+    putNullableString("opened_at", openedAt?.toString())
+    putNullableInt("days_after_opening", daysAfterOpening)
+    putNullableString("notes", notes)
+    putNullableString("frozen_until", frozenUntil?.toString())
+    putNullableString("nutrition_data", nutritionData)
+}

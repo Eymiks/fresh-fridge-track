@@ -47,10 +47,11 @@ class ExpirationCheckWorker @AssistedInject constructor(
         }
 
         val notifDays = prefs.notifDays.first()
-        val doneIds = prefs.notifDoneIds.first()
 
         val tz = TimeZone.currentSystemDefault()
         val today = Clock.System.now().toLocalDateTime(tz).date
+        val lastCheck = prefs.notifLastCheck.first()
+        val doneIds = if (lastCheck == today.toString()) prefs.notifDoneIds.first() else emptySet()
         val threshold = today.plus(notifDays, DateTimeUnit.DAY)
 
         val entities = productDao.getByHousehold(householdId)
@@ -59,7 +60,8 @@ class ExpirationCheckWorker @AssistedInject constructor(
             .filter { it.status == ProductStatus.ACTIVE || it.status == ProductStatus.OPENED }
             .filter { product ->
                 val effective = product.getEffectiveExpirationDate()
-                effective <= threshold && product.id !in doneIds
+                val daysLeft = today.daysUntil(effective)
+                daysLeft >= 0 && effective <= threshold && product.id !in doneIds
             }
 
         if (toNotify.isEmpty()) {

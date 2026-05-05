@@ -84,6 +84,18 @@ class StatsUseCase @Inject constructor() {
             }.average().toFloat()
         }
 
+        val utilizationRates = consumed.mapNotNull { p ->
+            val changedDate = p.statusChangedAt?.toLocalDateTime(tz)?.date ?: return@mapNotNull null
+            val addedDate = p.addedAt.toLocalDateTime(tz).date
+            val totalLife = addedDate.daysUntil(p.expirationDate)
+            if (totalLife <= 0) return@mapNotNull null
+            val usedLife = addedDate.daysUntil(changedDate).coerceIn(0, totalLife)
+            usedLife.toFloat() / totalLife.toFloat() * 100f
+        }
+        val avgUtilizationRate = if (utilizationRates.isEmpty()) 0f else {
+            utilizationRates.average().toFloat()
+        }
+
         // Category scores
         val allCategoryKeys = (consumed + thrown).mapNotNull { it.category }.distinct()
         val categoryScores = allCategoryKeys.map { cat ->
@@ -112,7 +124,7 @@ class StatsUseCase @Inject constructor() {
             prevMonthScore = prevScore,
             trend = trend,
             streak = streak,
-            avgUtilizationRate = 0f,   // placeholder
+            avgUtilizationRate = avgUtilizationRate,
             categoryScores = categoryScores,
             topThrown = topThrown,
             topRecurrent = topRecurrent,

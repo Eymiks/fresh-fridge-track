@@ -31,16 +31,21 @@ import javax.inject.Inject
 
 data class DetailUiState(
     val isLoading: Boolean = true,
+    val isMutating: Boolean = false,
     val product: Product? = null,
     val notFound: Boolean = false,
     val authMessage: String? = null,
     val error: String? = null,
-    val showOpeningDialog: Boolean = false
+    val showOpeningDialog: Boolean = false,
+    val feedbackMessage: String? = null,
+    val feedbackId: Long = 0
 )
 
 private data class DetailTransientState(
     val showOpeningDialog: Boolean = false,
-    val actionError: String? = null
+    val isMutating: Boolean = false,
+    val feedbackMessage: String? = null,
+    val feedbackId: Long = 0
 )
 
 @HiltViewModel
@@ -65,8 +70,10 @@ class ProductDetailViewModel @Inject constructor(
 
     val ui = combine(productState, transient) { state, local ->
         state.copy(
+            isMutating = local.isMutating,
             showOpeningDialog = local.showOpeningDialog,
-            error = local.actionError ?: state.error
+            feedbackMessage = local.feedbackMessage,
+            feedbackId = local.feedbackId
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, DetailUiState())
 
@@ -118,62 +125,61 @@ class ProductDetailViewModel @Inject constructor(
 
     fun setStatus(status: ProductStatus) = viewModelScope.launch {
         val p = getProduct() ?: return@launch
-        val result = when (val state = authState.value) {
-            is AuthState.Guest -> runCatching { productRepository.setGuestStatus(p, status) }
-            is AuthState.Authenticated -> {
-                val hId = state.household?.id ?: return@launch
-                runCatching { productRepository.setStatus(p, hId, status) }
+        mutate("Statut mis à jour") {
+            when (val state = authState.value) {
+                is AuthState.Guest -> productRepository.setGuestStatus(p, status)
+                is AuthState.Authenticated -> {
+                    val hId = state.household?.id ?: error("Pas de foyer")
+                    productRepository.setStatus(p, hId, status)
+                }
+                else -> error("Non connecté")
             }
-            else -> return@launch
         }
-        result
-            .onSuccess { transient.update { it.copy(actionError = null) } }
-            .onFailure { e -> transient.update { it.copy(actionError = e.message) } }
     }
 
     fun openProduct(daysAfterOpening: Int) = viewModelScope.launch {
         val p = getProduct() ?: return@launch
+        val now = kotlinx.datetime.Clock.System.now()
         val updated = p.copy(
             status = ProductStatus.OPENED,
-            openedAt = kotlinx.datetime.Clock.System.now(),
+            openedAt = now,
+            statusChangedAt = now,
             daysAfterOpening = daysAfterOpening
         )
-        val result = when (val state = authState.value) {
-            is AuthState.Guest -> runCatching { productRepository.updateGuestProduct(updated) }
-            is AuthState.Authenticated -> {
-                val hId = state.household?.id ?: return@launch
-                runCatching { productRepository.updateProduct(updated, hId) }
+        mutate("Produit marqué comme ouvert") {
+            when (val state = authState.value) {
+                is AuthState.Guest -> productRepository.updateGuestProduct(updated)
+                is AuthState.Authenticated -> {
+                    val hId = state.household?.id ?: error("Pas de foyer")
+                    productRepository.updateProduct(updated, hId)
+                }
+                else -> error("Non connecté")
             }
-            else -> return@launch
         }
-        result
-            .onSuccess { transient.update { it.copy(actionError = null) } }
-            .onFailure { e -> transient.update { it.copy(actionError = e.message) } }
         transient.update { it.copy(showOpeningDialog = false) }
     }
 
     fun updateNotes(notes: String) = viewModelScope.launch {
         val p = getProduct() ?: return@launch
-        val updated = p.copy(notes = notes)
-        saveProduct(updated)
-            .onSuccess { transient.update { it.copy(actionError = null) } }
-            .onFailure { e -> transient.update { it.copy(actionError = e.message) } }
+        mutate("Note sauvegardée") {
+            saveProduct(p.copy(notes = notes.takeIf { it.isNotBlank() })).getOrThrow()
+        }
     }
 
     fun freezeProduct() = viewModelScope.launch {
         val p = getProduct() ?: return@launch
         val until = kotlinx.datetime.Clock.System.todayIn(TimeZone.currentSystemDefault())
             .plus(getFreezeDuration(p.category), DateTimeUnit.MONTH)
-        saveProduct(p.copy(frozenUntil = until))
-            .onSuccess { transient.update { it.copy(actionError = null) } }
-            .onFailure { e -> transient.update { it.copy(actionError = e.message) } }
+        mutate("Produit mis au congélateur") {
+            saveProduct(p.copy(frozenUntil = until)).getOrThrow()
+        }
     }
 
     fun unfreezeProduct() = viewModelScope.launch {
         val p = getProduct() ?: return@launch
-        saveProduct(p.copy(frozenUntil = null))
-            .onSuccess { transient.update { it.copy(actionError = null) } }
-            .onFailure { e -> transient.update { it.copy(actionError = e.message) } }
+        mutate("Produit retiré du congélateur") {
+            saveProduct(p.copy(frozenUntil = null)).getOrThrow()
+        }
     }
 
     private suspend fun saveProduct(product: Product): Result<Unit> = when (val state = authState.value) {
@@ -187,16 +193,40 @@ class ProductDetailViewModel @Inject constructor(
 
     fun deleteProduct(onDeleted: () -> Unit) = viewModelScope.launch {
         val p = getProduct() ?: return@launch
-        val result = when (authState.value) {
-            is AuthState.Guest -> runCatching { productRepository.removeGuestProduct(p.id) }
-            is AuthState.Authenticated -> runCatching { productRepository.removeProduct(p.id) }
-            else -> return@launch
+        mutate(successMessage = null) {
+            when (authState.value) {
+                is AuthState.Guest -> productRepository.removeGuestProduct(p.id)
+                is AuthState.Authenticated -> productRepository.removeProduct(p.id)
+                else -> error("Non connecté")
+            }
+            onDeleted()
         }
-        result
-            .onSuccess { onDeleted() }
-            .onFailure { e -> transient.update { it.copy(actionError = e.message) } }
     }
 
     fun showOpeningDialog() = transient.update { it.copy(showOpeningDialog = true) }
     fun dismissOpeningDialog() = transient.update { it.copy(showOpeningDialog = false) }
+
+    fun clearFeedback() = transient.update { it.copy(feedbackMessage = null) }
+
+    private suspend fun mutate(successMessage: String?, block: suspend () -> Unit) {
+        if (transient.value.isMutating) return
+        transient.update { it.copy(isMutating = true, feedbackMessage = null) }
+        runCatching { block() }
+            .onSuccess {
+                successMessage?.let { message ->
+                    transient.update { state ->
+                        state.copy(feedbackMessage = message, feedbackId = state.feedbackId + 1)
+                    }
+                }
+            }
+            .onFailure { e ->
+                transient.update { state ->
+                    state.copy(
+                        feedbackMessage = e.message ?: "Action impossible pour le moment.",
+                        feedbackId = state.feedbackId + 1
+                    )
+                }
+            }
+        transient.update { it.copy(isMutating = false) }
+    }
 }

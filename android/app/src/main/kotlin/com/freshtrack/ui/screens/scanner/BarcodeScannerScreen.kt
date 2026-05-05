@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -94,23 +95,27 @@ fun BarcodeScannerScreen(navController: NavController) {
                 ScannerActions(
                     modifier = Modifier.align(Alignment.BottomCenter),
                     prompt = "Pointez vers un code-barres",
-                    promptColor = Color.White,
-                    onManualClick = {
-                        navController.navigate(Routes.addProduct()) {
-                            popUpTo(Routes.BARCODE_SCANNER) { inclusive = true }
-                        }
-                    }
-                )
-            } else {
-                ScannerActions(
-                    modifier = Modifier.align(Alignment.Center),
-                    prompt = "Permission caméra requise",
+                    detail = "Le scan démarre automatiquement dès qu'un code est lisible.",
                     promptColor = MaterialTheme.colorScheme.onSurface,
                     onManualClick = {
                         navController.navigate(Routes.addProduct()) {
                             popUpTo(Routes.BARCODE_SCANNER) { inclusive = true }
                         }
-                    }
+                    },
+                    onPermissionClick = null
+                )
+            } else {
+                ScannerActions(
+                    modifier = Modifier.align(Alignment.Center),
+                    prompt = "Permission caméra requise",
+                    detail = "Autorisez la caméra pour scanner un code-barres, ou ajoutez le produit à la main.",
+                    promptColor = MaterialTheme.colorScheme.onSurface,
+                    onManualClick = {
+                        navController.navigate(Routes.addProduct()) {
+                            popUpTo(Routes.BARCODE_SCANNER) { inclusive = true }
+                        }
+                    },
+                    onPermissionClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }
                 )
             }
         }
@@ -121,23 +126,29 @@ fun BarcodeScannerScreen(navController: NavController) {
 private fun ScannerActions(
     modifier: Modifier,
     prompt: String,
+    detail: String,
     promptColor: Color,
-    onManualClick: () -> Unit
+    onManualClick: () -> Unit,
+    onPermissionClick: (() -> Unit)?
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = prompt,
-            color = promptColor,
-            style = MaterialTheme.typography.bodyLarge
-        )
-        Spacer(Modifier.height(12.dp))
-        Button(onClick = onManualClick) {
-            Text("Saisir manuellement")
+    Card(modifier = modifier.fillMaxWidth().padding(24.dp)) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = prompt, color = promptColor, style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(6.dp))
+            Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(12.dp))
+            onPermissionClick?.let {
+                Button(onClick = it, modifier = Modifier.fillMaxWidth()) {
+                    Text("Autoriser la caméra")
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+            Button(onClick = onManualClick, modifier = Modifier.fillMaxWidth()) {
+                Text("Saisir manuellement")
+            }
         }
     }
 }

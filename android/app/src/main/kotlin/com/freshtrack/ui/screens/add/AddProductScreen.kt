@@ -246,7 +246,7 @@ fun AddProductScreen(
                     value = ui.expirationDate,
                     onValueChange = vm::setExpirationDate,
                     label = { Text("Date de péremption *") },
-                    placeholder = { Text("AAAA-MM-JJ") },
+                    placeholder = { Text("JJ/MM/AAAA") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f),
                     singleLine = true,
@@ -263,7 +263,7 @@ fun AddProductScreen(
                 value = ui.frozenUntil,
                 onValueChange = vm::setFrozenUntil,
                 label = { Text("Congelé jusqu'au") },
-                placeholder = { Text("AAAA-MM-JJ") },
+                placeholder = { Text("JJ/MM/AAAA") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -336,6 +336,71 @@ fun AddProductScreen(
                 label = { Text("Notes") },
                 modifier = Modifier.fillMaxWidth().height(120.dp),
                 maxLines = 5
+            )
+
+            Text(
+                "Informations avancées",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = ui.nutriScore,
+                    onValueChange = vm::setNutriScore,
+                    label = { Text("Nutri-Score") },
+                    placeholder = { Text("A-E") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = ui.novaGroup,
+                    onValueChange = vm::setNovaGroup,
+                    label = { Text("NOVA") },
+                    placeholder = { Text("1-4") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = ui.ecoScore,
+                    onValueChange = vm::setEcoScore,
+                    label = { Text("Eco-Score") },
+                    placeholder = { Text("A-E") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true
+                )
+            }
+
+            OutlinedTextField(
+                value = ui.allergens,
+                onValueChange = vm::setAllergens,
+                label = { Text("Allergènes") },
+                placeholder = { Text("Ex: Lait, gluten") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            OutlinedTextField(
+                value = ui.ingredients,
+                onValueChange = vm::setIngredients,
+                label = { Text("Ingrédients") },
+                modifier = Modifier.fillMaxWidth().height(120.dp),
+                maxLines = 5
+            )
+
+            OutlinedTextField(
+                value = ui.nutritionData,
+                onValueChange = vm::setNutritionData,
+                label = { Text("Données nutritionnelles JSON") },
+                placeholder = { Text("""{"energy_kcal":120,"proteins":4}""") },
+                modifier = Modifier.fillMaxWidth().height(100.dp),
+                maxLines = 4
             )
 
             // Message d'erreur

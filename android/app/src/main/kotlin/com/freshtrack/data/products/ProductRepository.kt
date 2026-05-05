@@ -86,6 +86,11 @@ class ProductRepository @Inject constructor(
         productDao.replaceForHousehold(householdId, rows.map { it.toEntity() })
     }
 
+    suspend fun findExistingImageForBarcode(householdId: String, barcode: String): String? =
+        productDao.getByHousehold(householdId)
+            .firstOrNull { it.barcode == barcode && !it.imageUrl.isNullOrBlank() }
+            ?.imageUrl
+
     suspend fun addProduct(product: Product, householdId: String, userId: String): Product {
         val row = product.toInsertRow(householdId, userId)
         val inserted = supabase.from("products").insert(row) { select() }
@@ -95,7 +100,7 @@ class ProductRepository @Inject constructor(
     }
 
     suspend fun updateProduct(product: Product, householdId: String) {
-        val row = product.toUpdateRow()
+        val row = product.toUpdateJsonObject()
         supabase.from("products").update(row) { filter { eq("id", product.id) } }
         productDao.upsert(product.toEntity(householdId))
     }

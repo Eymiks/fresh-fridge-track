@@ -17,13 +17,18 @@ import androidx.camera.core.SurfaceOrientedMeteringPointFactory
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -52,6 +57,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.freshtrack.domain.format.normalizeDateInput
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -59,6 +65,7 @@ import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import java.text.Normalizer
 import java.util.concurrent.TimeUnit
 
 // ─── date parsing (port de src/lib/dateOcr.ts) ───────────────────────────────
@@ -102,8 +109,12 @@ private fun correctDigits(s: String) = s
     .replace(Regex("[Il|]"), "1")
     .replace("B", "8")
 
+private fun stripAccents(s: String): String =
+    Normalizer.normalize(s, Normalizer.Form.NFD)
+        .replace(Regex("\\p{Mn}+"), "")
+
 fun parseExpirationDate(rawText: String): String? {
-    val normalized = rawText.uppercase()
+    val normalized = stripAccents(rawText).uppercase()
         .replace("'", " ").replace("’", " ")
         .replace(Regex("\\s+"), " ").trim()
 
@@ -215,7 +226,7 @@ fun DateScannerScreen(
     fun acceptDate(date: String) {
         if (!dateAccepted) {
             dateAccepted = true
-            navController.previousBackStackEntry?.savedStateHandle?.set("detected_date", date)
+            navController.previousBackStackEntry?.savedStateHandle?.set("detected_date", normalizeDateInput(date))
             navController.popBackStack()
         }
     }
@@ -244,7 +255,7 @@ fun DateScannerScreen(
                     Button(
                         onClick = { acceptDate(date) },
                         modifier = Modifier.align(Alignment.Center).padding(16.dp)
-                    ) { Text("Utiliser : $date") }
+                    ) { Text("Utiliser : ${normalizeDateInput(date)}") }
                 }
 
                 if (detectedDate == null) {
@@ -307,7 +318,27 @@ fun DateScannerScreen(
                     )
                 }
             } else {
-                Text("Permission caméra requise", Modifier.align(Alignment.Center))
+                Card(Modifier.align(Alignment.Center).fillMaxWidth().padding(24.dp)) {
+                    Column(Modifier.padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Permission caméra requise", style = MaterialTheme.typography.titleMedium)
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Autorisez la caméra pour lire une date, ou revenez au formulaire pour la saisir à la main.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Button(
+                            onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Autoriser la caméra") }
+                        Spacer(Modifier.height(8.dp))
+                        Button(
+                            onClick = { navController.popBackStack() },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Saisir la date manuellement") }
+                    }
+                }
             }
         }
     }

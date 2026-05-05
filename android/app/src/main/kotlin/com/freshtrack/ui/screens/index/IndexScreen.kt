@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.MoreVert
@@ -83,6 +84,7 @@ import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.model.ProductStatus
 import com.freshtrack.domain.model.getDaysUntilExpiration
 import com.freshtrack.domain.model.getExpirationStatus
+import com.freshtrack.domain.model.isActive
 import com.freshtrack.ui.theme.ColorExpired
 import com.freshtrack.ui.theme.ColorFresh
 import com.freshtrack.ui.theme.ColorSoon
@@ -95,6 +97,7 @@ fun IndexScreen(
     onProductClick: (String) -> Unit,
     onScanClick: () -> Unit,
     onSettingsClick: () -> Unit = {},
+    onEditProduct: (String) -> Unit = {},
     vm: IndexViewModel = hiltViewModel()
 ) {
     val ui by vm.ui.collectAsState()
@@ -116,7 +119,8 @@ fun IndexScreen(
     }
 
     val isInitialLoading = ui.isLoading && products.isEmpty()
-    val isEmpty = !ui.isLoading &&
+    val hasNoActiveProducts = !ui.isLoading && products.none { it.isActive() }
+    val hasNoFilteredProducts = !ui.isLoading &&
         groups.expired.isEmpty() && groups.soon.isEmpty() && groups.fresh.isEmpty()
 
     Scaffold(
@@ -235,7 +239,7 @@ fun IndexScreen(
                         items(6) { ProductCardSkeleton() }
                     }
                 }
-                isEmpty -> {
+                hasNoActiveProducts -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         AnimatedVisibility(
                             visible = true,
@@ -296,6 +300,7 @@ fun IndexScreen(
                                             else onProductClick(product.id)
                                         },
                                         onLongClick = { vm.enterSelectionMode(product.id) },
+                                        onEdit = { onEditProduct(product.id) },
                                         onConsume = { vm.quickSetStatus(product.id, ProductStatus.CONSUMED) },
                                         onThrow = { vm.quickSetStatus(product.id, ProductStatus.THROWN) }
                                     )
@@ -323,6 +328,7 @@ fun IndexScreen(
                                             else onProductClick(product.id)
                                         },
                                         onLongClick = { vm.enterSelectionMode(product.id) },
+                                        onEdit = { onEditProduct(product.id) },
                                         onConsume = { vm.quickSetStatus(product.id, ProductStatus.CONSUMED) },
                                         onThrow = { vm.quickSetStatus(product.id, ProductStatus.THROWN) }
                                     )
@@ -350,8 +356,38 @@ fun IndexScreen(
                                             else onProductClick(product.id)
                                         },
                                         onLongClick = { vm.enterSelectionMode(product.id) },
+                                        onEdit = { onEditProduct(product.id) },
                                         onConsume = { vm.quickSetStatus(product.id, ProductStatus.CONSUMED) },
                                         onThrow = { vm.quickSetStatus(product.id, ProductStatus.THROWN) }
+                                    )
+                                }
+                            }
+                        }
+
+                        if (hasNoFilteredProducts) {
+                            item("empty_filter") {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 24.dp, vertical = 48.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Search,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(36.dp)
+                                    )
+                                    Text(
+                                        "Aucun produit trouvé",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        "Changez de filtre ou revenez à Tous.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -544,6 +580,7 @@ fun ProductCard(
     isSelectionMode: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    onEdit: (() -> Unit)? = null,
     onConsume: (() -> Unit)? = null,
     onThrow: (() -> Unit)? = null
 ) {
@@ -752,6 +789,16 @@ fun ProductCard(
                                     expanded = showMenu,
                                     onDismissRequest = { showMenu = false }
                                 ) {
+                                    if (onEdit != null) {
+                                        DropdownMenuItem(
+                                            text = { Text("Modifier") },
+                                            onClick = { showMenu = false; onEdit() },
+                                            leadingIcon = {
+                                                Icon(Icons.Default.Edit, null,
+                                                    modifier = Modifier.size(18.dp))
+                                            }
+                                        )
+                                    }
                                     if (onConsume != null) {
                                         DropdownMenuItem(
                                             text = { Text("Marquer consommé") },

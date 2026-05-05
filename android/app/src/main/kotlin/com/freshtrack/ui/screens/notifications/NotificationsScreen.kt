@@ -5,6 +5,7 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,10 +14,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -43,7 +53,13 @@ fun NotificationsScreen(
     val expiredProducts by vm.expiredProducts.collectAsState()
     val soonProducts by vm.soonProducts.collectAsState()
     var filter by remember { mutableStateOf(AlertFilter.ALL) }
+    var settingsOpen by remember { mutableStateOf(false) }
     val alertCount = expiredProducts.size + soonProducts.size
+    val filteredCount = when (filter) {
+        AlertFilter.ALL -> alertCount
+        AlertFilter.EXPIRED -> expiredProducts.size
+        AlertFilter.SOON -> soonProducts.size
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -56,55 +72,75 @@ fun NotificationsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
-                Text(
-                    "Alertes d'expiration",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    formatHeaderSubtitle(expiredProducts.size, soonProducts.size),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier.size(44.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text("Alertes", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text(
+                            formatHeaderSubtitle(expiredProducts.size, soonProducts.size),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
 
             item {
-                HorizontalDivider()
-
-                Row(
-                    Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                 ) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Activer les notifications", fontWeight = FontWeight.Medium)
-                        Text("Recevoir des alertes avant l'expiration",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Switch(
-                        checked = settings.enabled,
-                        onCheckedChange = { checked ->
-                            if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                            } else {
-                                vm.setEnabled(checked)
+                    Column(Modifier.fillMaxWidth().padding(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Notifications push", fontWeight = FontWeight.Bold)
+                                Text(
+                                    if (settings.enabled) "Activées · rappel ${settings.days}j" else "En pause",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = settings.enabled,
+                                onCheckedChange = { checked ->
+                                    if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    } else {
+                                        vm.setEnabled(checked)
+                                    }
+                                }
+                            )
+                            IconButton(onClick = { settingsOpen = !settingsOpen }) {
+                                Icon(
+                                    if (settingsOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = if (settingsOpen) "Replier" else "Déplier"
+                                )
                             }
                         }
-                    )
-                }
 
-                HorizontalDivider()
-
-                if (settings.enabled) {
-                    Spacer(Modifier.height(16.dp))
-                    Text("Rappel avant expiration", fontWeight = FontWeight.Medium)
-                    Spacer(Modifier.height(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(1, 3, 7).forEach { option ->
-                            FilterChip(
-                                selected = settings.days == option,
-                                onClick = { vm.setDays(option) },
-                                label = { Text(if (option == 1) "1 jour" else "$option jours") }
+                        if (settingsOpen && settings.enabled) {
+                            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+                            Text("Rappel avant expiration", fontWeight = FontWeight.Medium)
+                            Spacer(Modifier.height(6.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                listOf(1, 3, 7).forEach { option ->
+                                    FilterChip(
+                                        selected = settings.days == option,
+                                        onClick = { vm.setDays(option) },
+                                        label = { Text(if (option == 1) "1 jour" else "$option jours") }
+                                    )
+                                }
+                            }
+                        } else if (settingsOpen) {
+                            Text(
+                                "Activez les notifications pour recevoir un rappel avant expiration.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -133,17 +169,17 @@ fun NotificationsScreen(
 
             if (alertCount == 0) {
                 item {
-                    Column(
-                        Modifier.fillMaxWidth().padding(vertical = 40.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text("Tout est sous contrôle", fontWeight = FontWeight.Bold)
-                        Text(
-                            "Aucun produit n'est périmé ou proche de sa date limite.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    EmptyAlertState(
+                        title = "Tout est sous contrôle",
+                        subtitle = "Aucun produit n'est périmé ou proche de sa date limite."
+                    )
+                }
+            } else if (filteredCount == 0) {
+                item {
+                    EmptyAlertState(
+                        title = "Aucun produit pour ce filtre",
+                        subtitle = "Changez de filtre ou revenez à Tout."
+                    )
                 }
             }
 
@@ -184,6 +220,27 @@ fun NotificationsScreen(
 }
 
 private enum class AlertFilter { ALL, EXPIRED, SOON }
+
+@Composable
+private fun EmptyAlertState(title: String, subtitle: String) {
+    Column(
+        Modifier.fillMaxWidth().padding(vertical = 40.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(
+            if (title.startsWith("Tout")) Icons.Default.CheckCircle else Icons.Default.Notifications,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(title, fontWeight = FontWeight.Bold)
+        Text(
+            subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
 
 private fun formatHeaderSubtitle(expiredCount: Int, soonCount: Int): String = when {
     expiredCount > 0 && soonCount > 0 -> "$expiredCount périmé(s) · $soonCount bientôt"

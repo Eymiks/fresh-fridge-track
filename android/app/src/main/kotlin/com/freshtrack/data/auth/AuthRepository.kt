@@ -11,9 +11,11 @@ import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -38,12 +40,15 @@ class AuthRepository @Inject constructor(
     private val supabase: SupabaseClient,
     private val prefs: AppPreferences
 ) {
+    private val refreshToken = MutableStateFlow(0)
+
     val sessionStatus: Flow<SessionStatus> get() = supabase.auth.sessionStatus
 
     val authState: Flow<AuthState> = combine(
         supabase.auth.sessionStatus,
-        prefs.isGuestMode
-    ) { session, isGuest ->
+        prefs.isGuestMode,
+        refreshToken
+    ) { session, isGuest, _ ->
         when {
             isGuest -> AuthState.Guest
             session is SessionStatus.Authenticated -> {
@@ -124,6 +129,8 @@ class AuthRepository @Inject constructor(
 
     suspend fun refreshHousehold(): Pair<Household?, List<Member>> {
         val userId = currentUserId() ?: return null to emptyList()
-        return loadHouseholdData(userId)
+        val data = loadHouseholdData(userId)
+        refreshToken.update { it + 1 }
+        return data
     }
 }

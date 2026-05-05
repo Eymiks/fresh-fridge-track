@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.freshtrack.data.auth.AuthRepository
 import com.freshtrack.data.auth.AuthState
 import com.freshtrack.data.products.ProductRepository
+import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.usecase.StatsResult
 import com.freshtrack.domain.usecase.StatsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -16,6 +18,7 @@ import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
+@OptIn(ExperimentalCoroutinesApi::class)
 class StatsViewModel @Inject constructor(
     authRepository: AuthRepository,
     productRepository: ProductRepository,
@@ -25,15 +28,16 @@ class StatsViewModel @Inject constructor(
     private val authState = authRepository.authState
         .stateIn(viewModelScope, SharingStarted.Eagerly, AuthState.Loading)
 
-    val stats = authState.flatMapLatest { state ->
-        if (state is AuthState.Authenticated && state.household != null) {
-            productRepository.observeProducts(state.household.id, state.members)
-                .map { products -> statsUseCase.compute(products) }
-        } else if (state is AuthState.Guest) {
-            productRepository.observeGuestProducts()
-                .map { products -> statsUseCase.compute(products) }
-        } else {
-            flowOf(null)
+    val products = authState.flatMapLatest { state ->
+        when {
+            state is AuthState.Authenticated && state.household != null ->
+                productRepository.observeProducts(state.household.id, state.members)
+            state is AuthState.Guest -> productRepository.observeGuestProducts()
+            else -> flowOf(emptyList())
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList<Product>())
+
+    val stats = products
+        .map { products -> statsUseCase.compute(products) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 }

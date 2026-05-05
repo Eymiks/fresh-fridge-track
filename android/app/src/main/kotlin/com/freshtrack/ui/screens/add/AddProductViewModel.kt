@@ -7,6 +7,9 @@ import com.freshtrack.data.auth.AuthRepository
 import com.freshtrack.data.auth.AuthState
 import com.freshtrack.data.openfoodfacts.OffApi
 import com.freshtrack.data.products.ProductRepository
+import com.freshtrack.domain.format.formatDate
+import com.freshtrack.domain.format.normalizeDateInput
+import com.freshtrack.domain.format.parseUserDate
 import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.model.ProductStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,7 +23,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
-import kotlinx.datetime.LocalDate
 import javax.inject.Inject
 
 data class AddProductUiState(
@@ -108,8 +110,8 @@ class AddProductViewModel @Inject constructor(
                     category = product.category ?: "autre",
                     subcategory = product.subcategory.orEmpty(),
                     quantity = product.quantity.orEmpty(),
-                    expirationDate = product.expirationDate.toString(),
-                    frozenUntil = product.frozenUntil?.toString().orEmpty(),
+                    expirationDate = formatDate(product.expirationDate).orEmpty(),
+                    frozenUntil = formatDate(product.frozenUntil).orEmpty(),
                     imageUrl = product.imageUrl.orEmpty(),
                     nutriScore = product.nutriScore.orEmpty(),
                     novaGroup = product.novaGroup?.toString().orEmpty(),
@@ -131,6 +133,12 @@ class AddProductViewModel @Inject constructor(
         _ui.update { it.copy(isLoadingBarcode = true, barcode = barcode) }
         val product = offApi.fetchByBarcode(barcode)
         if (product != null) {
+            val fallbackImage = if (product.imageUrl.isNullOrBlank()) {
+                val householdId = (authState.value as? AuthState.Authenticated)?.household?.id
+                householdId?.let { productRepository.findExistingImageForBarcode(it, barcode) }
+            } else {
+                null
+            }
             _ui.update {
                 it.copy(
                     isLoadingBarcode = false,
@@ -138,7 +146,7 @@ class AddProductViewModel @Inject constructor(
                     brand = product.brand ?: it.brand,
                     category = product.category ?: it.category,
                     subcategory = product.subcategory ?: it.subcategory,
-                    imageUrl = product.imageUrl ?: it.imageUrl,
+                    imageUrl = product.imageUrl ?: fallbackImage ?: it.imageUrl,
                     quantity = product.quantity ?: it.quantity,
                     nutriScore = product.nutriScore ?: it.nutriScore,
                     novaGroup = product.novaGroup?.toString() ?: it.novaGroup,
@@ -153,7 +161,7 @@ class AddProductViewModel @Inject constructor(
         }
     }
 
-    fun setExpirationDate(date: String) = _ui.update { it.copy(expirationDate = date) }
+    fun setExpirationDate(date: String) = _ui.update { it.copy(expirationDate = normalizeDateInput(date)) }
     fun setName(v: String) = _ui.update { it.copy(name = v) }
     fun setBrand(v: String) = _ui.update { it.copy(brand = v) }
     fun setCategory(v: String) = _ui.update { it.copy(category = v) }
@@ -162,9 +170,15 @@ class AddProductViewModel @Inject constructor(
     fun setBarcode(v: String) = _ui.update { it.copy(barcode = v) }
     fun setImageUrl(v: String) = _ui.update { it.copy(imageUrl = v) }
     fun setNotes(v: String) = _ui.update { it.copy(notes = v) }
-    fun setFrozenUntil(v: String) = _ui.update { it.copy(frozenUntil = v) }
+    fun setFrozenUntil(v: String) = _ui.update { it.copy(frozenUntil = normalizeDateInput(v)) }
     fun setOpened(v: Boolean) = _ui.update { it.copy(isOpened = v) }
     fun setDaysAfterOpening(v: String) = _ui.update { it.copy(daysAfterOpening = v) }
+    fun setNutriScore(v: String) = _ui.update { it.copy(nutriScore = v.uppercase().take(1)) }
+    fun setNovaGroup(v: String) = _ui.update { it.copy(novaGroup = v.filter { ch -> ch.isDigit() }.take(1)) }
+    fun setEcoScore(v: String) = _ui.update { it.copy(ecoScore = v.uppercase().take(1)) }
+    fun setAllergens(v: String) = _ui.update { it.copy(allergens = v) }
+    fun setIngredients(v: String) = _ui.update { it.copy(ingredients = v) }
+    fun setNutritionData(v: String) = _ui.update { it.copy(nutritionData = v) }
 
     fun uploadImage(bytes: ByteArray, ext: String) = viewModelScope.launch {
         val auth = authState.value as? AuthState.Authenticated ?: run {
@@ -185,16 +199,16 @@ class AddProductViewModel @Inject constructor(
     fun save(onSaved: () -> Unit) = viewModelScope.launch {
         val state = _ui.value
 
-        val expDate = runCatching { LocalDate.parse(state.expirationDate) }.getOrNull() ?: run {
-            _ui.update { it.copy(error = "Date invalide (format : AAAA-MM-JJ)") }; return@launch
+        val expDate = parseUserDate(state.expirationDate) ?: run {
+            _ui.update { it.copy(error = "Date invalide (format : JJ/MM/AAAA)") }; return@launch
         }
 
         _ui.update { it.copy(isSaving = true, error = null) }
 
         val existing = editingProduct
         val frozenUntil = state.frozenUntil.takeIf { it.isNotBlank() }?.let {
-            runCatching { LocalDate.parse(it) }.getOrNull() ?: run {
-                _ui.update { current -> current.copy(error = "Date de congélation invalide (format : AAAA-MM-JJ)") }
+            parseUserDate(it) ?: run {
+                _ui.update { current -> current.copy(error = "Date de congélation invalide (format : JJ/MM/AAAA)") }
                 return@launch
             }
         }

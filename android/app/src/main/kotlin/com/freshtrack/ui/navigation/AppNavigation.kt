@@ -160,7 +160,8 @@ private fun MainScreen(rootNavController: androidx.navigation.NavController) {
                 IndexScreen(
                     onProductClick = { id -> rootNavController.navigate(Routes.productDetail(id)) },
                     onScanClick = { rootNavController.navigate(Routes.BARCODE_SCANNER) },
-                    onSettingsClick = { rootNavController.navigate(Routes.SETTINGS) }
+                    onSettingsClick = { rootNavController.navigate(Routes.SETTINGS) },
+                    onEditProduct = { id -> rootNavController.navigate(Routes.editProduct(id)) }
                 )
             }
             composable(Routes.STATS) { StatsScreen() }

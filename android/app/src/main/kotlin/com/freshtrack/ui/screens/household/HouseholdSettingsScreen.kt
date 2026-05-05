@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonRemove
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,9 +37,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
+import com.freshtrack.domain.model.Member
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,10 +74,20 @@ fun HouseholdSettingsScreen(
     val ui by vm.ui.collectAsState()
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val myMember = members.firstOrNull { it.userId == vm.currentUserId }
     var myName by remember(myMember?.displayName) { mutableStateOf(myMember?.displayName ?: "") }
     var householdName by remember(household?.name) { mutableStateOf(household?.name ?: "") }
+    var memberToRemove by remember { mutableStateOf<Member?>(null) }
+    var showSignOutConfirm by remember { mutableStateOf(false) }
+    val isOwner = household?.createdBy == vm.currentUserId
+
+    LaunchedEffect(ui.successMessage, ui.error) {
+        val message = ui.successMessage ?: ui.error ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        vm.clearMessages()
+    }
 
     val avatarLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
@@ -85,6 +101,7 @@ fun HouseholdSettingsScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Mon foyer") },
@@ -191,12 +208,13 @@ fun HouseholdSettingsScreen(
                 onValueChange = { householdName = it },
                 label = { Text("Nom du foyer") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                enabled = isOwner
             )
             Spacer(Modifier.height(8.dp))
             Button(
                 onClick = { household?.let { vm.updateHouseholdName(it.id, householdName) } },
-                enabled = !ui.isLoading
+                enabled = isOwner && !ui.isLoading
             ) { Text("Renommer") }
 
             household?.let { hh ->
@@ -238,9 +256,16 @@ fun HouseholdSettingsScreen(
                     Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(member.displayName, modifier = Modifier.weight(1f))
-                    if (member.userId != vm.currentUserId) {
-                        IconButton(onClick = { vm.removeMember(member.id) }) {
+                    MemberAvatar(member, Modifier.size(36.dp))
+                    Spacer(Modifier.size(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(member.displayName, fontWeight = FontWeight.SemiBold)
+                        if (member.userId == vm.currentUserId) {
+                            Text("Moi", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                    if (isOwner && member.userId != vm.currentUserId) {
+                        IconButton(onClick = { memberToRemove = member }) {
                             Icon(Icons.Default.PersonRemove, "Retirer",
                                 tint = MaterialTheme.colorScheme.error)
                         }
@@ -251,20 +276,70 @@ fun HouseholdSettingsScreen(
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
 
             Button(
-                onClick = { vm.signOut() },
+                onClick = { showSignOutConfirm = true },
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !ui.isLoading
             ) { Text("Se déconnecter") }
+        }
+    }
 
-            if (ui.error != null) {
-                Spacer(Modifier.height(8.dp))
-                Text(ui.error!!, color = MaterialTheme.colorScheme.error)
-            }
-            if (ui.successMessage != null) {
-                Spacer(Modifier.height(8.dp))
-                Text(ui.successMessage!!, color = MaterialTheme.colorScheme.primary)
-            }
+    memberToRemove?.let { member ->
+        AlertDialog(
+            onDismissRequest = { memberToRemove = null },
+            title = { Text("Retirer ce membre ?") },
+            text = { Text("${member.displayName} pourra rejoindre le foyer à nouveau avec le code d'invitation.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        memberToRemove = null
+                        vm.removeMember(member.id)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Retirer") }
+            },
+            dismissButton = { TextButton(onClick = { memberToRemove = null }) { Text("Annuler") } }
+        )
+    }
+
+    if (showSignOutConfirm) {
+        AlertDialog(
+            onDismissRequest = { showSignOutConfirm = false },
+            title = { Text("Se déconnecter ?") },
+            text = { Text("Vous serez redirigé vers l'écran de connexion.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showSignOutConfirm = false
+                        vm.signOut()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Déconnexion") }
+            },
+            dismissButton = { TextButton(onClick = { showSignOutConfirm = false }) { Text("Annuler") } }
+        )
+    }
+}
+
+@Composable
+private fun MemberAvatar(member: Member, modifier: Modifier = Modifier) {
+    if (!member.avatarUrl.isNullOrBlank()) {
+        AsyncImage(
+            model = member.avatarUrl,
+            contentDescription = member.displayName,
+            contentScale = ContentScale.Crop,
+            modifier = modifier.clip(CircleShape)
+        )
+    } else {
+        Box(
+            modifier.clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                member.displayName.take(1).uppercase().ifBlank { "?" },
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                fontWeight = FontWeight.Black
+            )
         }
     }
 }

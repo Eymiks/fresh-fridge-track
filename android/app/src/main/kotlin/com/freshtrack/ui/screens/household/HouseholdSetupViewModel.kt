@@ -30,13 +30,19 @@ class HouseholdSetupViewModel @Inject constructor(
         }
         runCatching { householdRepository.createHousehold(name, userId, displayName.ifBlank { "Moi" }) }
             .onFailure { e -> _ui.update { it.copy(isLoading = false, error = e.message) } }
-            .onSuccess { _ui.update { it.copy(isLoading = false) } }
+            .onSuccess {
+                authRepository.refreshHousehold()
+                _ui.update { it.copy(isLoading = false) }
+            }
     }
 
     fun joinByCode(code: String, displayName: String) = viewModelScope.launch {
         _ui.update { it.copy(isLoading = true, error = null) }
         runCatching { householdRepository.joinByCode(code, displayName.ifBlank { "Moi" }) }
             .onFailure { e -> _ui.update { it.copy(isLoading = false, error = e.message) } }
-            .onSuccess { _ui.update { it.copy(isLoading = false) } }
+            .onSuccess {
+                authRepository.refreshHousehold()
+                _ui.update { it.copy(isLoading = false) }
+            }
     }
 }

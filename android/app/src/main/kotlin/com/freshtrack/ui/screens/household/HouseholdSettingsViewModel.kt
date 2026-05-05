@@ -46,26 +46,40 @@ class HouseholdSettingsViewModel @Inject constructor(
     fun updateDisplayName(memberId: String, name: String) = viewModelScope.launch {
         _ui.update { it.copy(isLoading = true) }
         runCatching { householdRepository.updateDisplayName(memberId, name) }
-            .onSuccess { _ui.update { it.copy(isLoading = false, successMessage = "Nom mis à jour") } }
+            .onSuccess {
+                authRepository.refreshHousehold()
+                _ui.update { it.copy(isLoading = false, successMessage = "Nom mis à jour") }
+            }
             .onFailure { e -> _ui.update { it.copy(isLoading = false, error = e.message) } }
     }
 
     fun updateHouseholdName(householdId: String, name: String) = viewModelScope.launch {
         _ui.update { it.copy(isLoading = true) }
         runCatching { householdRepository.updateHouseholdName(householdId, name) }
-            .onSuccess { _ui.update { it.copy(isLoading = false, successMessage = "Foyer mis à jour") } }
+            .onSuccess {
+                authRepository.refreshHousehold()
+                _ui.update { it.copy(isLoading = false, successMessage = "Foyer mis à jour") }
+            }
             .onFailure { e -> _ui.update { it.copy(isLoading = false, error = e.message) } }
     }
 
     fun removeMember(memberId: String) = viewModelScope.launch {
+        _ui.update { it.copy(isLoading = true) }
         runCatching { householdRepository.removeMember(memberId) }
-            .onFailure { e -> _ui.update { it.copy(error = e.message) } }
+            .onSuccess {
+                authRepository.refreshHousehold()
+                _ui.update { it.copy(isLoading = false, successMessage = "Membre retiré") }
+            }
+            .onFailure { e -> _ui.update { it.copy(isLoading = false, error = e.message) } }
     }
 
     fun uploadAvatar(householdId: String, userId: String, bytes: ByteArray, ext: String) = viewModelScope.launch {
         _ui.update { it.copy(isLoading = true) }
         runCatching { householdRepository.uploadAvatar(householdId, userId, bytes, ext) }
-            .onSuccess { _ui.update { it.copy(isLoading = false, successMessage = "Avatar mis à jour") } }
+            .onSuccess {
+                authRepository.refreshHousehold()
+                _ui.update { it.copy(isLoading = false, successMessage = "Avatar mis à jour") }
+            }
             .onFailure { e -> _ui.update { it.copy(isLoading = false, error = e.message) } }
     }
 
