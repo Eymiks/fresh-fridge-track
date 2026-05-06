@@ -5,6 +5,8 @@ import android.webkit.MimeTypeMap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +22,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -28,7 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.ExpandLess
@@ -36,6 +39,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -44,7 +48,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -53,7 +56,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -167,14 +169,43 @@ fun AddProductScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(screenTitle) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, "Retour")
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 1.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Surface(
+                        onClick = { navController.popBackStack() },
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.surfaceVariant
+                    ) {
+                        Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Retour")
+                        }
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            screenTitle,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            if (ui.isEditing) "Corrigez les informations utiles"
+                            else if (isMultiMode) "Vérifiez puis scannez le suivant"
+                            else "Renseignez l'essentiel, le reste peut attendre",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
-            )
+            }
         },
         bottomBar = {
             if (!ui.isLoadingBarcode && !ui.isLoadingProduct) {
@@ -224,6 +255,7 @@ fun AddProductScreen(
                     onValueChange = vm::setName,
                     label = { Text("Nom du produit *") },
                     modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
                     singleLine = true,
                     isError = ui.error != null && ui.name.isBlank()
                 )
@@ -240,14 +272,16 @@ fun AddProductScreen(
                         placeholder = { Text("JJ/MM/AAAA") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium,
                         singleLine = true,
                         isError = ui.error?.contains("Date") == true
                     )
-                    OutlinedButton(onClick = { showExpirationDatePicker = true }) {
+                    OutlinedButton(onClick = { showExpirationDatePicker = true }, shape = MaterialTheme.shapes.medium) {
                         Icon(Icons.Default.DateRange, contentDescription = "Choisir une date")
                     }
                     OutlinedButton(
-                        onClick = { navController.navigate(Routes.dateScanner(ui.barcode.ifBlank { "_" })) }
+                        onClick = { navController.navigate(Routes.dateScanner(ui.barcode.ifBlank { "_" })) },
+                        shape = MaterialTheme.shapes.medium
                     ) {
                         Icon(Icons.Default.CameraAlt, contentDescription = null)
                     }
@@ -266,6 +300,7 @@ fun AddProductScreen(
                             label = { Text("Catégorie") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
                             modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            shape = MaterialTheme.shapes.medium,
                             singleLine = true
                         )
                         ExposedDropdownMenu(
@@ -303,6 +338,7 @@ fun AddProductScreen(
                             label = { Text("Sous-cat.") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = subcategoryExpanded) },
                             modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            shape = MaterialTheme.shapes.medium,
                             singleLine = true
                         )
                         ExposedDropdownMenu(
@@ -335,6 +371,7 @@ fun AddProductScreen(
                         onValueChange = vm::setQuantity,
                         label = { Text("Quantité") },
                         modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium,
                         singleLine = true
                     )
                     OutlinedTextField(
@@ -342,6 +379,7 @@ fun AddProductScreen(
                         onValueChange = vm::setBrand,
                         label = { Text("Marque") },
                         modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium,
                         singleLine = true
                     )
                 }
@@ -357,11 +395,13 @@ fun AddProductScreen(
                         label = { Text("Code-barres") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium,
                         singleLine = true
                     )
                     OutlinedButton(
                         onClick = { vm.lookupBarcode(ui.barcode) },
-                        enabled = ui.barcode.isNotBlank()
+                        enabled = ui.barcode.isNotBlank(),
+                        shape = MaterialTheme.shapes.medium
                     ) {
                         Text("OK")
                     }
@@ -373,9 +413,28 @@ fun AddProductScreen(
                     AsyncImage(
                         model = ui.imageUrl,
                         contentDescription = null,
-                        modifier = Modifier.fillMaxWidth().height(140.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(140.dp)
+                            .clip(MaterialTheme.shapes.large),
                         contentScale = ContentScale.Crop
                     )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(112.dp)
+                            .clip(MaterialTheme.shapes.large)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Image,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                            modifier = Modifier.size(34.dp)
+                        )
+                    }
                 }
                 Row(
                     Modifier.fillMaxWidth(),
@@ -385,7 +444,8 @@ fun AddProductScreen(
                     OutlinedButton(
                         onClick = { imagePicker.launch(arrayOf("image/*")) },
                         modifier = Modifier.weight(1f),
-                        enabled = !ui.isUploadingImage
+                        enabled = !ui.isUploadingImage,
+                        shape = MaterialTheme.shapes.medium
                     ) {
                         Icon(Icons.Default.Image, contentDescription = null)
                         Text(if (ui.isUploadingImage) "Envoi…" else "Choisir une image")
@@ -399,6 +459,7 @@ fun AddProductScreen(
                     onValueChange = vm::setImageUrl,
                     label = { Text("Image produit (URL)") },
                     modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
                     singleLine = true
                 )
             }
@@ -415,6 +476,7 @@ fun AddProductScreen(
                     placeholder = { Text("JJ/MM/AAAA") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
                     singleLine = true,
                     isError = ui.error?.contains("congélation", ignoreCase = true) == true
                 )
@@ -442,6 +504,7 @@ fun AddProductScreen(
                         label = { Text("Jours après ouverture") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium,
                         singleLine = true
                     )
                 }
@@ -457,6 +520,7 @@ fun AddProductScreen(
                     onValueChange = vm::setNotes,
                     label = { Text("Notes") },
                     modifier = Modifier.fillMaxWidth().height(100.dp),
+                    shape = MaterialTheme.shapes.medium,
                     maxLines = 4
                 )
 
@@ -471,6 +535,7 @@ fun AddProductScreen(
                         label = { Text("Nutri") },
                         placeholder = { Text("A-E") },
                         modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium,
                         singleLine = true
                     )
                     OutlinedTextField(
@@ -480,6 +545,7 @@ fun AddProductScreen(
                         placeholder = { Text("1-4") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium,
                         singleLine = true
                     )
                     OutlinedTextField(
@@ -488,6 +554,7 @@ fun AddProductScreen(
                         label = { Text("Eco") },
                         placeholder = { Text("A-E") },
                         modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium,
                         singleLine = true
                     )
                 }
@@ -498,6 +565,7 @@ fun AddProductScreen(
                     label = { Text("Allergènes") },
                     placeholder = { Text("Ex: Lait, gluten") },
                     modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
                     singleLine = true
                 )
 
@@ -506,6 +574,7 @@ fun AddProductScreen(
                     onValueChange = vm::setIngredients,
                     label = { Text("Ingrédients") },
                     modifier = Modifier.fillMaxWidth().height(100.dp),
+                    shape = MaterialTheme.shapes.medium,
                     maxLines = 4
                 )
 
@@ -515,6 +584,7 @@ fun AddProductScreen(
                     label = { Text("Données nutritionnelles JSON") },
                     placeholder = { Text("""{"energy_kcal":120,"proteins":4}""") },
                     modifier = Modifier.fillMaxWidth().height(90.dp),
+                    shape = MaterialTheme.shapes.medium,
                     maxLines = 3
                 )
             }
@@ -556,8 +626,14 @@ private fun CompactFormSection(
     onToggle: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = MaterialTheme.shapes.large
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -566,8 +642,9 @@ private fun CompactFormSection(
             ) {
                 Text(
                     title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 if (onToggle != null) {
@@ -633,17 +710,19 @@ private fun AddProductBottomBar(
         modifier = Modifier
             .navigationBarsPadding()
             .imePadding(),
-        tonalElevation = 3.dp
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+        shadowElevation = 6.dp
     ) {
         Column(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (isMultiMode && !ui.isEditing) {
                 Button(
                     onClick = onSaveAndScanNext,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = canSave
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    enabled = canSave,
+                    shape = MaterialTheme.shapes.large
                 ) {
                     SaveProgressLabel(
                         isSaving = ui.isSaving,
@@ -660,8 +739,9 @@ private fun AddProductBottomBar(
             } else {
                 Button(
                     onClick = onSave,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = canSave
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    enabled = canSave,
+                    shape = MaterialTheme.shapes.large
                 ) {
                     SaveProgressLabel(
                         isSaving = ui.isSaving,
