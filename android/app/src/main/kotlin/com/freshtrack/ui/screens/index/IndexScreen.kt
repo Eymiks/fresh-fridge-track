@@ -798,10 +798,9 @@ fun ProductCard(
     }
     val daysLabel = remember(daysLeft) {
         when {
-            daysLeft < 0 -> "Périmé depuis ${-daysLeft}j"
-            daysLeft == 0 -> "Expire aujourd'hui"
-            daysLeft == 1 -> "Expire demain"
-            else -> "Expire dans ${daysLeft}j"
+            daysLeft < 0 -> "${-daysLeft}j"
+            daysLeft == 0 -> "Auj."
+            else -> "${daysLeft}j"
         }
     }
     val imageRequest: ImageRequest? = remember(product.imageUrl) {
@@ -833,7 +832,7 @@ fun ProductCard(
 
     SwipeToDismissBox(
         state = dismissState,
-        modifier = Modifier.padding(horizontal = 12.dp, vertical = verticalPadding),
+        modifier = Modifier.padding(horizontal = 20.dp, vertical = verticalPadding),
         enableDismissFromStartToEnd = !isSelectionMode && onConsume != null,
         enableDismissFromEndToStart = !isSelectionMode && onThrow != null,
         backgroundContent = {
@@ -888,7 +887,7 @@ fun ProductCard(
                         )
                     }
                     .padding(start = 4.dp)
-                    .padding(horizontal = 10.dp, vertical = 10.dp),
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (isSelectionMode) {
@@ -896,50 +895,51 @@ fun ProductCard(
                     Spacer(Modifier.width(4.dp))
                 }
 
-                if (imageRequest != null) {
-                    // Image + frozen badge overlay (L1)
-                    Box(contentAlignment = Alignment.TopEnd) {
+                Box(contentAlignment = Alignment.TopEnd) {
+                    if (imageRequest != null) {
                         AsyncImage(
                             model = imageRequest,
                             contentDescription = null,
-                            modifier = Modifier.size(52.dp).clip(MaterialTheme.shapes.small),
+                            modifier = Modifier.size(48.dp).clip(MaterialTheme.shapes.small),
                             contentScale = ContentScale.Crop
                         )
-                        if (product.frozenUntil != null) {
-                            Box(
-                                Modifier.size(18.dp)
-                                    .clip(MaterialTheme.shapes.extraSmall)
-                                    .background(Color(0xFF0288D1)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Default.AcUnit,
-                                    contentDescription = "Congelé",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(12.dp)
-                                )
-                            }
+                    } else {
+                        Box(
+                            Modifier.size(48.dp)
+                                .clip(MaterialTheme.shapes.small)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.AcUnit,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
                     }
-                    Spacer(Modifier.width(10.dp))
-                } else if (product.frozenUntil != null) {
-                    // No image but frozen — show standalone badge
-                    Box(
-                        Modifier.size(52.dp)
-                            .clip(MaterialTheme.shapes.small)
-                            .background(Color(0xFF0288D1).copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.AcUnit, contentDescription = null,
-                            tint = Color(0xFF0288D1), modifier = Modifier.size(28.dp))
+                    if (product.frozenUntil != null) {
+                        Box(
+                            Modifier.size(18.dp)
+                                .clip(MaterialTheme.shapes.extraSmall)
+                                .background(Color(0xFF0288D1)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.AcUnit,
+                                contentDescription = "Congelé",
+                                tint = Color.White,
+                                modifier = Modifier.size(12.dp)
+                            )
+                        }
                     }
-                    Spacer(Modifier.width(10.dp))
                 }
+                Spacer(Modifier.width(10.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         product.name,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1
                     )
@@ -998,12 +998,19 @@ fun ProductCard(
                 }
 
                 Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = daysLabel,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = statusColor,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(statusColor)
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = daysLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                     // Context menu (M9)
                     if (!isSelectionMode) {
                         Box {
