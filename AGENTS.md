@@ -188,6 +188,13 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - `MainScreen` et la barre batch de `IndexScreen` appliquent aussi `navigationBarsPadding()` sur leurs barres basses.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 7 : fluidité accueil**
+- Issue GitHub `Android` reprise : #3 `Scroll accueil saccadé`.
+- `IndexScreen` ajoute des `contentType` stables aux items de la `LazyColumn` et stabilise les callbacks produit par `remember(product.id, ...)`.
+- `ProductCard` mémorise les calculs de statut/date et utilise un `ImageRequest` Coil stable sur une image contrainte à 52dp, sans activer de crossfade.
+- Les animations de l'état vide et du FAB bubble menu respectent `reduceMotion`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

@@ -80,10 +80,12 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import com.freshtrack.domain.catalog.PRODUCT_CATEGORIES
 import com.freshtrack.domain.model.ExpirationStatus
 import com.freshtrack.domain.model.Product
@@ -111,6 +113,7 @@ fun IndexScreen(
     val groups by vm.groups.collectAsState()
     val totalCounts by vm.totalCounts.collectAsState()
     val products by vm.products.collectAsState()
+    val reduceMotion = LocalAppearance.current.reduceMotion
 
     var searchActive by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
@@ -209,6 +212,7 @@ fun IndexScreen(
             if (!ui.isSelectionMode) {
                 FabBubbleMenu(
                     expanded = fabExpanded,
+                    reduceMotion = reduceMotion,
                     onToggle = { fabExpanded = !fabExpanded },
                     onSingleProduct = { fabExpanded = false; onScanClick() },
                     onMultiProduct = { fabExpanded = false; onMultiScanClick() }
@@ -247,37 +251,26 @@ fun IndexScreen(
             when {
                 isInitialLoading -> {
                     LazyColumn(Modifier.fillMaxSize()) {
-                        items(6) { ProductCardSkeleton() }
+                        items(6, contentType = { "skeleton" }) { ProductCardSkeleton() }
                     }
                 }
                 hasNoActiveProducts -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        AnimatedVisibility(
-                            visible = true,
-                            enter = fadeIn(tween(400)) + scaleIn(tween(400), initialScale = 0.8f)
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                        if (reduceMotion) {
+                            EmptyFridgeState()
+                        } else {
+                            AnimatedVisibility(
+                                visible = true,
+                                enter = fadeIn(tween(400)) + scaleIn(tween(400), initialScale = 0.8f)
                             ) {
-                                Text("🥗", style = MaterialTheme.typography.displayLarge)
-                                Text(
-                                    "Votre frigo est vide",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    "Appuyez sur + pour ajouter un produit",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                EmptyFridgeState()
                             }
                         }
                     }
                 }
                 else -> {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        item("stat_cards") {
+                        item(key = "stat_cards", contentType = "stat_cards") {
                             StatCardsRow(
                                 expiredCount = totalCounts.expired,
                                 soonCount = totalCounts.soon,
@@ -288,11 +281,13 @@ fun IndexScreen(
                         }
 
                         if (totalCounts.expired > 0 && ui.statusFilter == StatusFilter.ALL) {
-                            item("alert_banner") { AlertBanner(totalCounts.expired) }
+                            item(key = "alert_banner", contentType = "alert_banner") {
+                                AlertBanner(totalCounts.expired)
+                            }
                         }
 
                         if (groups.expired.isNotEmpty()) {
-                            stickyHeader("header_expired") {
+                            stickyHeader(key = "header_expired", contentType = "section_header") {
                                 CollapsibleSectionHeader(
                                     title = "⚠ Périmés (${groups.expired.size})",
                                     color = ColorExpired,
@@ -301,26 +296,38 @@ fun IndexScreen(
                                 )
                             }
                             if (!expiredCollapsed) {
-                                items(groups.expired, key = { it.id }) { product ->
+                                items(groups.expired, key = { it.id }, contentType = { "product" }) { product ->
+                                    val productId = product.id
+                                    val productClick = remember(productId, ui.isSelectionMode) {
+                                        {
+                                            if (ui.isSelectionMode) vm.toggleSelection(productId)
+                                            else onProductClick(productId)
+                                        }
+                                    }
+                                    val longClick = remember(productId) { { vm.enterSelectionMode(productId) } }
+                                    val editClick = remember(productId) { { onEditProduct(productId) } }
+                                    val consumeClick = remember(productId) {
+                                        { vm.quickSetStatus(productId, ProductStatus.CONSUMED); Unit }
+                                    }
+                                    val throwClick = remember(productId) {
+                                        { vm.quickSetStatus(productId, ProductStatus.THROWN); Unit }
+                                    }
                                     ProductCard(
                                         product = product,
-                                        isSelected = product.id in ui.selectedIds,
+                                        isSelected = productId in ui.selectedIds,
                                         isSelectionMode = ui.isSelectionMode,
-                                        onClick = {
-                                            if (ui.isSelectionMode) vm.toggleSelection(product.id)
-                                            else onProductClick(product.id)
-                                        },
-                                        onLongClick = { vm.enterSelectionMode(product.id) },
-                                        onEdit = { onEditProduct(product.id) },
-                                        onConsume = { vm.quickSetStatus(product.id, ProductStatus.CONSUMED) },
-                                        onThrow = { vm.quickSetStatus(product.id, ProductStatus.THROWN) }
+                                        onClick = productClick,
+                                        onLongClick = longClick,
+                                        onEdit = editClick,
+                                        onConsume = consumeClick,
+                                        onThrow = throwClick
                                     )
                                 }
                             }
                         }
 
                         if (groups.soon.isNotEmpty()) {
-                            stickyHeader("header_soon") {
+                            stickyHeader(key = "header_soon", contentType = "section_header") {
                                 CollapsibleSectionHeader(
                                     title = "⏰ Bientôt périmés (${groups.soon.size})",
                                     color = ColorSoon,
@@ -329,26 +336,38 @@ fun IndexScreen(
                                 )
                             }
                             if (!soonCollapsed) {
-                                items(groups.soon, key = { it.id }) { product ->
+                                items(groups.soon, key = { it.id }, contentType = { "product" }) { product ->
+                                    val productId = product.id
+                                    val productClick = remember(productId, ui.isSelectionMode) {
+                                        {
+                                            if (ui.isSelectionMode) vm.toggleSelection(productId)
+                                            else onProductClick(productId)
+                                        }
+                                    }
+                                    val longClick = remember(productId) { { vm.enterSelectionMode(productId) } }
+                                    val editClick = remember(productId) { { onEditProduct(productId) } }
+                                    val consumeClick = remember(productId) {
+                                        { vm.quickSetStatus(productId, ProductStatus.CONSUMED); Unit }
+                                    }
+                                    val throwClick = remember(productId) {
+                                        { vm.quickSetStatus(productId, ProductStatus.THROWN); Unit }
+                                    }
                                     ProductCard(
                                         product = product,
-                                        isSelected = product.id in ui.selectedIds,
+                                        isSelected = productId in ui.selectedIds,
                                         isSelectionMode = ui.isSelectionMode,
-                                        onClick = {
-                                            if (ui.isSelectionMode) vm.toggleSelection(product.id)
-                                            else onProductClick(product.id)
-                                        },
-                                        onLongClick = { vm.enterSelectionMode(product.id) },
-                                        onEdit = { onEditProduct(product.id) },
-                                        onConsume = { vm.quickSetStatus(product.id, ProductStatus.CONSUMED) },
-                                        onThrow = { vm.quickSetStatus(product.id, ProductStatus.THROWN) }
+                                        onClick = productClick,
+                                        onLongClick = longClick,
+                                        onEdit = editClick,
+                                        onConsume = consumeClick,
+                                        onThrow = throwClick
                                     )
                                 }
                             }
                         }
 
                         if (groups.fresh.isNotEmpty()) {
-                            stickyHeader("header_fresh") {
+                            stickyHeader(key = "header_fresh", contentType = "section_header") {
                                 CollapsibleSectionHeader(
                                     title = "✓ Frais (${groups.fresh.size})",
                                     color = ColorFresh,
@@ -357,26 +376,38 @@ fun IndexScreen(
                                 )
                             }
                             if (!freshCollapsed) {
-                                items(groups.fresh, key = { it.id }) { product ->
+                                items(groups.fresh, key = { it.id }, contentType = { "product" }) { product ->
+                                    val productId = product.id
+                                    val productClick = remember(productId, ui.isSelectionMode) {
+                                        {
+                                            if (ui.isSelectionMode) vm.toggleSelection(productId)
+                                            else onProductClick(productId)
+                                        }
+                                    }
+                                    val longClick = remember(productId) { { vm.enterSelectionMode(productId) } }
+                                    val editClick = remember(productId) { { onEditProduct(productId) } }
+                                    val consumeClick = remember(productId) {
+                                        { vm.quickSetStatus(productId, ProductStatus.CONSUMED); Unit }
+                                    }
+                                    val throwClick = remember(productId) {
+                                        { vm.quickSetStatus(productId, ProductStatus.THROWN); Unit }
+                                    }
                                     ProductCard(
                                         product = product,
-                                        isSelected = product.id in ui.selectedIds,
+                                        isSelected = productId in ui.selectedIds,
                                         isSelectionMode = ui.isSelectionMode,
-                                        onClick = {
-                                            if (ui.isSelectionMode) vm.toggleSelection(product.id)
-                                            else onProductClick(product.id)
-                                        },
-                                        onLongClick = { vm.enterSelectionMode(product.id) },
-                                        onEdit = { onEditProduct(product.id) },
-                                        onConsume = { vm.quickSetStatus(product.id, ProductStatus.CONSUMED) },
-                                        onThrow = { vm.quickSetStatus(product.id, ProductStatus.THROWN) }
+                                        onClick = productClick,
+                                        onLongClick = longClick,
+                                        onEdit = editClick,
+                                        onConsume = consumeClick,
+                                        onThrow = throwClick
                                     )
                                 }
                             }
                         }
 
                         if (hasNoFilteredProducts) {
-                            item("empty_filter") {
+                            item(key = "empty_filter", contentType = "empty_state") {
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -404,11 +435,31 @@ fun IndexScreen(
                             }
                         }
 
-                        item { Spacer(Modifier.height(80.dp)) }
+                        item(key = "bottom_spacer", contentType = "spacer") { Spacer(Modifier.height(80.dp)) }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun EmptyFridgeState() {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text("🥗", style = MaterialTheme.typography.displayLarge)
+        Text(
+            "Votre frigo est vide",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            "Appuyez sur + pour ajouter un produit",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -595,18 +646,42 @@ fun ProductCard(
     onConsume: (() -> Unit)? = null,
     onThrow: (() -> Unit)? = null
 ) {
-    val status = product.getExpirationStatus()
-    val daysLeft = product.getDaysUntilExpiration()
-    val statusColor = when (status) {
-        ExpirationStatus.EXPIRED -> ColorExpired
-        ExpirationStatus.SOON -> ColorSoon
-        ExpirationStatus.FRESH -> ColorFresh
+    val context = LocalContext.current
+    val status = remember(
+        product.status,
+        product.openedAt,
+        product.daysAfterOpening,
+        product.expirationDate,
+        product.frozenUntil
+    ) { product.getExpirationStatus() }
+    val daysLeft = remember(
+        product.status,
+        product.openedAt,
+        product.daysAfterOpening,
+        product.expirationDate,
+        product.frozenUntil
+    ) { product.getDaysUntilExpiration() }
+    val statusColor = remember(status) {
+        when (status) {
+            ExpirationStatus.EXPIRED -> ColorExpired
+            ExpirationStatus.SOON -> ColorSoon
+            ExpirationStatus.FRESH -> ColorFresh
+        }
     }
-    val daysLabel = when {
-        daysLeft < 0 -> "Périmé depuis ${-daysLeft}j"
-        daysLeft == 0 -> "Expire aujourd'hui"
-        daysLeft == 1 -> "Expire demain"
-        else -> "Expire dans ${daysLeft}j"
+    val daysLabel = remember(daysLeft) {
+        when {
+            daysLeft < 0 -> "Périmé depuis ${-daysLeft}j"
+            daysLeft == 0 -> "Expire aujourd'hui"
+            daysLeft == 1 -> "Expire demain"
+            else -> "Expire dans ${daysLeft}j"
+        }
+    }
+    val imageRequest: ImageRequest? = remember(product.imageUrl) {
+        product.imageUrl?.let { url ->
+            ImageRequest.Builder(context)
+                .data(url)
+                .build()
+        }
     }
 
     val density = LocalAppearance.current.density
@@ -691,11 +766,11 @@ fun ProductCard(
                     Spacer(Modifier.width(4.dp))
                 }
 
-                if (product.imageUrl != null) {
+                if (imageRequest != null) {
                     // Image + frozen badge overlay (L1)
                     Box(contentAlignment = Alignment.TopEnd) {
                         AsyncImage(
-                            model = product.imageUrl,
+                            model = imageRequest,
                             contentDescription = null,
                             modifier = Modifier.size(52.dp).clip(MaterialTheme.shapes.small),
                             contentScale = ContentScale.Crop
@@ -846,6 +921,7 @@ fun ProductCard(
 @Composable
 private fun FabBubbleMenu(
     expanded: Boolean,
+    reduceMotion: Boolean,
     onToggle: () -> Unit,
     onSingleProduct: () -> Unit,
     onMultiProduct: () -> Unit
@@ -854,47 +930,68 @@ private fun FabBubbleMenu(
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        AnimatedVisibility(
-            visible = expanded,
-            enter = fadeIn(spring(stiffness = Spring.StiffnessMedium)) +
-                    scaleIn(spring(stiffness = Spring.StiffnessMedium), initialScale = 0.7f),
-            exit = fadeOut(tween(150)) + scaleOut(tween(150), targetScale = 0.7f)
-        ) {
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+        if (reduceMotion) {
+            if (expanded) {
+                FabOptions(onMultiProduct = onMultiProduct, onSingleProduct = onSingleProduct)
+            }
+        } else {
+            AnimatedVisibility(
+                visible = expanded,
+                enter = fadeIn(spring(stiffness = Spring.StiffnessMedium)) +
+                        scaleIn(spring(stiffness = Spring.StiffnessMedium), initialScale = 0.7f),
+                exit = fadeOut(tween(150)) + scaleOut(tween(150), targetScale = 0.7f)
             ) {
-                BubbleOption(
-                    label = "Plusieurs produits",
-                    onClick = onMultiProduct,
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-                BubbleOption(
-                    label = "Un produit",
-                    onClick = onSingleProduct,
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                FabOptions(onMultiProduct = onMultiProduct, onSingleProduct = onSingleProduct)
             }
         }
 
         FloatingActionButton(onClick = onToggle) {
-            AnimatedVisibility(
-                visible = expanded,
-                enter = fadeIn(tween(100)) + scaleIn(tween(100)),
-                exit = fadeOut(tween(100)) + scaleOut(tween(100))
-            ) {
-                Icon(Icons.Default.Close, "Fermer")
-            }
-            AnimatedVisibility(
-                visible = !expanded,
-                enter = fadeIn(tween(100)) + scaleIn(tween(100)),
-                exit = fadeOut(tween(100)) + scaleOut(tween(100))
-            ) {
-                Icon(Icons.Default.Add, "Ajouter un produit")
+            if (reduceMotion) {
+                Icon(
+                    if (expanded) Icons.Default.Close else Icons.Default.Add,
+                    if (expanded) "Fermer" else "Ajouter un produit"
+                )
+            } else {
+                AnimatedVisibility(
+                    visible = expanded,
+                    enter = fadeIn(tween(100)) + scaleIn(tween(100)),
+                    exit = fadeOut(tween(100)) + scaleOut(tween(100))
+                ) {
+                    Icon(Icons.Default.Close, "Fermer")
+                }
+                AnimatedVisibility(
+                    visible = !expanded,
+                    enter = fadeIn(tween(100)) + scaleIn(tween(100)),
+                    exit = fadeOut(tween(100)) + scaleOut(tween(100))
+                ) {
+                    Icon(Icons.Default.Add, "Ajouter un produit")
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun FabOptions(
+    onMultiProduct: () -> Unit,
+    onSingleProduct: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.End,
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        BubbleOption(
+            label = "Plusieurs produits",
+            onClick = onMultiProduct,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+        )
+        BubbleOption(
+            label = "Un produit",
+            onClick = onSingleProduct,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
     }
 }
 
