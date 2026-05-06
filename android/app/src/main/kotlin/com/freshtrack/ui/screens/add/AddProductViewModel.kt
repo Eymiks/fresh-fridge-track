@@ -8,6 +8,8 @@ import com.freshtrack.data.auth.AuthState
 import com.freshtrack.data.openfoodfacts.OffApi
 import com.freshtrack.data.openfoodfacts.OffResult
 import com.freshtrack.data.products.ProductRepository
+import com.freshtrack.domain.catalog.matchCategory
+import com.freshtrack.domain.catalog.matchSubcategory
 import com.freshtrack.domain.format.formatDate
 import com.freshtrack.domain.format.normalizeDateInput
 import com.freshtrack.domain.format.parseUserDate
@@ -37,7 +39,7 @@ data class AddProductUiState(
     // Form fields
     val name: String = "",
     val brand: String = "",
-    val category: String = "autre",
+    val category: String = "",
     val subcategory: String = "",
     val quantity: String = "",
     val expirationDate: String = "",
@@ -110,7 +112,7 @@ class AddProductViewModel @Inject constructor(
                     isLoadingProduct = false,
                     name = product.name,
                     brand = product.brand.orEmpty(),
-                    category = product.category ?: "autre",
+                    category = product.category.orEmpty(),
                     subcategory = product.subcategory.orEmpty(),
                     quantity = product.quantity.orEmpty(),
                     expirationDate = formatDate(product.expirationDate).orEmpty(),
@@ -146,8 +148,8 @@ class AddProductViewModel @Inject constructor(
                     isLoadingBarcode = false,
                     name = product.name,
                     brand = product.brand ?: it.brand,
-                    category = product.category ?: it.category,
-                    subcategory = product.subcategory ?: it.subcategory,
+                    category = if (it.category.isBlank()) product.category.orEmpty() else it.category,
+                    subcategory = if (it.subcategory.isBlank()) product.subcategory.orEmpty() else it.subcategory,
                     imageUrl = fallbackImage ?: it.imageUrl,
                     quantity = product.quantity ?: it.quantity,
                     nutriScore = product.nutriScore ?: it.nutriScore,
@@ -171,7 +173,9 @@ class AddProductViewModel @Inject constructor(
     fun setExpirationDate(date: String) = _ui.update { it.copy(expirationDate = normalizeDateInput(date)) }
     fun setName(v: String) = _ui.update { it.copy(name = v) }
     fun setBrand(v: String) = _ui.update { it.copy(brand = v) }
-    fun setCategory(v: String) = _ui.update { it.copy(category = v) }
+    fun setCategory(v: String) = _ui.update {
+        if (it.category == v) it else it.copy(category = v, subcategory = "")
+    }
     fun setSubcategory(v: String) = _ui.update { it.copy(subcategory = v) }
     fun setQuantity(v: String) = _ui.update { it.copy(quantity = v) }
     fun setBarcode(v: String) = _ui.update { it.copy(barcode = v) }
@@ -233,6 +237,10 @@ class AddProductViewModel @Inject constructor(
             existing?.status == ProductStatus.THROWN -> ProductStatus.THROWN
             else -> ProductStatus.ACTIVE
         }
+        val finalCategory = state.category.takeIf { it.isNotBlank() }
+            ?: matchCategory(productName = state.name.trim())
+        val finalSubcategory = state.subcategory.takeIf { it.isNotBlank() }
+            ?: matchSubcategory(finalCategory, productName = state.name.trim())
 
         val product = Product(
             id = existing?.id.orEmpty(),
@@ -241,8 +249,8 @@ class AddProductViewModel @Inject constructor(
             expirationDate = expDate,
             addedAt = existing?.addedAt ?: Clock.System.now(),
             brand = state.brand.takeIf { it.isNotBlank() },
-            category = state.category,
-            subcategory = state.subcategory.takeIf { it.isNotBlank() },
+            category = finalCategory,
+            subcategory = finalSubcategory,
             quantity = state.quantity.takeIf { it.isNotBlank() },
             imageUrl = state.imageUrl.takeIf { it.isNotBlank() },
             nutriScore = state.nutriScore.takeIf { it.isNotBlank() },

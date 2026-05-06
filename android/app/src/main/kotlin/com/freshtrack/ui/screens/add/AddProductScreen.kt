@@ -73,6 +73,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.freshtrack.domain.catalog.PRODUCT_CATEGORIES
+import com.freshtrack.domain.catalog.matchCategory
 import com.freshtrack.domain.format.formatDate
 import com.freshtrack.domain.format.parseUserDate
 import com.freshtrack.ui.navigation.Routes
@@ -143,9 +144,16 @@ fun AddProductScreen(
     }
 
     var categoryExpanded by remember { mutableStateOf(false) }
+    var subcategoryExpanded by remember { mutableStateOf(false) }
     var showExpirationDatePicker by remember { mutableStateOf(false) }
     val categories = remember { PRODUCT_CATEGORIES.filter { it.key != "all" } }
+    val resolvedCategoryKey = remember(ui.category, ui.name) {
+        ui.category.ifBlank { matchCategory(productName = ui.name) }
+    }
     val currentCategory = categories.firstOrNull { it.key == ui.category }
+    val subcategoryOptions = remember(resolvedCategoryKey) {
+        categories.firstOrNull { it.key == resolvedCategoryKey }?.subcategories.orEmpty()
+    }
     val screenTitle = when {
         ui.isEditing -> "Modifier le produit"
         isMultiMode -> "Ajouter — mode chaîne"
@@ -231,7 +239,7 @@ fun AddProductScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedTextField(
-                    value = currentCategory?.label ?: ui.category,
+                    value = currentCategory?.label ?: "Automatique",
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Catégorie") },
@@ -242,6 +250,13 @@ fun AddProductScreen(
                     expanded = categoryExpanded,
                     onDismissRequest = { categoryExpanded = false }
                 ) {
+                    DropdownMenuItem(
+                        text = { Text("Automatique") },
+                        onClick = {
+                            vm.setCategory("")
+                            categoryExpanded = false
+                        }
+                    )
                     categories.forEach { cat ->
                         DropdownMenuItem(
                             text = { Text(cat.label) },
@@ -254,13 +269,42 @@ fun AddProductScreen(
                 }
             }
 
-            OutlinedTextField(
-                value = ui.subcategory,
-                onValueChange = vm::setSubcategory,
-                label = { Text("Sous-catégorie") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
+            ExposedDropdownMenuBox(
+                expanded = subcategoryExpanded,
+                onExpandedChange = { subcategoryExpanded = it },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = ui.subcategory.ifBlank { "Automatique" },
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Sous-catégorie") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = subcategoryExpanded) },
+                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                    singleLine = true
+                )
+                ExposedDropdownMenu(
+                    expanded = subcategoryExpanded,
+                    onDismissRequest = { subcategoryExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Automatique") },
+                        onClick = {
+                            vm.setSubcategory("")
+                            subcategoryExpanded = false
+                        }
+                    )
+                    subcategoryOptions.forEach { sub ->
+                        DropdownMenuItem(
+                            text = { Text(sub.label) },
+                            onClick = {
+                                vm.setSubcategory(sub.label)
+                                subcategoryExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
 
             // Quantité
             OutlinedTextField(

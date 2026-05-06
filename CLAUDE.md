@@ -213,6 +213,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - `SettingsScreen` et `HouseholdSettingsScreen` ne dépendent plus du foyer capturé dans la callback du picker : ils lisent seulement les bytes de l'image et appellent `uploadCurrentUserAvatar()`.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 11 : sous-catégories Android**
+- Issue GitHub `Android` prise en compte : #5 `Améliorer les sous-catégories`.
+- `AddProductViewModel` applique désormais la catégorie automatique avec `matchCategory()` et complète la sous-catégorie vide avec `matchSubcategory()` au moment de l'enregistrement.
+- `AddProductScreen` ajoute l'option `Automatique` aux catégories et remplace la saisie libre de sous-catégorie par un sélecteur lié à la catégorie courante.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
