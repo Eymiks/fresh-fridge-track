@@ -11,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -42,7 +43,21 @@ class HouseholdSettingsViewModel @Inject constructor(
     val members = authState.map { (it as? AuthState.Authenticated)?.members ?: emptyList() }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    private var cachedUserId: String? = null
+    private var cachedHouseholdId: String? = null
+
     val currentUserId get() = authRepository.currentUserId()
+
+    init {
+        viewModelScope.launch {
+            authState.collect { state ->
+                if (state is AuthState.Authenticated) {
+                    cachedUserId = state.userId
+                    state.household?.id?.let { cachedHouseholdId = it }
+                }
+            }
+        }
+    }
 
     fun updateDisplayName(memberId: String, name: String) = viewModelScope.launch {
         _ui.update { it.copy(isLoading = true) }
@@ -88,6 +103,47 @@ class HouseholdSettingsViewModel @Inject constructor(
                 }
             }
             .onFailure { e -> _ui.update { it.copy(isLoading = false, error = e.message) } }
+    }
+
+    fun uploadCurrentUserAvatar(bytes: ByteArray, ext: String) = viewModelScope.launch {
+        _ui.update { it.copy(isLoading = true, error = null, successMessage = null) }
+        runCatching {
+            val (householdId, userId) = resolveAvatarTarget()
+            householdRepository.uploadAvatar(householdId, userId, bytes, ext)
+        }
+            .onSuccess { member ->
+                cachedUserId = member.userId
+                cachedHouseholdId = member.householdId
+                authRepository.refreshHousehold()
+                _ui.update {
+                    it.copy(
+                        isLoading = false,
+                        successMessage = "Avatar mis à jour",
+                        avatarUrlOverride = member.avatarUrl
+                    )
+                }
+            }
+            .onFailure { e ->
+                _ui.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.message ?: "Impossible d'envoyer l'avatar."
+                    )
+                }
+            }
+    }
+
+    private suspend fun resolveAvatarTarget(): Pair<String, String> {
+        val state = authState.value as? AuthState.Authenticated
+        val userId = state?.userId
+            ?: cachedUserId
+            ?: authRepository.currentUserId()
+            ?: error("Impossible d'envoyer l'avatar : utilisateur introuvable.")
+        val householdId = state?.household?.id
+            ?: cachedHouseholdId
+            ?: authRepository.refreshHousehold().first?.id
+            ?: error("Impossible d'envoyer l'avatar : foyer introuvable.")
+        return householdId to userId
     }
 
     fun signOut() = viewModelScope.launch { authRepository.signOut() }

@@ -3,6 +3,7 @@ package com.freshtrack.ui.screens.household
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import android.webkit.MimeTypeMap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -48,6 +49,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,6 +64,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.freshtrack.domain.model.Member
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,6 +79,7 @@ fun HouseholdSettingsScreen(
     val ui by vm.ui.collectAsState()
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
     val myMember = members.firstOrNull { it.userId == vm.currentUserId }
@@ -93,11 +99,17 @@ fun HouseholdSettingsScreen(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         uri ?: return@rememberLauncherForActivityResult
-        val hh = household ?: return@rememberLauncherForActivityResult
-        val userId = vm.currentUserId ?: return@rememberLauncherForActivityResult
-        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return@rememberLauncherForActivityResult
-        val ext = context.contentResolver.getType(uri)?.substringAfterLast('/') ?: "jpeg"
-        vm.uploadAvatar(hh.id, userId, bytes, ext)
+        val mimeType = context.contentResolver.getType(uri)
+        val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "jpg"
+        scope.launch {
+            val bytes = withContext(Dispatchers.IO) {
+                context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            } ?: run {
+                vm.reportError("Impossible de lire l'image sélectionnée.")
+                return@launch
+            }
+            vm.uploadCurrentUserAvatar(bytes, ext)
+        }
     }
 
     Scaffold(

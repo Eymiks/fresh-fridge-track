@@ -152,14 +152,6 @@ fun SettingsScreen(
 
     val avatarLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
-        val hh = effectiveHousehold ?: run {
-            householdVm.reportError("Impossible d'envoyer l'avatar : foyer introuvable.")
-            return@rememberLauncherForActivityResult
-        }
-        val userId = auth?.userId ?: run {
-            householdVm.reportError("Impossible d'envoyer l'avatar : utilisateur introuvable.")
-            return@rememberLauncherForActivityResult
-        }
         val mimeType = context.contentResolver.getType(uri)
         val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "jpg"
         scope.launch {
@@ -169,7 +161,7 @@ fun SettingsScreen(
                 householdVm.reportError("Impossible de lire l'image sélectionnée.")
                 return@launch
             }
-            householdVm.uploadAvatar(hh.id, userId, bytes, ext)
+            householdVm.uploadCurrentUserAvatar(bytes, ext)
         }
     }
 

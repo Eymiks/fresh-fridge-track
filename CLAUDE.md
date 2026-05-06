@@ -207,6 +207,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Le fallback couvre l'upload avatar, l'affichage du profil, le nom du foyer, le code d'invitation et la liste des membres.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 10 : upload avatar indépendant de Compose**
+- Issue GitHub `Android` reprise : #1 `Upload image profil`.
+- `HouseholdSettingsViewModel` garde désormais en cache le dernier `userId` et `householdId` authentifiés, puis résout la cible de l'avatar côté ViewModel au moment de l'upload.
+- `SettingsScreen` et `HouseholdSettingsScreen` ne dépendent plus du foyer capturé dans la callback du picker : ils lisent seulement les bytes de l'image et appellent `uploadCurrentUserAvatar()`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
