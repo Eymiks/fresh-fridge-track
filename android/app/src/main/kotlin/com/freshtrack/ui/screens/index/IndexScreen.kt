@@ -43,7 +43,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Card
@@ -57,8 +57,9 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
@@ -115,7 +116,6 @@ fun IndexScreen(
     val products by vm.products.collectAsState()
     val reduceMotion = LocalAppearance.current.reduceMotion
 
-    var searchActive by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
     var fabExpanded by remember { mutableStateOf(false) }
 
@@ -137,60 +137,63 @@ fun IndexScreen(
     Scaffold(
         topBar = {
             Column(Modifier.background(headerBg)) {
-                SearchBar(
-                    query = ui.searchQuery,
-                    onQueryChange = { vm.setSearch(it) },
-                    onSearch = { searchActive = false },
-                    active = searchActive,
-                    onActiveChange = { searchActive = it },
-                    placeholder = { Text("Rechercher un produit…") },
-                    leadingIcon = { Icon(Icons.Default.Search, null) },
-                    trailingIcon = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box {
-                                IconButton(onClick = { showSortMenu = !showSortMenu }) {
-                                    Icon(Icons.Default.Sort, "Trier")
-                                }
-                                DropdownMenu(
-                                    expanded = showSortMenu,
-                                    onDismissRequest = { showSortMenu = false }
-                                ) {
-                                    DropdownMenuItem(
-                                        text = { Text("Par expiration") },
-                                        onClick = { vm.setSortOrder(SortOrder.EXPIRATION); showSortMenu = false },
-                                        trailingIcon = if (ui.sortOrder == SortOrder.EXPIRATION) {
-                                            { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
-                                        } else null
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text("Par nom") },
-                                        onClick = { vm.setSortOrder(SortOrder.NAME); showSortMenu = false },
-                                        trailingIcon = if (ui.sortOrder == SortOrder.NAME) {
-                                            { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
-                                        } else null
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text("Par date d'ajout") },
-                                        onClick = { vm.setSortOrder(SortOrder.ADDED_DATE); showSortMenu = false },
-                                        trailingIcon = if (ui.sortOrder == SortOrder.ADDED_DATE) {
-                                            { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
-                                        } else null
-                                    )
-                                }
-                            }
-                            if (ui.searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { vm.setSearch("") }) {
-                                    Icon(Icons.Default.Close, null)
-                                }
-                            } else {
-                                IconButton(onClick = onSettingsClick) {
-                                    Icon(Icons.Default.Settings, "Paramètres")
-                                }
-                            }
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    OutlinedTextField(
+                        value = ui.searchQuery,
+                        onValueChange = { vm.setSearch(it) },
+                        placeholder = { Text("Rechercher un produit…", style = MaterialTheme.typography.bodyMedium) },
+                        leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(20.dp)) },
+                        trailingIcon = if (ui.searchQuery.isNotEmpty()) {
+                            { IconButton(onClick = { vm.setSearch("") }) { Icon(Icons.Default.Close, null, Modifier.size(18.dp)) } }
+                        } else null,
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                        )
+                    )
+                    Box {
+                        IconButton(onClick = { showSortMenu = !showSortMenu }) {
+                            Icon(Icons.AutoMirrored.Filled.Sort, "Trier")
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {}
+                        DropdownMenu(
+                            expanded = showSortMenu,
+                            onDismissRequest = { showSortMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Par expiration") },
+                                onClick = { vm.setSortOrder(SortOrder.EXPIRATION); showSortMenu = false },
+                                trailingIcon = if (ui.sortOrder == SortOrder.EXPIRATION) {
+                                    { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
+                                } else null
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Par nom") },
+                                onClick = { vm.setSortOrder(SortOrder.NAME); showSortMenu = false },
+                                trailingIcon = if (ui.sortOrder == SortOrder.NAME) {
+                                    { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
+                                } else null
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Par date d'ajout") },
+                                onClick = { vm.setSortOrder(SortOrder.ADDED_DATE); showSortMenu = false },
+                                trailingIcon = if (ui.sortOrder == SortOrder.ADDED_DATE) {
+                                    { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
+                                } else null
+                            )
+                        }
+                    }
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(Icons.Default.Settings, "Paramètres")
+                    }
+                }
 
                 LazyRow(
                     modifier = Modifier.padding(horizontal = 8.dp),

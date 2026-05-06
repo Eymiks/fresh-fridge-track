@@ -282,6 +282,11 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Filtre corrigé : les produits déjà périmés (`daysLeft < 0`) sont toujours notifiés, indépendamment du seuil `notifDays` (avant, un produit périmé depuis plus de `notifDays` jours était silencieusement ignoré).
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 22 : polish accueil et icône notification**
+- `ic_notification.xml` : remplacé le flocon de neige par une icône de cloche (Material Design) — l'icône système dans la barre de statut Android est désormais correcte.
+- `IndexScreen` : remplacement de la `SearchBar` Material3 (expansive plein écran) par un `OutlinedTextField` compact dans un `Row`, plus proche du comportement de la PWA. Suppression de la variable `searchActive` devenue inutile. Correction du warning `Icons.Default.Sort` → `Icons.AutoMirrored.Filled.Sort`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
