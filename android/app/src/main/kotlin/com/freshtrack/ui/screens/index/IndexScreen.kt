@@ -124,9 +124,9 @@ fun IndexScreen(
     var freshCollapsed by rememberSaveable { mutableStateOf(false) }
 
     val headerBg = when {
-        totalCounts.expired > 0 -> ColorExpired.copy(alpha = 0.07f)
-        totalCounts.soon > 0 -> ColorSoon.copy(alpha = 0.07f)
-        else -> Color.Transparent
+        totalCounts.expired > 0 -> ColorExpired.copy(alpha = 0.14f)
+        totalCounts.soon > 0 -> ColorSoon.copy(alpha = 0.12f)
+        else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
     }
 
     val isInitialLoading = ui.isLoading && products.isEmpty()

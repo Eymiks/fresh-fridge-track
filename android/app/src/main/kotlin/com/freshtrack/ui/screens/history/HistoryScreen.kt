@@ -21,6 +21,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.Card
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -96,7 +98,7 @@ fun HistoryScreen(
 
             if ((filter == HistoryFilter.ALL || filter == HistoryFilter.OPENED) && openedList.isNotEmpty()) {
                 item {
-                    SectionHeader("Ouverts", openedList.size, Icons.Default.Restore, MaterialTheme.colorScheme.primary)
+                    SectionHeader("Ouverts", openedList.size, Icons.Default.Inventory2, MaterialTheme.colorScheme.primary)
                 }
                 items(openedList, key = { "o_${it.id}" }) { product ->
                     HistoryItem(product = product, onClick = { onProductClick(product.id) }, onRestore = { vm.restoreProduct(product) })
@@ -105,7 +107,7 @@ fun HistoryScreen(
 
             if ((filter == HistoryFilter.ALL || filter == HistoryFilter.CONSUMED) && consumedList.isNotEmpty()) {
                 item {
-                    SectionHeader("Consommés", consumedList.size, Icons.Default.Check, ColorFresh)
+                    SectionHeader("Consommés", consumedList.size, Icons.Default.Restaurant, ColorFresh)
                 }
                 items(consumedList, key = { "c_${it.id}" }) { product ->
                     HistoryItem(product = product, onClick = { onProductClick(product.id) }, onRestore = { vm.restoreProduct(product) })
@@ -232,8 +234,8 @@ private data class StatusMeta(
 
 @Composable
 private fun statusMeta(status: ProductStatus): StatusMeta = when (status) {
-    ProductStatus.OPENED -> StatusMeta("Ouvert", MaterialTheme.colorScheme.tertiary, Icons.Default.Restore)
-    ProductStatus.CONSUMED -> StatusMeta("Consommé", MaterialTheme.colorScheme.primary, Icons.Default.Check)
+    ProductStatus.OPENED -> StatusMeta("Ouvert", MaterialTheme.colorScheme.primary, Icons.Default.Inventory2)
+    ProductStatus.CONSUMED -> StatusMeta("Consommé", ColorFresh, Icons.Default.Restaurant)
     ProductStatus.THROWN -> StatusMeta("Jeté", MaterialTheme.colorScheme.error, Icons.Default.Delete)
     ProductStatus.ACTIVE -> StatusMeta("Actif", MaterialTheme.colorScheme.onSurfaceVariant, Icons.Default.Check)
 }

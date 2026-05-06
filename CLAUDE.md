@@ -255,6 +255,13 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - À vérifier sur appareil : rendu exact de la courbe Vico, axes et lisibilité selon thème.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 18 : polish Historique et header accueil**
+- `HistoryScreen` utilise des icônes Material plus proches des états PWA : paquet pour Ouverts, restaurant pour Consommés, corbeille pour Jetés.
+- La couleur "Consommé" est harmonisée en vert (`ColorFresh`) dans les sections et les badges.
+- `IndexScreen` rend le header dynamique plus visible : rouge/orange plus marqués en présence d'alertes, primaire subtil sinon.
+- À vérifier sur appareil : rendu exact des contrastes header selon thème et couleur d'accent.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
