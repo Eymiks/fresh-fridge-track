@@ -1,5 +1,6 @@
 package com.freshtrack.ui.screens.stats
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.Recycling
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Card
@@ -39,6 +39,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,6 +51,7 @@ import com.freshtrack.domain.catalog.PRODUCT_CATEGORIES
 import com.freshtrack.domain.model.ExpirationStatus
 import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.model.ProductStatus
+import com.freshtrack.domain.model.getEffectiveExpirationDate
 import com.freshtrack.domain.model.getDaysUntilExpiration
 import com.freshtrack.domain.model.getExpirationStatus
 import com.freshtrack.domain.model.isActive
@@ -55,6 +60,9 @@ import com.freshtrack.domain.usecase.StatsResult
 import com.freshtrack.ui.theme.ColorExpired
 import com.freshtrack.ui.theme.ColorFresh
 import com.freshtrack.ui.theme.ColorSoon
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.daysUntil
+import kotlinx.datetime.toLocalDateTime
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
@@ -177,15 +185,34 @@ private fun UrgentRow(product: Product) {
         days == 1 -> "Demain"
         else -> "${days}j"
     }
+    val tz = TimeZone.currentSystemDefault()
+    val addedDate = product.addedAt.toLocalDateTime(tz).date
+    val effectiveExpiry = product.getEffectiveExpirationDate()
+    val totalLifeDays = addedDate.daysUntil(effectiveExpiry).coerceAtLeast(1)
+    val lifeProgress = (days.coerceAtLeast(0).toFloat() / totalLifeDays).coerceIn(0f, 1f)
+    val barColor = when {
+        lifeProgress > 0.5f -> ColorFresh
+        lifeProgress > 0.2f -> ColorSoon
+        else -> ColorExpired
+    }
     Card(Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Inventory2, contentDescription = null, tint = color)
-            Spacer(Modifier.size(10.dp))
-            Column(Modifier.weight(1f)) {
-                Text(product.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(categoryLabel(product.category ?: "autre"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(Modifier.padding(horizontal = 12.dp).padding(top = 12.dp, bottom = 10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Inventory2, contentDescription = null, tint = color)
+                Spacer(Modifier.size(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(product.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(categoryLabel(product.category ?: "autre"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Text(label, color = color, fontWeight = FontWeight.Bold)
             }
-            Text(label, color = color, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = { lifeProgress },
+                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(999.dp)),
+                color = barColor,
+                trackColor = barColor.copy(alpha = 0.18f)
+            )
         }
     }
 }
@@ -194,9 +221,9 @@ private fun UrgentRow(product: Product) {
 private fun AntiGaspiTab(stats: StatsResult) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Default.Recycling, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
             Text("Score anti-gaspi ce mois", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("${stats.monthlyScore.roundToInt()}%", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black)
+            Spacer(Modifier.height(4.dp))
+            AntiGaspiGauge(stats.monthlyScore)
             val trend = stats.trend
             Text(
                 when {
@@ -230,8 +257,9 @@ private fun AntiGaspiTab(stats: StatsResult) {
     if (stats.topThrown.isNotEmpty()) {
         Text("Produits les plus gaspillés", fontWeight = FontWeight.SemiBold)
         stats.topThrown.forEachIndexed { i, (name, count) ->
+            val medal = when (i) { 0 -> "🥇"; 1 -> "🥈"; 2 -> "🥉"; else -> "${i + 1}." }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("${i + 1}. $name", maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                Text("$medal $name", maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 Text("x$count", color = ColorExpired, fontWeight = FontWeight.Bold)
             }
         }
@@ -258,8 +286,9 @@ private fun TendancesTab(stats: StatsResult) {
     if (stats.topRecurrent.isNotEmpty()) {
         Text("Produits récurrents", fontWeight = FontWeight.SemiBold)
         stats.topRecurrent.forEachIndexed { i, (name, count) ->
+            val medal = when (i) { 0 -> "🥇"; 1 -> "🥈"; 2 -> "🥉"; else -> "${i + 1}." }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("${i + 1}. $name", modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("$medal $name", modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text("x$count", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
         }
@@ -333,6 +362,55 @@ private fun MonthLabels(monthly: List<MonthlyData>) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
         monthly.forEach { m ->
             Text(m.label.substringBefore(" "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun AntiGaspiGauge(score: Float) {
+    val gaugeColor = when {
+        score >= 75f -> ColorFresh
+        score >= 50f -> ColorSoon
+        else -> ColorExpired
+    }
+    val appreciation = when {
+        score >= 75f -> "Excellent !"
+        score >= 50f -> "Bien !"
+        else -> "À améliorer"
+    }
+    val trackColor = MaterialTheme.colorScheme.surfaceVariant
+
+    Box(
+        Modifier.fillMaxWidth().height(160.dp),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Canvas(Modifier.fillMaxSize()) {
+            val sw = 22.dp.toPx()
+            val r = (minOf(size.width / 2f, size.height) - sw / 2f - 4.dp.toPx()).coerceAtLeast(0f)
+            val cx = size.width / 2f
+            val cy = size.height
+            val topLeft = Offset(cx - r, cy - r)
+            val arcSize = Size(r * 2f, r * 2f)
+
+            drawArc(trackColor, 180f, 180f, false, topLeft, arcSize, style = Stroke(sw, cap = StrokeCap.Round))
+            drawArc(gaugeColor, 180f, (score.coerceIn(0f, 100f) / 100f) * 180f, false, topLeft, arcSize, style = Stroke(sw, cap = StrokeCap.Round))
+        }
+        Column(
+            Modifier.padding(bottom = 14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                "${score.roundToInt()}%",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Black,
+                color = gaugeColor
+            )
+            Text(
+                appreciation,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = gaugeColor
+            )
         }
     }
 }

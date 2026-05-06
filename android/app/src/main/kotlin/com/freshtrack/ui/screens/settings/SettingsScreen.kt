@@ -81,6 +81,7 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.freshtrack.data.auth.AuthState
 import com.freshtrack.domain.model.Member
+import com.freshtrack.ui.components.OfflineBanner
 import com.freshtrack.ui.navigation.Routes
 import com.freshtrack.ui.screens.auth.AuthViewModel
 import com.freshtrack.ui.screens.household.HouseholdSettingsViewModel
@@ -165,14 +166,16 @@ fun SettingsScreen(
             )
         }
     ) { innerPadding ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
+        Column(Modifier.fillMaxSize().padding(innerPadding)) {
+            OfflineBanner()
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
             ProfileHeader(
                 displayName = displayName,
                 subtitle = when (authState) {
@@ -354,6 +357,7 @@ fun SettingsScreen(
                     Spacer(Modifier.size(8.dp))
                     Text("Se déconnecter")
                 }
+            }
             }
         }
     }

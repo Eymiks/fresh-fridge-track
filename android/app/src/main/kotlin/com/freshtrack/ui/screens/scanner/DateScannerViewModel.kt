@@ -45,7 +45,12 @@ class DateScannerViewModel @Inject constructor(
             val base64 = Base64.encodeToString(bytes, Base64.DEFAULT)
             val dataUrl = "data:image/jpeg;base64,$base64"
 
-            val date = ocrEdgeFunction.parseDate(dataUrl)
+            var date: String? = null
+            for (attempt in 1..2) {
+                date = ocrEdgeFunction.parseDate(dataUrl)
+                if (date != null) break
+                if (attempt < 2) delay(2000L * attempt)
+            }
             _ui.update { it.copy(isCloudLoading = false) }
 
             if (date != null) {

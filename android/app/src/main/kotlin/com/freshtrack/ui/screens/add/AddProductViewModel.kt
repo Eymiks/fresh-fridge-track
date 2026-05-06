@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.freshtrack.data.auth.AuthRepository
 import com.freshtrack.data.auth.AuthState
 import com.freshtrack.data.openfoodfacts.OffApi
+import com.freshtrack.data.openfoodfacts.OffResult
 import com.freshtrack.data.products.ProductRepository
 import com.freshtrack.domain.format.formatDate
 import com.freshtrack.domain.format.normalizeDateInput
@@ -51,7 +52,9 @@ data class AddProductUiState(
     val ingredients: String = "",
     val nutritionData: String = "",
     val isOpened: Boolean = false,
-    val daysAfterOpening: String = "3"
+    val daysAfterOpening: String = "3",
+    val offImages: List<String> = emptyList(),
+    val showImageDialog: Boolean = false
 )
 
 @HiltViewModel
@@ -131,14 +134,13 @@ class AddProductViewModel @Inject constructor(
 
     fun lookupBarcode(barcode: String) = viewModelScope.launch {
         _ui.update { it.copy(isLoadingBarcode = true, barcode = barcode) }
-        val product = offApi.fetchByBarcode(barcode)
-        if (product != null) {
-            val fallbackImage = if (product.imageUrl.isNullOrBlank()) {
+        val result: OffResult? = offApi.fetchByBarcodeRaw(barcode)
+        if (result != null) {
+            val product = result.product
+            val fallbackImage = if (result.availableImages.isEmpty()) {
                 val householdId = (authState.value as? AuthState.Authenticated)?.household?.id
                 householdId?.let { productRepository.findExistingImageForBarcode(it, barcode) }
-            } else {
-                null
-            }
+            } else null
             _ui.update {
                 it.copy(
                     isLoadingBarcode = false,
@@ -146,20 +148,25 @@ class AddProductViewModel @Inject constructor(
                     brand = product.brand ?: it.brand,
                     category = product.category ?: it.category,
                     subcategory = product.subcategory ?: it.subcategory,
-                    imageUrl = product.imageUrl ?: fallbackImage ?: it.imageUrl,
+                    imageUrl = fallbackImage ?: it.imageUrl,
                     quantity = product.quantity ?: it.quantity,
                     nutriScore = product.nutriScore ?: it.nutriScore,
                     novaGroup = product.novaGroup?.toString() ?: it.novaGroup,
                     ecoScore = product.ecoScore ?: it.ecoScore,
                     allergens = product.allergens ?: it.allergens,
                     ingredients = product.ingredients ?: it.ingredients,
-                    nutritionData = product.nutritionData ?: it.nutritionData
+                    nutritionData = product.nutritionData ?: it.nutritionData,
+                    offImages = result.availableImages,
+                    showImageDialog = result.availableImages.isNotEmpty()
                 )
             }
         } else {
             _ui.update { it.copy(isLoadingBarcode = false) }
         }
     }
+
+    fun selectOffImage(url: String) = _ui.update { it.copy(imageUrl = url, showImageDialog = false) }
+    fun dismissImageDialog() = _ui.update { it.copy(showImageDialog = false) }
 
     fun setExpirationDate(date: String) = _ui.update { it.copy(expirationDate = normalizeDateInput(date)) }
     fun setName(v: String) = _ui.update { it.copy(name = v) }

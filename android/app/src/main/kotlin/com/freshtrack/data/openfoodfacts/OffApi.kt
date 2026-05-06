@@ -26,10 +26,15 @@ private const val OFF_BASE = "https://world.openfoodfacts.org/api/v0/product"
 @Serializable
 private data class OffResponse(val status: Int = 0, val product: JsonObject? = null)
 
+data class OffResult(val product: Product, val availableImages: List<String>)
+
 @Singleton
 class OffApi @Inject constructor(private val httpClient: HttpClient) {
 
-    suspend fun fetchByBarcode(barcode: String): Product? = runCatching {
+    suspend fun fetchByBarcode(barcode: String): Product? =
+        fetchByBarcodeRaw(barcode)?.product
+
+    suspend fun fetchByBarcodeRaw(barcode: String): OffResult? = runCatching {
         val response: OffResponse = httpClient.get("$OFF_BASE/$barcode.json").body()
         if (response.status != 1 || response.product == null) return null
         val p = response.product
@@ -38,7 +43,15 @@ class OffApi @Inject constructor(private val httpClient: HttpClient) {
 
         val name = str("product_name_fr") ?: str("product_name") ?: str("product_name_en") ?: return null
         val brand = str("brands")
-        val imageUrl = str("image_front_url") ?: str("image_url") ?: str("image_small_url")
+        val availableImages = listOfNotNull(
+            str("image_front_url"),
+            str("image_url"),
+            str("image_ingredients_url"),
+            str("image_nutrition_url"),
+            str("image_packaging_url"),
+            str("image_small_url")
+        ).distinct().take(5)
+        val imageUrl: String? = null  // sera choisi par l'utilisateur via le dialog
         val nutriScore = str("nutriscore_grade") ?: str("nutrition_grade_fr")
         val novaGroup = str("nova_group")?.toIntOrNull()
         val ecoScore = str("ecoscore_grade")
@@ -64,7 +77,7 @@ class OffApi @Inject constructor(private val httpClient: HttpClient) {
         val subcategory = matchSubcategory(category, offCategory, name)
 
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-        Product(
+        val product = Product(
             name = name, barcode = barcode, brand = brand, imageUrl = imageUrl,
             nutriScore = nutriScore, novaGroup = novaGroup, ecoScore = ecoScore,
             allergens = allergens, ingredients = ingredients,
@@ -74,5 +87,6 @@ class OffApi @Inject constructor(private val httpClient: HttpClient) {
             expirationDate = today,
             addedAt = Clock.System.now()
         )
+        OffResult(product = product, availableImages = availableImages)
     }.getOrNull()
 }

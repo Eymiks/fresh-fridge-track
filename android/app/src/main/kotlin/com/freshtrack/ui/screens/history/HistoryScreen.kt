@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.Card
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.freshtrack.ui.theme.ColorFresh
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -56,14 +58,9 @@ fun HistoryScreen(
 ) {
     val products by vm.historyProducts.collectAsState()
     var filter by remember { mutableStateOf(HistoryFilter.ALL) }
-    val filtered = remember(products, filter) {
-        when (filter) {
-            HistoryFilter.ALL -> products
-            HistoryFilter.OPENED -> products.filter { it.status == ProductStatus.OPENED }
-            HistoryFilter.CONSUMED -> products.filter { it.status == ProductStatus.CONSUMED }
-            HistoryFilter.THROWN -> products.filter { it.status == ProductStatus.THROWN }
-        }
-    }
+    val openedList = remember(products) { products.filter { it.status == ProductStatus.OPENED } }
+    val consumedList = remember(products) { products.filter { it.status == ProductStatus.CONSUMED } }
+    val thrownList = remember(products) { products.filter { it.status == ProductStatus.THROWN } }
 
     Surface(Modifier.fillMaxSize()) {
         LazyColumn(
@@ -85,9 +82,9 @@ fun HistoryScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     HistoryFilterChip("Tout (${products.size})", filter == HistoryFilter.ALL) { filter = HistoryFilter.ALL }
-                    HistoryFilterChip("Ouverts (${products.count { it.status == ProductStatus.OPENED }})", filter == HistoryFilter.OPENED) { filter = HistoryFilter.OPENED }
-                    HistoryFilterChip("Consommés (${products.count { it.status == ProductStatus.CONSUMED }})", filter == HistoryFilter.CONSUMED) { filter = HistoryFilter.CONSUMED }
-                    HistoryFilterChip("Jetés (${products.count { it.status == ProductStatus.THROWN }})", filter == HistoryFilter.THROWN) { filter = HistoryFilter.THROWN }
+                    HistoryFilterChip("Ouverts (${openedList.size})", filter == HistoryFilter.OPENED) { filter = HistoryFilter.OPENED }
+                    HistoryFilterChip("Consommés (${consumedList.size})", filter == HistoryFilter.CONSUMED) { filter = HistoryFilter.CONSUMED }
+                    HistoryFilterChip("Jetés (${thrownList.size})", filter == HistoryFilter.THROWN) { filter = HistoryFilter.THROWN }
                 }
             }
 
@@ -95,20 +92,52 @@ fun HistoryScreen(
                 item {
                     EmptyHistoryState("Aucun produit dans l'historique", "Les produits ouverts, consommés ou jetés apparaîtront ici.")
                 }
-            } else if (filtered.isEmpty()) {
+            }
+
+            if ((filter == HistoryFilter.ALL || filter == HistoryFilter.OPENED) && openedList.isNotEmpty()) {
                 item {
-                    EmptyHistoryState("Aucun produit pour ce filtre", "Changez de filtre ou revenez à Tout.")
+                    SectionHeader("Ouverts", openedList.size, Icons.Default.Restore, MaterialTheme.colorScheme.primary)
                 }
-            } else {
-                items(filtered, key = { it.id }) { product ->
-                    HistoryItem(
-                        product = product,
-                        onClick = { onProductClick(product.id) },
-                        onRestore = { vm.restoreProduct(product) }
-                    )
+                items(openedList, key = { "o_${it.id}" }) { product ->
+                    HistoryItem(product = product, onClick = { onProductClick(product.id) }, onRestore = { vm.restoreProduct(product) })
+                }
+            }
+
+            if ((filter == HistoryFilter.ALL || filter == HistoryFilter.CONSUMED) && consumedList.isNotEmpty()) {
+                item {
+                    SectionHeader("Consommés", consumedList.size, Icons.Default.Check, ColorFresh)
+                }
+                items(consumedList, key = { "c_${it.id}" }) { product ->
+                    HistoryItem(product = product, onClick = { onProductClick(product.id) }, onRestore = { vm.restoreProduct(product) })
+                }
+            }
+
+            if ((filter == HistoryFilter.ALL || filter == HistoryFilter.THROWN) && thrownList.isNotEmpty()) {
+                item {
+                    SectionHeader("Jetés", thrownList.size, Icons.Default.Delete, MaterialTheme.colorScheme.error)
+                }
+                items(thrownList, key = { "t_${it.id}" }) { product ->
+                    HistoryItem(product = product, onClick = { onProductClick(product.id) }, onRestore = { vm.restoreProduct(product) })
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SectionHeader(label: String, count: Int, icon: ImageVector, color: androidx.compose.ui.graphics.Color) {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+        Text(
+            "$label ($count)",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
     }
 }
 

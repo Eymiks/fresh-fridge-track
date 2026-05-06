@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,9 +48,15 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -57,9 +64,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -108,6 +117,11 @@ fun ProductDetailScreen(
     var showFullscreenImage by remember { mutableStateOf(false) }
     var ingredientsExpanded by remember(product?.ingredients) { mutableStateOf(false) }
     val clipboard = LocalClipboardManager.current
+    val scrollState = rememberScrollState()
+    val density = LocalDensity.current
+    val showStickyHeader by remember(density) {
+        derivedStateOf { scrollState.value > with(density) { 110.dp.roundToPx() } }
+    }
 
     LaunchedEffect(ui.feedbackId) {
         val message = ui.feedbackMessage ?: return@LaunchedEffect
@@ -183,11 +197,11 @@ fun ProductDetailScreen(
         val categoryLabel = remember(product.category) { product.categoryLabel() }
         val notesDirty = notes != (product.notes ?: "")
 
-        Column(Modifier.fillMaxSize().padding(innerPadding)) {
+        Box(Modifier.fillMaxSize().padding(innerPadding)) {
             Column(
                 Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
             ) {
                 ProductHero(
                     product = product,
@@ -253,6 +267,14 @@ fun ProductDetailScreen(
                         3 -> HistoryTab(product)
                     }
                 }
+            }
+            AnimatedVisibility(
+                visible = showStickyHeader,
+                enter = fadeIn() + slideInVertically { -it },
+                exit = fadeOut() + slideOutVertically { -it },
+                modifier = Modifier.align(Alignment.TopStart)
+            ) {
+                StickyProductHeader(product = product, onBack = { navController.popBackStack() })
             }
         }
     }
@@ -401,20 +423,24 @@ private fun StatusActions(
 ) {
     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (product.status != ProductStatus.ACTIVE) {
-                    Button(onClick = { onSetStatus(ProductStatus.ACTIVE) }, enabled = !isMutating) {
-                        Text("Remettre actif")
+            if (product.status == ProductStatus.CONSUMED || product.status == ProductStatus.THROWN) {
+                Button(
+                    onClick = { onSetStatus(ProductStatus.ACTIVE) },
+                    enabled = !isMutating,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Remettre actif") }
+            } else {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(onClick = onOpen, enabled = !isMutating, modifier = Modifier.weight(1f)) {
+                        Text("Ouvert")
                     }
-                }
-                if (product.status == ProductStatus.ACTIVE) {
-                    Button(onClick = onOpen, enabled = !isMutating) { Text("Ouvrir") }
-                }
-                if (product.status == ProductStatus.ACTIVE || product.status == ProductStatus.OPENED) {
-                    TextButton(onClick = { onSetStatus(ProductStatus.CONSUMED) }, enabled = !isMutating) {
+                    OutlinedButton(onClick = { onSetStatus(ProductStatus.CONSUMED) }, enabled = !isMutating, modifier = Modifier.weight(1f)) {
                         Text("Consommé")
                     }
-                    TextButton(onClick = { onSetStatus(ProductStatus.THROWN) }, enabled = !isMutating) {
+                    OutlinedButton(onClick = { onSetStatus(ProductStatus.THROWN) }, enabled = !isMutating, modifier = Modifier.weight(1f)) {
                         Text("Jeté")
                     }
                 }
@@ -584,15 +610,21 @@ private fun NotesTab(
         value = notes,
         onValueChange = onNotesChange,
         label = { Text("Notes") },
-        modifier = Modifier.fillMaxWidth().height(200.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .onFocusChanged { focusState ->
+                if (!focusState.hasFocus && isDirty) onSave()
+            },
         maxLines = 10
     )
-    Button(
-        onClick = onSave,
-        modifier = Modifier.fillMaxWidth(),
-        enabled = isDirty && !isMutating
-    ) {
-        Text(if (isMutating) "Sauvegarde…" else "Sauvegarder")
+    if (isDirty || isMutating) {
+        Text(
+            if (isMutating) "Sauvegarde…" else "Modification non sauvegardée",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp)
+        )
     }
 }
 
@@ -955,4 +987,37 @@ private fun novaColor(group: Int): Color = when (group) {
     3 -> Color(0xFFE65100)
     4 -> Color(0xFFB71C1C)
     else -> Color.Gray
+}
+
+@Composable
+private fun StickyProductHeader(product: Product, onBack: () -> Unit) {
+    Surface(
+        shadowElevation = 4.dp,
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Retour")
+            }
+            if (!product.imageUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = product.imageUrl,
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp).clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(Modifier.width(10.dp))
+            }
+            Text(
+                product.name,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
 }
