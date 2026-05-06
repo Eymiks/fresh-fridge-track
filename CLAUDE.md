@@ -237,6 +237,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Les actions bas d'écran affichent désormais `Modifier` puis `Supprimer` sous forme de boutons full-width avec `navigationBarsPadding()`.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 15 : permission notifications fiable**
+- Écart Android corrigé : l'écran Alertes ne considère plus l'état initial Android 13+ comme des notifications définitivement bloquées.
+- `AppPreferences` persiste `frigo-notif-permission-requested`, exposé par `NotificationsViewModel`.
+- `NotificationsScreen` affiche la carte rouge "Notifications bloquées" uniquement après une demande de permission déjà effectuée, refusée, et sans rationale système.
+- Vérifications : `./gradlew.bat :app:assembleDebug` OK ; `./gradlew.bat :app:testDebugUnitTest` OK (`NO-SOURCE`).
+
 ---
 
 ## Android — Référence fonctionnalités PWA

@@ -25,6 +25,7 @@ class AppPreferences @Inject constructor(private val dataStore: DataStore<Prefer
         val KEY_NOTIF_DAYS = intPreferencesKey("frigo-notif-days")
         val KEY_NOTIF_LAST_CHECK = stringPreferencesKey("frigo-notif-last-check")
         val KEY_NOTIF_DONE_IDS = stringSetPreferencesKey("frigo-notif-done-ids")
+        val KEY_NOTIF_PERMISSION_REQUESTED = booleanPreferencesKey("frigo-notif-permission-requested")
     }
 
     val isGuestMode: Flow<Boolean> = dataStore.data.map { it[KEY_GUEST_MODE] ?: false }
@@ -36,6 +37,9 @@ class AppPreferences @Inject constructor(private val dataStore: DataStore<Prefer
     val notifDays: Flow<Int> = dataStore.data.map { it[KEY_NOTIF_DAYS] ?: 3 }
     val notifLastCheck: Flow<String?> = dataStore.data.map { it[KEY_NOTIF_LAST_CHECK] }
     val notifDoneIds: Flow<Set<String>> = dataStore.data.map { it[KEY_NOTIF_DONE_IDS] ?: emptySet() }
+    val notifPermissionRequested: Flow<Boolean> = dataStore.data.map {
+        it[KEY_NOTIF_PERMISSION_REQUESTED] ?: false
+    }
 
     suspend fun setGuestMode(value: Boolean) = dataStore.edit { it[KEY_GUEST_MODE] = value }
     suspend fun setThemeMode(value: String) = dataStore.edit { it[KEY_THEME_MODE] = value }
@@ -46,6 +50,8 @@ class AppPreferences @Inject constructor(private val dataStore: DataStore<Prefer
     suspend fun setNotifDays(value: Int) = dataStore.edit { it[KEY_NOTIF_DAYS] = value }
     suspend fun setNotifLastCheck(value: String) = dataStore.edit { it[KEY_NOTIF_LAST_CHECK] = value }
     suspend fun setNotifDoneIds(ids: Set<String>) = dataStore.edit { it[KEY_NOTIF_DONE_IDS] = ids }
+    suspend fun setNotifPermissionRequested(value: Boolean) =
+        dataStore.edit { it[KEY_NOTIF_PERMISSION_REQUESTED] = value }
     suspend fun addNotifDoneId(id: String) = dataStore.edit {
         val current = it[KEY_NOTIF_DONE_IDS] ?: emptySet()
         it[KEY_NOTIF_DONE_IDS] = current + id

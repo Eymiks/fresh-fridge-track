@@ -60,6 +60,7 @@ fun NotificationsScreen(
     onProductClick: (String) -> Unit = {}
 ) {
     val settings by vm.settings.collectAsState()
+    val permissionRequested by vm.permissionRequested.collectAsState()
     val expiredProducts by vm.expiredProducts.collectAsState()
     val soonProducts by vm.soonProducts.collectAsState()
     var filter by remember { mutableStateOf(AlertFilter.ALL) }
@@ -73,12 +74,18 @@ fun NotificationsScreen(
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted -> if (granted) vm.setEnabled(true) }
+    ) { granted ->
+        vm.markPermissionRequested()
+        if (granted) vm.setEnabled(true) else vm.setEnabled(false)
+    }
 
     val context = LocalContext.current
     val activity = context as? Activity
+    val notificationPermissionGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
     val permPermanentlyDenied = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED &&
+        permissionRequested &&
+            !notificationPermissionGranted &&
             activity?.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) == false
     } else false
 
@@ -167,7 +174,8 @@ fun NotificationsScreen(
                             Switch(
                                 checked = settings.enabled,
                                 onCheckedChange = { checked ->
-                                    if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    if (checked && !notificationPermissionGranted) {
+                                        vm.markPermissionRequested()
                                         permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                                     } else {
                                         vm.setEnabled(checked)

@@ -139,14 +139,14 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - `DateScannerScreen.kt` : paramètre `isMultiScan` — en mode multi, navigue vers `ADD_PRODUCT_MULTI` avec `popUpTo(DATE_SCANNER_MULTI)` au lieu de passer par `savedStateHandle`.
 - `AddProductScreen.kt` : paramètres `isMultiMode` + `initialDate`. Affiche "Ajouter & scanner le suivant" (reset vers `BARCODE_SCANNER_MULTI` fresh) + "Terminer" (`popBackStack` jusqu'à `BARCODE_SCANNER_MULTI` inclusive) en mode multi.
 
-### Phases restantes
+### Phases terminées (Mission Codex 2026-05-06)
 
-| Phase | Description | Fichiers principaux |
-|-------|-------------|---------------------|
-| 3 | Stats visuelles : jauge semicircle (Canvas Compose), barre de vie produits urgents, medals 🥇🥈🥉 | `StatsScreen.kt` |
-| 4 | ProductDetail : sticky header au scroll, grille 3 boutons côte à côte, auto-save notes | `ProductDetailScreen.kt` |
-| 5 | History : 3 sections colorées (Ouverts/Consommés/Jetés). Notifications : carte "permission refusée" + lien paramètres Android | `HistoryScreen.kt`, `NotificationsScreen.kt` |
-| 6 | Sélection image OFF (5 choix), email dans profil, bannière hors ligne, retry OCR avec backoff | `AddProductScreen.kt`, `AddProductViewModel.kt`, `SettingsScreen.kt` |
+| Phase | Description | Fichiers principaux | État |
+|-------|-------------|---------------------|------|
+| 3 | Stats visuelles : jauge semicircle (Canvas Compose), barre de vie produits urgents, medals 🥇🥈🥉 | `StatsScreen.kt` | ✅ |
+| 4 | ProductDetail : sticky header au scroll, grille 3 boutons côte à côte, auto-save notes | `ProductDetailScreen.kt` | ✅ |
+| 5 | History : 3 sections colorées (Ouverts/Consommés/Jetés). Notifications : carte "permission refusée" + lien paramètres Android | `HistoryScreen.kt`, `NotificationsScreen.kt` | ✅ |
+| 6 | Sélection image OFF (5 choix), email dans profil, bannière hors ligne, retry OCR avec backoff | `AddProductScreen.kt`, `AddProductViewModel.kt`, `SettingsScreen.kt`, `OfflineBanner.kt`, `DateScannerViewModel.kt` | ✅ |
 
 ### Journal de développement Android
 
@@ -236,6 +236,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Les actions rapides sont regroupées dans une carte dédiée avec `Ouvert`, `Consommé`, `Jeté`, congélation et remise active pour les produits archivés.
 - Les actions bas d'écran affichent désormais `Modifier` puis `Supprimer` sous forme de boutons full-width avec `navigationBarsPadding()`.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
+**2026-05-06 — Étape 15 : permission notifications fiable**
+- Écart Android corrigé : l'écran Alertes ne considère plus l'état initial Android 13+ comme des notifications définitivement bloquées.
+- `AppPreferences` persiste `frigo-notif-permission-requested`, exposé par `NotificationsViewModel`.
+- `NotificationsScreen` affiche la carte rouge "Notifications bloquées" uniquement après une demande de permission déjà effectuée, refusée, et sans rationale système.
+- Vérifications : `./gradlew.bat :app:assembleDebug` OK ; `./gradlew.bat :app:testDebugUnitTest` OK (`NO-SOURCE`).
 
 ---
 

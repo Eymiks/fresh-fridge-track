@@ -39,6 +39,9 @@ class NotificationsViewModel @Inject constructor(
         NotificationSettings(enabled, days)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, NotificationSettings())
 
+    val permissionRequested = prefs.notifPermissionRequested
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     private val products = authState.flatMapLatest { state ->
         when (state) {
             is AuthState.Authenticated -> {
@@ -60,4 +63,7 @@ class NotificationsViewModel @Inject constructor(
 
     fun setEnabled(enabled: Boolean) = viewModelScope.launch { prefs.setNotifEnabled(enabled) }
     fun setDays(days: Int) = viewModelScope.launch { prefs.setNotifDays(days) }
+    fun markPermissionRequested() = viewModelScope.launch {
+        prefs.setNotifPermissionRequested(true)
+    }
 }
