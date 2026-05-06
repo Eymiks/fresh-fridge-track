@@ -195,6 +195,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Les animations de l'état vide et du FAB bubble menu respectent `reduceMotion`.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 8 : retour picker avatar**
+- Issue GitHub `Android` reprise : #1 `Upload image profil`.
+- `AppNavigation` ne renavigue plus vers `MAIN` quand l'utilisateur est déjà dans une route authentifiée (`settings`, détail, scanner, etc.) après une émission auth `Loading -> Authenticated`.
+- `SettingsScreen` ne quitte plus silencieusement le callback avatar si le foyer, l'utilisateur ou la lecture de l'image échoue ; une erreur explicite est envoyée au snackbar.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

@@ -149,15 +149,24 @@ fun SettingsScreen(
     ) { granted -> if (granted) appearanceVm.setNotifEnabled(true) }
 
     val avatarLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
-        val hh = household ?: return@rememberLauncherForActivityResult
-        val userId = auth?.userId ?: return@rememberLauncherForActivityResult
+        if (uri == null) return@rememberLauncherForActivityResult
+        val hh = household ?: run {
+            householdVm.reportError("Impossible d'envoyer l'avatar : foyer introuvable.")
+            return@rememberLauncherForActivityResult
+        }
+        val userId = auth?.userId ?: run {
+            householdVm.reportError("Impossible d'envoyer l'avatar : utilisateur introuvable.")
+            return@rememberLauncherForActivityResult
+        }
         val mimeType = context.contentResolver.getType(uri)
         val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "jpg"
         scope.launch {
             val bytes = withContext(Dispatchers.IO) {
                 context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-            } ?: return@launch
+            } ?: run {
+                householdVm.reportError("Impossible de lire l'image sélectionnée.")
+                return@launch
+            }
             householdVm.uploadAvatar(hh.id, userId, bytes, ext)
         }
     }

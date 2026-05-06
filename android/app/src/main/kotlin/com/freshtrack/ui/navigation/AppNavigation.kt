@@ -92,6 +92,8 @@ fun AppNavigation() {
     val authState by authVm.authState.collectAsState()
 
     val navController = rememberNavController()
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = backStackEntry?.destination?.route
     val targetRoot = when (val state = authState) {
         is AuthState.Loading -> null
         is AuthState.NotAuthenticated -> Routes.AUTH
@@ -99,8 +101,18 @@ fun AppNavigation() {
         is AuthState.Authenticated -> if (state.household == null) Routes.HOUSEHOLD_SETUP else Routes.MAIN
     }
 
-    LaunchedEffect(targetRoot) {
-        targetRoot?.let { route ->
+    LaunchedEffect(targetRoot, currentRoute) {
+        val route = targetRoot ?: return@LaunchedEffect
+        val current = currentRoute
+        val shouldNavigate = when (route) {
+            Routes.AUTH -> current != Routes.AUTH
+            Routes.HOUSEHOLD_SETUP -> current != Routes.HOUSEHOLD_SETUP
+            Routes.MAIN -> current == null || current == Routes.LOADING ||
+                current == Routes.AUTH || current == Routes.HOUSEHOLD_SETUP
+            else -> current != route
+        }
+
+        if (shouldNavigate) {
             navController.navigate(route) { popUpTo(0) { inclusive = true } }
         }
     }

@@ -92,5 +92,7 @@ class HouseholdSettingsViewModel @Inject constructor(
 
     fun signOut() = viewModelScope.launch { authRepository.signOut() }
 
+    fun reportError(message: String) = _ui.update { it.copy(isLoading = false, error = message) }
+
     fun clearMessages() = _ui.update { it.copy(error = null, successMessage = null) }
 }
