@@ -27,10 +27,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -45,6 +48,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -66,10 +70,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.freshtrack.domain.catalog.PRODUCT_CATEGORIES
+import com.freshtrack.domain.format.formatDate
+import com.freshtrack.domain.format.parseUserDate
 import com.freshtrack.ui.navigation.Routes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.toLocalDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -130,6 +140,7 @@ fun AddProductScreen(
     }
 
     var categoryExpanded by remember { mutableStateOf(false) }
+    var showExpirationDatePicker by remember { mutableStateOf(false) }
     val categories = remember { PRODUCT_CATEGORIES.filter { it.key != "all" } }
     val currentCategory = categories.firstOrNull { it.key == ui.category }
     val screenTitle = when {
@@ -275,6 +286,11 @@ fun AddProductScreen(
                     singleLine = true,
                     isError = ui.error?.contains("Date") == true
                 )
+                OutlinedButton(
+                    onClick = { showExpirationDatePicker = true }
+                ) {
+                    Icon(Icons.Default.DateRange, contentDescription = "Choisir une date")
+                }
                 OutlinedButton(
                     onClick = { navController.navigate(Routes.dateScanner(ui.barcode.ifBlank { "_" })) }
                 ) {
@@ -504,6 +520,49 @@ fun AddProductScreen(
             onDismiss = { vm.dismissImageDialog() }
         )
     }
+
+    if (showExpirationDatePicker) {
+        ProductDatePickerDialog(
+            initialDate = ui.expirationDate,
+            onDateSelected = vm::setExpirationDate,
+            onDismiss = { showExpirationDatePicker = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProductDatePickerDialog(
+    initialDate: String,
+    onDateSelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val pickerState = rememberDatePickerState(
+        initialSelectedDateMillis = remember(initialDate) { dateInputToEpochMillis(initialDate) }
+    )
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    pickerState.selectedDateMillis?.let { millis ->
+                        onDateSelected(epochMillisToDateInput(millis))
+                    }
+                    onDismiss()
+                }
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Annuler")
+            }
+        }
+    ) {
+        DatePicker(state = pickerState)
+    }
 }
 
 @Composable
@@ -553,3 +612,13 @@ private fun OffImageSelectionDialog(
         }
     }
 }
+
+private fun dateInputToEpochMillis(value: String): Long? =
+    parseUserDate(value)?.atStartOfDayIn(TimeZone.UTC)?.toEpochMilliseconds()
+
+private fun epochMillisToDateInput(value: Long): String =
+    formatDate(
+        Instant.fromEpochMilliseconds(value)
+            .toLocalDateTime(TimeZone.UTC)
+            .date
+    ).orEmpty()

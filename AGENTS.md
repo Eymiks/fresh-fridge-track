@@ -163,6 +163,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Les images produit affichées dans les cartes utilisent `ContentScale.Crop` sur une taille stable de 52dp.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 3 : sélecteur de date produit**
+- Issue GitHub `Android` prise en compte : #6 `Sélecteur de date produit`.
+- `AddProductScreen.kt` ajoute un `DatePickerDialog` Material3 sur le champ `Date de péremption`, en complément de la saisie manuelle et du scanner caméra existants.
+- Le DatePicker initialise sa sélection depuis la valeur du formulaire quand elle est valide, puis réécrit la date au format `JJ/MM/AAAA`; le flux est commun à l'ajout et à la modification de produit.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
