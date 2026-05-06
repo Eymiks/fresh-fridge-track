@@ -169,6 +169,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Le DatePicker initialise sa sélection depuis la valeur du formulaire quand elle est valide, puis réécrit la date au format `JJ/MM/AAAA`; le flux est commun à l'ajout et à la modification de produit.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 4 : actions fixes sur ajout produit**
+- Issue GitHub `Android` prise en compte : #4 `Ajout produit trop long`.
+- `AddProductScreen.kt` déplace les actions principales dans le `bottomBar` du `Scaffold`, afin que `Ajouter au frigo`, `Enregistrer les modifications`, `Ajouter & scanner le suivant` et `Terminer` restent accessibles sans descendre en bas du formulaire.
+- Le formulaire reste scrollable avec les mêmes champs ; cette étape ne réorganise pas encore les sections avancées.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

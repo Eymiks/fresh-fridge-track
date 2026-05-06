@@ -44,6 +44,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -159,6 +160,25 @@ fun AddProductScreen(
                     }
                 }
             )
+        },
+        bottomBar = {
+            if (!ui.isLoadingBarcode && !ui.isLoadingProduct) {
+                AddProductBottomBar(
+                    ui = ui,
+                    isMultiMode = isMultiMode,
+                    onSave = { vm.save { navController.popBackStack() } },
+                    onSaveAndScanNext = {
+                        vm.save {
+                            navController.navigate(Routes.BARCODE_SCANNER_MULTI) {
+                                popUpTo(Routes.BARCODE_SCANNER_MULTI) { inclusive = true }
+                            }
+                        }
+                    },
+                    onFinishMultiScan = {
+                        navController.popBackStack(Routes.BARCODE_SCANNER_MULTI, true)
+                    }
+                )
+            }
         }
     ) { innerPadding ->
         if (ui.isLoadingBarcode || ui.isLoadingProduct) {
@@ -452,64 +472,6 @@ fun AddProductScreen(
             }
 
             Spacer(Modifier.height(8.dp))
-
-            if (isMultiMode && !ui.isEditing) {
-                // Bouton "Ajouter & scanner le suivant"
-                Button(
-                    onClick = {
-                        vm.save {
-                            // Réinitialiser en naviguant vers un BARCODE_SCANNER_MULTI frais
-                            navController.navigate(Routes.BARCODE_SCANNER_MULTI) {
-                                popUpTo(Routes.BARCODE_SCANNER_MULTI) { inclusive = true }
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !ui.isSaving && ui.name.isNotBlank() && ui.expirationDate.isNotBlank()
-                ) {
-                    if (ui.isSaving) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.padding(end = 8.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
-                    }
-                    Text(if (ui.isSaving) "Enregistrement…" else "Ajouter & scanner le suivant")
-                }
-                // Bouton "Terminer" (quitter le mode multi-scan)
-                TextButton(
-                    onClick = {
-                        navController.popBackStack(Routes.BARCODE_SCANNER_MULTI, true)
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Terminer")
-                }
-            } else {
-                // Bouton sauvegarder classique
-                Button(
-                    onClick = {
-                        vm.save { navController.popBackStack() }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !ui.isSaving && ui.name.isNotBlank() && ui.expirationDate.isNotBlank()
-                ) {
-                    if (ui.isSaving) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.padding(end = 8.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
-                    }
-                    Text(
-                        when {
-                            ui.isSaving -> "Enregistrement…"
-                            ui.isEditing -> "Enregistrer les modifications"
-                            else -> "Ajouter au frigo"
-                        }
-                    )
-                }
-            }
         }
     }
 
@@ -563,6 +525,72 @@ private fun ProductDatePickerDialog(
     ) {
         DatePicker(state = pickerState)
     }
+}
+
+@Composable
+private fun AddProductBottomBar(
+    ui: AddProductUiState,
+    isMultiMode: Boolean,
+    onSave: () -> Unit,
+    onSaveAndScanNext: () -> Unit,
+    onFinishMultiScan: () -> Unit
+) {
+    val canSave = !ui.isSaving && ui.name.isNotBlank() && ui.expirationDate.isNotBlank()
+
+    Surface(tonalElevation = 3.dp) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (isMultiMode && !ui.isEditing) {
+                Button(
+                    onClick = onSaveAndScanNext,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = canSave
+                ) {
+                    SaveProgressLabel(
+                        isSaving = ui.isSaving,
+                        savingLabel = "Enregistrement…",
+                        idleLabel = "Ajouter & scanner le suivant"
+                    )
+                }
+                TextButton(
+                    onClick = onFinishMultiScan,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Terminer")
+                }
+            } else {
+                Button(
+                    onClick = onSave,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = canSave
+                ) {
+                    SaveProgressLabel(
+                        isSaving = ui.isSaving,
+                        savingLabel = "Enregistrement…",
+                        idleLabel = if (ui.isEditing) "Enregistrer les modifications" else "Ajouter au frigo"
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SaveProgressLabel(
+    isSaving: Boolean,
+    savingLabel: String,
+    idleLabel: String
+) {
+    if (isSaving) {
+        CircularProgressIndicator(
+            modifier = Modifier.padding(end = 8.dp),
+            color = MaterialTheme.colorScheme.onPrimary,
+            strokeWidth = 2.dp
+        )
+    }
+    Text(if (isSaving) savingLabel else idleLabel)
 }
 
 @Composable
