@@ -6,7 +6,8 @@
       "Bash(awk '{print $5}')",
       "Bash(powershell -Command \"Stop-Process -Id 19900 -Force\")",
       "Bash(bun run *)",
-      "PowerShell(netstat -ano | Select-String \":3000\" | ForEach-Object { ($_ -split '\\s+')[-1] } | Sort-Object -Unique | ForEach-Object { if ($_ -match '^\\d+$') { taskkill /PID $_ /F 2>$null } })"
+      "PowerShell(netstat -ano | Select-String \":3000\" | ForEach-Object { ($_ -split '\\s+')[-1] } | Sort-Object -Unique | ForEach-Object { if ($_ -match '^\\d+$') { taskkill /PID $_ /F 2>$null } })",
+      "Bash(git add *)"
     ]
   },
   "hooks": {
@@ -15,8 +16,8 @@
         "hooks": [
           {
             "type": "command",
-            "shell": "powershell",
             "command": "$msgFile = '.claude/commit_msg.txt'; if (Test-Path $msgFile) { $msg = (Get-Content $msgFile -Raw).Trim(); Remove-Item $msgFile } else { $msg = $null }; git add -A; $staged = git diff --cached --name-only 2>$null; if ($staged) { if (-not $msg) { $files = ($staged -split \"`n\" | Where-Object { $_ } | ForEach-Object { Split-Path $_ -Leaf }) -join ', '; $msg = \"auto: $files\" }; git commit -m $msg; git push origin main 2>$null }",
+            "shell": "powershell",
             "statusMessage": "Pushing to GitHub...",
             "async": true
           }
