@@ -225,6 +225,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Les champs de conservation et les informations avancées sont repliés par défaut, tandis que les champs essentiels et les actions image restent immédiatement accessibles.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 13 : bannière hors ligne accueil**
+- Écart PWA / Android corrigé : l'indicateur hors ligne est visible sur l'accueil et les onglets principaux.
+- `MainScreen` affiche désormais `OfflineBanner()` au-dessus du `NavHost` des onglets.
+- `NotificationsScreen` ne rend plus sa propre bannière hors ligne pour éviter un doublon dans l'onglet Alertes.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

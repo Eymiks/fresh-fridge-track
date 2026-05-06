@@ -1,6 +1,7 @@
 package com.freshtrack.ui.navigation
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -28,6 +29,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.freshtrack.data.auth.AuthState
+import com.freshtrack.ui.components.OfflineBanner
 import com.freshtrack.ui.screens.auth.AuthScreen
 import com.freshtrack.ui.screens.auth.AuthViewModel
 import com.freshtrack.ui.screens.credits.CreditsScreen
@@ -200,26 +202,29 @@ private fun MainScreen(rootNavController: androidx.navigation.NavController) {
             }
         }
     ) { innerPadding ->
-        NavHost(
-            navController = tabNavController,
-            startDestination = Routes.INDEX,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            composable(Routes.INDEX) {
-                IndexScreen(
-                    onProductClick = { id -> rootNavController.navigate(Routes.productDetail(id)) },
-                    onScanClick = { rootNavController.navigate(Routes.BARCODE_SCANNER) },
-                    onMultiScanClick = { rootNavController.navigate(Routes.BARCODE_SCANNER_MULTI) },
-                    onSettingsClick = { rootNavController.navigate(Routes.SETTINGS) },
-                    onEditProduct = { id -> rootNavController.navigate(Routes.editProduct(id)) }
-                )
-            }
-            composable(Routes.STATS) { StatsScreen() }
-            composable(Routes.HISTORY) {
-                HistoryScreen(onProductClick = { id -> rootNavController.navigate(Routes.productDetail(id)) })
-            }
-            composable(Routes.NOTIFICATIONS) {
-                NotificationsScreen(onProductClick = { id -> rootNavController.navigate(Routes.productDetail(id)) })
+        Column(Modifier.fillMaxSize().padding(innerPadding)) {
+            OfflineBanner()
+            NavHost(
+                navController = tabNavController,
+                startDestination = Routes.INDEX,
+                modifier = Modifier.weight(1f)
+            ) {
+                composable(Routes.INDEX) {
+                    IndexScreen(
+                        onProductClick = { id -> rootNavController.navigate(Routes.productDetail(id)) },
+                        onScanClick = { rootNavController.navigate(Routes.BARCODE_SCANNER) },
+                        onMultiScanClick = { rootNavController.navigate(Routes.BARCODE_SCANNER_MULTI) },
+                        onSettingsClick = { rootNavController.navigate(Routes.SETTINGS) },
+                        onEditProduct = { id -> rootNavController.navigate(Routes.editProduct(id)) }
+                    )
+                }
+                composable(Routes.STATS) { StatsScreen() }
+                composable(Routes.HISTORY) {
+                    HistoryScreen(onProductClick = { id -> rootNavController.navigate(Routes.productDetail(id)) })
+                }
+                composable(Routes.NOTIFICATIONS) {
+                    NotificationsScreen(onProductClick = { id -> rootNavController.navigate(Routes.productDetail(id)) })
+                }
             }
         }
     }

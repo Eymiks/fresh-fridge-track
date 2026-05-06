@@ -52,7 +52,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.freshtrack.ui.components.OfflineBanner
 import com.freshtrack.ui.screens.index.ProductCard
 
 @Composable
@@ -85,7 +84,6 @@ fun NotificationsScreen(
 
     Surface(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
-            OfflineBanner()
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(16.dp),
