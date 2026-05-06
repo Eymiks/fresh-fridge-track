@@ -1,11 +1,14 @@
 package com.freshtrack.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -15,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -39,6 +43,7 @@ import com.freshtrack.ui.screens.add.AddProductScreen
 import com.freshtrack.ui.screens.stats.StatsScreen
 
 object Routes {
+    const val LOADING = "loading"
     const val AUTH = "auth"
     const val HOUSEHOLD_SETUP = "household_setup"
     const val MAIN = "main"
@@ -86,24 +91,21 @@ fun AppNavigation() {
     val authState by authVm.authState.collectAsState()
 
     val navController = rememberNavController()
+    val targetRoot = when (val state = authState) {
+        is AuthState.Loading -> null
+        is AuthState.NotAuthenticated -> Routes.AUTH
+        is AuthState.Guest -> Routes.MAIN
+        is AuthState.Authenticated -> if (state.household == null) Routes.HOUSEHOLD_SETUP else Routes.MAIN
+    }
 
-    LaunchedEffect(authState) {
-        when (val state = authState) {
-            is AuthState.Loading -> {}
-            is AuthState.NotAuthenticated -> navController.navigate(Routes.AUTH) {
-                popUpTo(0) { inclusive = true }
-            }
-            is AuthState.Guest -> navController.navigate(Routes.MAIN) {
-                popUpTo(0) { inclusive = true }
-            }
-            is AuthState.Authenticated -> {
-                val dest = if (state.household == null) Routes.HOUSEHOLD_SETUP else Routes.MAIN
-                navController.navigate(dest) { popUpTo(0) { inclusive = true } }
-            }
+    LaunchedEffect(targetRoot) {
+        targetRoot?.let { route ->
+            navController.navigate(route) { popUpTo(0) { inclusive = true } }
         }
     }
 
-    NavHost(navController = navController, startDestination = Routes.AUTH) {
+    NavHost(navController = navController, startDestination = Routes.LOADING) {
+        composable(Routes.LOADING) { LoadingScreen() }
         composable(Routes.AUTH) { AuthScreen(navController) }
         composable(Routes.HOUSEHOLD_SETUP) { HouseholdSetupScreen(navController) }
         composable(Routes.MAIN) { MainScreen(navController) }
@@ -148,6 +150,13 @@ fun AppNavigation() {
     }
 
     GuestImportPrompt()
+}
+
+@Composable
+private fun LoadingScreen() {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+    }
 }
 
 @Composable

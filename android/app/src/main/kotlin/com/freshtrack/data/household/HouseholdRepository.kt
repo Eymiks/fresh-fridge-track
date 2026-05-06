@@ -11,6 +11,7 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
 import io.github.jan.supabase.storage.storage
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -64,7 +65,7 @@ class HouseholdRepository @Inject constructor(private val supabase: SupabaseClie
         val path = "$householdId/avatar_$userId.$ext"
         val bucket = supabase.storage.from("product-images")
         bucket.upload(path, bytes, options = { upsert = true })
-        val publicUrl = bucket.publicUrl(path)
+        val publicUrl = "${bucket.publicUrl(path)}?v=${Clock.System.now().toEpochMilliseconds()}"
         supabase.from("household_members")
             .update(mapOf("avatar_url" to publicUrl)) {
                 filter {

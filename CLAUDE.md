@@ -148,6 +148,15 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 | 5 | History : 3 sections colorées (Ouverts/Consommés/Jetés). Notifications : carte "permission refusée" + lien paramètres Android | `HistoryScreen.kt`, `NotificationsScreen.kt` | ✅ |
 | 6 | Sélection image OFF (5 choix), bannière hors ligne, retry OCR avec backoff | `AddProductScreen.kt`, `AddProductViewModel.kt`, `SettingsScreen.kt`, `OfflineBanner.kt`, `DateScannerViewModel.kt` | ✅ |
 
+### Journal de développement Android
+
+**2026-05-06 — Étape 1 : stabilisation navigation/auth + avatar**
+- Issues GitHub `Android` prises en compte : #1 `Upload image profil`, #2 `Lenteurs au démarrage`.
+- `AppNavigation.kt` démarre désormais sur une route `loading` et ne renvoie plus vers `MAIN` à chaque nouvelle émission `AuthState.Authenticated` ; seules les transitions de gate auth (`AUTH` / `HOUSEHOLD_SETUP` / `MAIN`) déclenchent une navigation racine. Cela évite le retour inattendu à l'accueil après `refreshHousehold()`.
+- `HouseholdRepository.uploadAvatar()` versionne l'URL publique avec `?v=<timestamp>` après l'upsert Storage pour forcer Coil à recharger l'avatar mis à jour.
+- `IndexViewModel` garde `isLoading=true` pendant `AuthState.Loading` et pendant `fetchAndCache()` initial, afin d'éviter un écran d'accueil vide avant l'arrivée des produits.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

@@ -103,14 +103,19 @@ class IndexViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             authState.flatMapLatest { state ->
-                if (state is AuthState.Authenticated && state.household != null) {
-                    flow {
+                when {
+                    state is AuthState.Loading -> flow {
+                        _ui.update { it.copy(isLoading = true) }
+                    }
+                    state is AuthState.Authenticated && state.household != null -> flow {
+                        _ui.update { it.copy(isLoading = true, error = null) }
                         val result = runCatching { productRepository.fetchAndCache(state.household.id) }
                         _ui.update { it.copy(isLoading = false, error = result.exceptionOrNull()?.message) }
                         emitAll(productRepository.subscribeToRealtime(state.household.id))
                     }
-                } else {
-                    flow { _ui.update { it.copy(isLoading = false) } }
+                    else -> flow {
+                        _ui.update { it.copy(isLoading = false) }
+                    }
                 }
             }.collect {}
         }
