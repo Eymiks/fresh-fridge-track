@@ -308,6 +308,14 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Commits créés par étape : thème, Auth, accueil, cartes produit, formulaire produit, navigation + documentation.
 - À vérifier sur appareil : contraste clair/sombre, header accueil selon alertes, clavier sur Auth/AddProduct, bottom nav avec barre système, lisibilité des badges courts.
 
+**2026-05-07 — Suite polish accueil Android d'après capture PWA**
+- `IndexScreen` reprend davantage la capture PWA : stat-cards placées dans le header, barre recherche + tri + filtre sur une seule ligne, suppression des chips catégories permanentes.
+- Le bouton filtre carré ouvre un menu combinant statut et catégorie via les setters existants, sans changer la logique métier ni le modèle de données.
+- La banner des produits périmés affiche désormais une action `Voir`, les sections utilisent des icônes Compose plutôt que des emoji texte, et les cartes produit alignent badge date + Nutri-Score à droite avec image stable 52dp.
+- Commit créé : `827badf android: affiner l'accueil d'après la capture PWA`.
+- Vérifications : `./gradlew.bat :app:assembleDebug` OK ; `./gradlew.bat :app:testDebugUnitTest` OK (`NO-SOURCE`) ; APK installé et lancé sur l'appareil `ZY22HVMV3X`.
+- À vérifier sur appareil : densité exacte des cartes sur petit écran et lisibilité du menu filtre en mode sombre.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
