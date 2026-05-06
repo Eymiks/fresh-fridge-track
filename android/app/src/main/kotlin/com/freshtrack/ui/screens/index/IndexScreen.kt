@@ -18,10 +18,8 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -77,8 +75,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -672,163 +672,166 @@ fun ProductCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             shape = MaterialTheme.shapes.medium
         ) {
-            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-                // Left color strip (M7)
-                Box(
-                    Modifier.width(5.dp).fillMaxHeight()
-                        .background(statusColor, shape = RectangleShape)
-                )
-                Row(
-                    modifier = Modifier.weight(1f).padding(horizontal = 10.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (isSelectionMode) {
-                        Checkbox(checked = isSelected, onCheckedChange = null)
-                        Spacer(Modifier.width(4.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .drawBehind {
+                        drawRect(
+                            color = statusColor,
+                            size = Size(5.dp.toPx(), size.height)
+                        )
                     }
+                    .padding(start = 5.dp)
+                    .padding(horizontal = 10.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (isSelectionMode) {
+                    Checkbox(checked = isSelected, onCheckedChange = null)
+                    Spacer(Modifier.width(4.dp))
+                }
 
-                    if (product.imageUrl != null) {
-                        // Image + frozen badge overlay (L1)
-                        Box(contentAlignment = Alignment.TopEnd) {
-                            AsyncImage(
-                                model = product.imageUrl,
-                                contentDescription = null,
-                                modifier = Modifier.size(52.dp).clip(MaterialTheme.shapes.small)
-                            )
-                            if (product.frozenUntil != null) {
-                                Box(
-                                    Modifier.size(18.dp)
-                                        .clip(MaterialTheme.shapes.extraSmall)
-                                        .background(Color(0xFF0288D1)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        Icons.Default.AcUnit,
-                                        contentDescription = "Congelé",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(12.dp)
-                                    )
-                                }
+                if (product.imageUrl != null) {
+                    // Image + frozen badge overlay (L1)
+                    Box(contentAlignment = Alignment.TopEnd) {
+                        AsyncImage(
+                            model = product.imageUrl,
+                            contentDescription = null,
+                            modifier = Modifier.size(52.dp).clip(MaterialTheme.shapes.small),
+                            contentScale = ContentScale.Crop
+                        )
+                        if (product.frozenUntil != null) {
+                            Box(
+                                Modifier.size(18.dp)
+                                    .clip(MaterialTheme.shapes.extraSmall)
+                                    .background(Color(0xFF0288D1)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.AcUnit,
+                                    contentDescription = "Congelé",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(12.dp)
+                                )
                             }
                         }
-                        Spacer(Modifier.width(10.dp))
-                    } else if (product.frozenUntil != null) {
-                        // No image but frozen — show standalone badge
-                        Box(
-                            Modifier.size(52.dp)
-                                .clip(MaterialTheme.shapes.small)
-                                .background(Color(0xFF0288D1).copy(alpha = 0.15f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.AcUnit, contentDescription = null,
-                                tint = Color(0xFF0288D1), modifier = Modifier.size(28.dp))
-                        }
-                        Spacer(Modifier.width(10.dp))
                     }
+                    Spacer(Modifier.width(10.dp))
+                } else if (product.frozenUntil != null) {
+                    // No image but frozen — show standalone badge
+                    Box(
+                        Modifier.size(52.dp)
+                            .clip(MaterialTheme.shapes.small)
+                            .background(Color(0xFF0288D1).copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.AcUnit, contentDescription = null,
+                            tint = Color(0xFF0288D1), modifier = Modifier.size(28.dp))
+                    }
+                    Spacer(Modifier.width(10.dp))
+                }
 
-                    Column(modifier = Modifier.weight(1f)) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        product.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1
+                    )
+                    if (!product.brand.isNullOrBlank()) {
                         Text(
-                            product.name,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium,
+                            product.brand,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1
                         )
-                        if (!product.brand.isNullOrBlank()) {
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (product.status == ProductStatus.OPENED) {
                             Text(
-                                product.brand,
-                                style = MaterialTheme.typography.bodySmall,
+                                "Ouvert",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
+                        // Nutri-Score badge (M8)
+                        if (!product.nutriScore.isNullOrBlank()) {
+                            NutriScoreBadge(product.nutriScore)
+                        }
+                    }
+                    // Ajouté par (L2)
+                    if (!product.addedByName.isNullOrBlank()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(10.dp)
+                            )
+                            Text(
+                                product.addedByName,
+                                style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1
                             )
                         }
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (product.status == ProductStatus.OPENED) {
-                                Text(
-                                    "Ouvert",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.tertiary
-                                )
-                            }
-                            // Nutri-Score badge (M8)
-                            if (!product.nutriScore.isNullOrBlank()) {
-                                NutriScoreBadge(product.nutriScore)
-                            }
-                        }
-                        // Ajouté par (L2)
-                        if (!product.addedByName.isNullOrBlank()) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Person,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(10.dp)
-                                )
-                                Text(
-                                    product.addedByName,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1
-                                )
-                            }
-                        }
                     }
+                }
 
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            text = daysLabel,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = statusColor,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        // Context menu (M9)
-                        if (!isSelectionMode) {
-                            Box {
-                                IconButton(
-                                    onClick = { showMenu = true },
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Icon(Icons.Default.MoreVert, "Plus d'options", Modifier.size(16.dp))
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = daysLabel,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = statusColor,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    // Context menu (M9)
+                    if (!isSelectionMode) {
+                        Box {
+                            IconButton(
+                                onClick = { showMenu = true },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(Icons.Default.MoreVert, "Plus d'options", Modifier.size(16.dp))
+                            }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false }
+                            ) {
+                                if (onEdit != null) {
+                                    DropdownMenuItem(
+                                        text = { Text("Modifier") },
+                                        onClick = { showMenu = false; onEdit() },
+                                        leadingIcon = {
+                                            Icon(Icons.Default.Edit, null,
+                                                modifier = Modifier.size(18.dp))
+                                        }
+                                    )
                                 }
-                                DropdownMenu(
-                                    expanded = showMenu,
-                                    onDismissRequest = { showMenu = false }
-                                ) {
-                                    if (onEdit != null) {
-                                        DropdownMenuItem(
-                                            text = { Text("Modifier") },
-                                            onClick = { showMenu = false; onEdit() },
-                                            leadingIcon = {
-                                                Icon(Icons.Default.Edit, null,
-                                                    modifier = Modifier.size(18.dp))
-                                            }
-                                        )
-                                    }
-                                    if (onConsume != null) {
-                                        DropdownMenuItem(
-                                            text = { Text("Marquer consommé") },
-                                            onClick = { showMenu = false; onConsume() },
-                                            leadingIcon = {
-                                                Icon(Icons.Default.Check, null,
-                                                    tint = ColorFresh, modifier = Modifier.size(18.dp))
-                                            }
-                                        )
-                                    }
-                                    if (onThrow != null) {
-                                        DropdownMenuItem(
-                                            text = { Text("Jeter") },
-                                            onClick = { showMenu = false; onThrow() },
-                                            leadingIcon = {
-                                                Icon(Icons.Default.Delete, null,
-                                                    tint = ColorExpired, modifier = Modifier.size(18.dp))
-                                            }
-                                        )
-                                    }
+                                if (onConsume != null) {
+                                    DropdownMenuItem(
+                                        text = { Text("Marquer consommé") },
+                                        onClick = { showMenu = false; onConsume() },
+                                        leadingIcon = {
+                                            Icon(Icons.Default.Check, null,
+                                                tint = ColorFresh, modifier = Modifier.size(18.dp))
+                                        }
+                                    )
+                                }
+                                if (onThrow != null) {
+                                    DropdownMenuItem(
+                                        text = { Text("Jeter") },
+                                        onClick = { showMenu = false; onThrow() },
+                                        leadingIcon = {
+                                            Icon(Icons.Default.Delete, null,
+                                                tint = ColorExpired, modifier = Modifier.size(18.dp))
+                                        }
+                                    )
                                 }
                             }
                         }

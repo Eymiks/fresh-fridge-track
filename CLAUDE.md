@@ -157,6 +157,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - `IndexViewModel` garde `isLoading=true` pendant `AuthState.Loading` et pendant `fetchAndCache()` initial, afin d'éviter un écran d'accueil vide avant l'arrivée des produits.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 2 : optimisation scroll accueil**
+- Issue GitHub `Android` prise en compte : #3 `Scroll accueil saccadé`.
+- `IndexScreen.ProductCard()` n'utilise plus `height(IntrinsicSize.Min)` / `fillMaxHeight()` pour la bande de statut ; la bande est dessinée via `drawBehind`, ce qui évite une mesure intrinsèque coûteuse pour chaque item de la `LazyColumn`.
+- Les images produit affichées dans les cartes utilisent `ContentScale.Crop` sur une taille stable de 52dp.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
