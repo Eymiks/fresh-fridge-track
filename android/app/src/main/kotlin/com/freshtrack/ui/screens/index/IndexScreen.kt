@@ -57,6 +57,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -131,9 +132,9 @@ fun IndexScreen(
     var freshCollapsed by rememberSaveable { mutableStateOf(false) }
 
     val headerBg = when {
-        totalCounts.expired > 0 -> ColorExpired.copy(alpha = 0.14f)
-        totalCounts.soon > 0 -> ColorSoon.copy(alpha = 0.12f)
-        else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
+        totalCounts.expired > 0 -> ColorExpired.copy(alpha = 0.08f)
+        totalCounts.soon > 0 -> ColorSoon.copy(alpha = 0.08f)
+        else -> MaterialTheme.colorScheme.surface
     }
 
     val isInitialLoading = ui.isLoading && products.isEmpty()
@@ -143,39 +144,63 @@ fun IndexScreen(
 
     Scaffold(
         topBar = {
-            Column(Modifier.background(headerBg)) {
-                // Ligne branding : icône + "FreshTrack" + paramètres
+            Column(
+                Modifier
+                    .background(headerBg)
+                    .padding(top = 10.dp, bottom = 12.dp)
+            ) {
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        Icons.Default.Eco,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(MaterialTheme.shapes.small)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Eco,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Spacer(Modifier.width(10.dp))
                     Text(
                         "FreshTrack",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
                     )
-                    IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Default.Settings, "Paramètres")
+                    Surface(
+                        onClick = onSettingsClick,
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        shadowElevation = 1.dp
+                    ) {
+                        Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Settings,
+                                contentDescription = "Paramètres",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
-                // Barre de recherche + tri
+
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                        .padding(horizontal = 20.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedTextField(
                         value = ui.searchQuery,
@@ -187,14 +212,30 @@ fun IndexScreen(
                         } else null,
                         singleLine = true,
                         modifier = Modifier.weight(1f),
-                        shape = MaterialTheme.shapes.extraLarge,
+                        shape = MaterialTheme.shapes.medium,
                         colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                         )
                     )
                     Box {
-                        IconButton(onClick = { showSortMenu = !showSortMenu }) {
-                            Icon(Icons.AutoMirrored.Filled.Sort, "Trier")
+                        Surface(
+                            onClick = { showSortMenu = !showSortMenu },
+                            shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            shadowElevation = 1.dp
+                        ) {
+                            Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.Sort,
+                                    contentDescription = "Trier",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                         DropdownMenu(
                             expanded = showSortMenu,
@@ -226,8 +267,8 @@ fun IndexScreen(
                 }
 
                 LazyRow(
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(PRODUCT_CATEGORIES.filter { it.key != "all" }.let {
                         listOf(PRODUCT_CATEGORIES.first()) + it
@@ -235,7 +276,19 @@ fun IndexScreen(
                         FilterChip(
                             selected = ui.selectedCategory == cat.key,
                             onClick = { vm.setCategory(cat.key) },
-                            label = { Text(cat.label, style = MaterialTheme.typography.labelSmall) }
+                            label = { Text(cat.label, style = MaterialTheme.typography.labelSmall) },
+                            shape = MaterialTheme.shapes.small,
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = ui.selectedCategory == cat.key,
+                                borderColor = MaterialTheme.colorScheme.outlineVariant,
+                                selectedBorderColor = MaterialTheme.colorScheme.primary
+                            )
                         )
                     }
                 }
@@ -480,18 +533,42 @@ fun IndexScreen(
 private fun EmptyFridgeState() {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.padding(horizontal = 32.dp)
     ) {
-        Text("🥗", style = MaterialTheme.typography.displayLarge)
+        Box(
+            modifier = Modifier
+                .size(96.dp)
+                .clip(MaterialTheme.shapes.extraLarge)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .clip(MaterialTheme.shapes.large)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.AcUnit,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(30.dp)
+                )
+            }
+        }
         Text(
-            "Votre frigo est vide",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
+            "Frigo vide !",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onBackground
         )
         Text(
-            "Appuyez sur + pour ajouter un produit",
+            "Ajoutez votre premier produit pour commencer",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 4.dp)
         )
     }
 }
@@ -507,8 +584,8 @@ private fun StatCardsRow(
     onFilterChange: (StatusFilter) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         StatCard(expiredCount, "Périmés", ColorExpired,
             activeFilter == StatusFilter.EXPIRED, Icons.Default.Warning, Modifier.weight(1f)) {
@@ -534,36 +611,39 @@ private fun StatCard(
     Card(
         onClick = onClick, modifier = modifier,
         colors = CardDefaults.cardColors(
-            containerColor = if (isActive) color.copy(alpha = 0.14f)
+            containerColor = if (isActive) color.copy(alpha = 0.12f)
             else MaterialTheme.colorScheme.surface
         ),
         border = if (isActive) BorderStroke(1.dp, color)
         else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = MaterialTheme.shapes.medium
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp).fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Row(
+            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Box(
-                modifier = Modifier.size(36.dp).clip(MaterialTheme.shapes.small)
-                    .background(color.copy(alpha = 0.14f)),
+                modifier = Modifier.size(34.dp).clip(MaterialTheme.shapes.small)
+                    .background(color.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
             }
-            Spacer(Modifier.height(6.dp))
-            Text(
-                count.toString(),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = if (isActive || count > 0) color else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                label,
-                style = MaterialTheme.typography.labelSmall,
-                color = if (isActive) color else MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Column {
+                Text(
+                    count.toString(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = if (isActive || count > 0) color else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isActive) color else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -576,7 +656,7 @@ private fun AlertBanner(expiredCount: Int) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .padding(horizontal = 20.dp, vertical = 4.dp)
             .clip(MaterialTheme.shapes.medium)
             .background(ColorExpired.copy(alpha = 0.10f))
             .padding(horizontal = 14.dp, vertical = 10.dp),
@@ -588,7 +668,7 @@ private fun AlertBanner(expiredCount: Int) {
             "$expiredCount produit${if (plural) "s" else ""} ${if (plural) "sont" else "est"} périmé${if (plural) "s" else ""}",
             style = MaterialTheme.typography.bodyMedium,
             color = ColorExpired,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Bold
         )
     }
 }
@@ -604,7 +684,7 @@ private fun CollapsibleSectionHeader(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
             .clickable { onToggle() }
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -629,31 +709,32 @@ private fun CollapsibleSectionHeader(
 @Composable
 private fun ProductCardSkeleton() {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 5.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = MaterialTheme.shapes.medium
     ) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                Modifier.size(56.dp).clip(MaterialTheme.shapes.small)
-                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                Modifier.size(48.dp).clip(MaterialTheme.shapes.small)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
             )
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Box(
-                    Modifier.fillMaxWidth(0.55f).height(14.dp).clip(MaterialTheme.shapes.small)
-                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                    Modifier.fillMaxWidth(0.64f).height(12.dp).clip(MaterialTheme.shapes.small)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 )
                 Spacer(Modifier.height(6.dp))
                 Box(
                     Modifier.fillMaxWidth(0.30f).height(10.dp).clip(MaterialTheme.shapes.small)
-                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.08f))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 )
             }
             Box(
-                Modifier.width(64.dp).height(14.dp).clip(MaterialTheme.shapes.small)
-                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                Modifier.width(42.dp).height(20.dp).clip(MaterialTheme.shapes.small)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
             )
         }
     }
