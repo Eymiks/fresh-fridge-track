@@ -92,6 +92,17 @@ class ProductRepository @Inject constructor(
             .firstOrNull { it.barcode == barcode && !it.imageUrl.isNullOrBlank() }
             ?.imageUrl
 
+    suspend fun getProductsSnapshot(
+        householdId: String,
+        members: List<Member> = emptyList()
+    ): List<Product> =
+        productDao.getByHousehold(householdId).map { it.toDomain(members) }
+
+    suspend fun getGuestProductsSnapshot(): List<Product> =
+        productDao.getByHousehold(GUEST_HOUSEHOLD_ID).map {
+            it.toDomain().copy(addedByName = GUEST_DISPLAY_NAME)
+        }
+
     suspend fun addProduct(product: Product, householdId: String, userId: String): Product {
         val row = product.toInsertRow(householdId, userId)
         val inserted = supabase.from("products").insert(row) { select() }

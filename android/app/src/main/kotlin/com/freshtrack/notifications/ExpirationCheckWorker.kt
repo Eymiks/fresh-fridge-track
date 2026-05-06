@@ -14,9 +14,8 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.freshtrack.data.auth.AuthRepository
 import com.freshtrack.data.auth.AuthState
-import com.freshtrack.data.db.ProductDao
-import com.freshtrack.data.products.toDomain
 import com.freshtrack.data.prefs.AppPreferences
+import com.freshtrack.data.products.ProductRepository
 import com.freshtrack.domain.model.ProductStatus
 import com.freshtrack.domain.model.getEffectiveExpirationDate
 import dagger.assisted.Assisted
@@ -35,7 +34,7 @@ class ExpirationCheckWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val authRepository: AuthRepository,
-    private val productDao: ProductDao,
+    private val productRepository: ProductRepository,
     private val prefs: AppPreferences
 ) : CoroutineWorker(context, params) {
 
@@ -44,8 +43,12 @@ class ExpirationCheckWorker @AssistedInject constructor(
         if (!notifEnabled) return Result.success()
 
         val authState = authRepository.authState.first { it !is AuthState.Loading }
-        val householdId = when (val s = authState) {
-            is AuthState.Authenticated -> s.household?.id ?: return Result.success()
+        val products = when (val s = authState) {
+            is AuthState.Authenticated -> {
+                val householdId = s.household?.id ?: return Result.success()
+                productRepository.getProductsSnapshot(householdId, s.members)
+            }
+            is AuthState.Guest -> productRepository.getGuestProductsSnapshot()
             else -> return Result.success()
         }
 
@@ -57,14 +60,12 @@ class ExpirationCheckWorker @AssistedInject constructor(
         val doneIds = if (lastCheck == today.toString()) prefs.notifDoneIds.first() else emptySet()
         val threshold = today.plus(notifDays, DateTimeUnit.DAY)
 
-        val entities = productDao.getByHousehold(householdId)
-        val toNotify = entities
-            .map { it.toDomain() }
+        val toNotify = products
             .filter { it.status == ProductStatus.ACTIVE || it.status == ProductStatus.OPENED }
             .filter { product ->
                 val effective = product.getEffectiveExpirationDate()
                 val daysLeft = today.daysUntil(effective)
-                daysLeft >= 0 && effective <= threshold && product.id !in doneIds
+                daysLeft <= notifDays && effective <= threshold && product.id !in doneIds
             }
 
         if (toNotify.isEmpty()) {

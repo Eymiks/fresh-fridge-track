@@ -2,6 +2,7 @@ package com.freshtrack.ui.screens.settings
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.webkit.MimeTypeMap
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -77,6 +78,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
@@ -114,6 +116,7 @@ fun SettingsScreen(
     val appearance by appearanceVm.appearance.collectAsState()
     val notifEnabled by appearanceVm.notifEnabled.collectAsState()
     val notifDays by appearanceVm.notifDays.collectAsState()
+    val notifPermissionRequested by appearanceVm.notifPermissionRequested.collectAsState()
     val authState by authVm.authState.collectAsState()
     val household by householdVm.household.collectAsState()
     val members by householdVm.members.collectAsState()
@@ -135,6 +138,8 @@ fun SettingsScreen(
     val myMember = effectiveMembers.firstOrNull { it.userId == auth?.userId }
     val displayName = myMember?.displayName ?: auth?.displayName ?: "Invité"
     val isOwner = effectiveHousehold?.createdBy == auth?.userId
+    val notificationPermissionGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
     LaunchedEffect(myMember?.displayName, auth?.displayName) {
         editedName = myMember?.displayName ?: auth?.displayName.orEmpty()
@@ -148,7 +153,10 @@ fun SettingsScreen(
 
     val notifPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted -> if (granted) appearanceVm.setNotifEnabled(true) }
+    ) { granted ->
+        appearanceVm.markNotifPermissionRequested()
+        appearanceVm.setNotifEnabled(granted)
+    }
 
     val avatarLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
@@ -274,10 +282,15 @@ fun SettingsScreen(
             SectionCard(title = "Notifications", icon = Icons.Default.Notifications) {
                 SettingsSwitchRow(
                     title = "Alertes d'expiration",
-                    subtitle = "Recevoir une alerte avant la date limite",
+                    subtitle = if (notifPermissionRequested && !notificationPermissionGranted) {
+                        "Autorisez les notifications dans les paramètres Android"
+                    } else {
+                        "Recevoir une alerte avant la date limite"
+                    },
                     checked = notifEnabled,
                     onCheckedChange = { checked ->
-                        if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        if (checked && !notificationPermissionGranted) {
+                            appearanceVm.markNotifPermissionRequested()
                             notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         } else {
                             appearanceVm.setNotifEnabled(checked)

@@ -268,6 +268,13 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Le bouton manuel est visible même quand la caméra est autorisée mais qu'aucune date n'est encore détectée.
 - Vérifications : `./gradlew.bat :app:assembleDebug` OK ; `./gradlew.bat :app:testDebugUnitTest` OK (`NO-SOURCE`).
 
+**2026-05-06 — Étape 20 : notifications expirées et permissions cohérentes**
+- `ExpirationCheckWorker` passe par `ProductRepository` et utilise des snapshots domaine pour les foyers authentifiés et le mode invité.
+- Les notifications de fond incluent désormais les produits déjà périmés, en plus des produits bientôt périmés.
+- `SettingsScreen` partage le suivi `frigo-notif-permission-requested` via `AppearanceViewModel` et désactive les notifications si la permission Android est refusée depuis Paramètres.
+- À vérifier sur appareil : exécution WorkManager réelle, notifications en mode invité, et retour depuis les paramètres Android.
+- Vérifications : `./gradlew.bat :app:assembleDebug` OK ; `./gradlew.bat :app:testDebugUnitTest` OK (`NO-SOURCE`).
+
 ---
 
 ## Android — Référence fonctionnalités PWA

@@ -33,6 +33,8 @@ class AppearanceViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
     val notifDays = prefs.notifDays
         .stateIn(viewModelScope, SharingStarted.Eagerly, 3)
+    val notifPermissionRequested = prefs.notifPermissionRequested
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     fun setThemeMode(mode: ThemeMode) = viewModelScope.launch {
         prefs.setThemeMode(mode.name.lowercase())
@@ -51,5 +53,8 @@ class AppearanceViewModel @Inject constructor(
     }
     fun setNotifDays(value: Int) = viewModelScope.launch {
         prefs.setNotifDays(value)
+    }
+    fun markNotifPermissionRequested() = viewModelScope.launch {
+        prefs.setNotifPermissionRequested(true)
     }
 }
