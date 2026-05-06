@@ -249,6 +249,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - `DateScannerScreen` garde le retour `savedStateHandle` pour le bouton caméra du formulaire, et navigue vers le formulaire seulement pour le flux d'ajout issu du scanner code-barres.
 - Vérifications : `./gradlew.bat :app:assembleDebug` OK ; `./gradlew.bat :app:testDebugUnitTest` OK (`NO-SOURCE`).
 
+**2026-05-06 — Étape 17 : courbe mensuelle Anti-Gaspi**
+- Écart visuel Stats repris : l'évolution mensuelle Anti-Gaspi utilise désormais une courbe Vico (`rememberLineCartesianLayer` + `lineSeries`) au lieu d'un chart en colonnes.
+- Les barres groupées Ajouts / consommés / jetés de l'onglet Tendances restent en colonnes, conformément à la référence PWA.
+- À vérifier sur appareil : rendu exact de la courbe Vico, axes et lisibilité selon thème.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

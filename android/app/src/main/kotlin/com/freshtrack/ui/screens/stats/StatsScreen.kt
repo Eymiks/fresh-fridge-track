@@ -65,9 +65,11 @@ import kotlinx.datetime.daysUntil
 import kotlinx.datetime.toLocalDateTime
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
+import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import kotlin.math.roundToInt
 
 @Composable
@@ -327,11 +329,11 @@ private fun MonthlyScoreChart(monthly: List<MonthlyData>) {
     val modelProducer = remember { CartesianChartModelProducer() }
     LaunchedEffect(monthly) {
         modelProducer.runTransaction {
-            columnSeries { series(monthly.map { it.score }) }
+            lineSeries { series(monthly.map { it.score }) }
         }
     }
     CartesianChartHost(
-        chart = rememberCartesianChart(rememberColumnCartesianLayer()),
+        chart = rememberCartesianChart(rememberLineCartesianLayer()),
         modelProducer = modelProducer,
         modifier = Modifier.fillMaxWidth().height(160.dp)
     )
