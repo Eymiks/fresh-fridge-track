@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AcUnit
@@ -47,6 +46,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.BottomAppBar
@@ -56,9 +56,8 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -90,6 +89,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -125,6 +125,7 @@ fun IndexScreen(
     val reduceMotion = LocalAppearance.current.reduceMotion
 
     var showSortMenu by remember { mutableStateOf(false) }
+    var showFilterMenu by remember { mutableStateOf(false) }
     var fabExpanded by remember { mutableStateOf(false) }
 
     var expiredCollapsed by rememberSaveable { mutableStateOf(false) }
@@ -139,6 +140,9 @@ fun IndexScreen(
 
     val isInitialLoading = ui.isLoading && products.isEmpty()
     val hasNoActiveProducts = !ui.isLoading && products.none { it.isActive() }
+    val hasActiveProducts = products.any { it.isActive() }
+    val hasAlerts = totalCounts.expired > 0 || totalCounts.soon > 0
+    val hasActiveFilter = ui.statusFilter != StatusFilter.ALL || ui.selectedCategory != "all"
     val hasNoFilteredProducts = !ui.isLoading &&
         groups.expired.isEmpty() && groups.soon.isEmpty() && groups.fresh.isEmpty()
 
@@ -147,17 +151,17 @@ fun IndexScreen(
             Column(
                 Modifier
                     .background(headerBg)
-                    .padding(top = 10.dp, bottom = 12.dp)
+                    .padding(top = 8.dp, bottom = 14.dp)
             ) {
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(36.dp)
                             .clip(MaterialTheme.shapes.small)
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)),
                         contentAlignment = Alignment.Center
@@ -166,7 +170,7 @@ fun IndexScreen(
                             Icons.Default.Eco,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                     Spacer(Modifier.width(10.dp))
@@ -177,41 +181,63 @@ fun IndexScreen(
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
                     )
-                    Surface(
-                        onClick = onSettingsClick,
-                        shape = MaterialTheme.shapes.small,
-                        color = MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                        shadowElevation = 1.dp
-                    ) {
-                        Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
-                            Icon(
-                                Icons.Default.Settings,
-                                contentDescription = "Paramètres",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
+                    Box {
+                        Surface(
+                            onClick = onSettingsClick,
+                            shape = MaterialTheme.shapes.small,
+                            color = MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            shadowElevation = 1.dp
+                        ) {
+                            Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.Settings,
+                                    contentDescription = "Paramètres",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        if (hasAlerts) {
+                            Box(
+                                Modifier
+                                    .align(Alignment.TopEnd)
+                                    .size(9.dp)
+                                    .clip(CircleShape)
+                                    .background(ColorExpired)
                             )
                         }
                     }
                 }
 
+                if (hasActiveProducts) {
+                    StatCardsRow(
+                        expiredCount = totalCounts.expired,
+                        soonCount = totalCounts.soon,
+                        freshCount = totalCounts.fresh,
+                        activeFilter = ui.statusFilter,
+                        onFilterChange = { vm.setStatusFilter(it) },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 4.dp),
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedTextField(
                         value = ui.searchQuery,
                         onValueChange = { vm.setSearch(it) },
-                        placeholder = { Text("Rechercher un produit…", style = MaterialTheme.typography.bodyMedium) },
-                        leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(20.dp)) },
+                        placeholder = { Text("Rechercher un produit...", style = MaterialTheme.typography.bodyMedium) },
+                        leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(18.dp)) },
                         trailingIcon = if (ui.searchQuery.isNotEmpty()) {
                             { IconButton(onClick = { vm.setSearch("") }) { Icon(Icons.Default.Close, null, Modifier.size(18.dp)) } }
                         } else null,
                         singleLine = true,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).height(50.dp),
                         shape = MaterialTheme.shapes.medium,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -221,22 +247,12 @@ fun IndexScreen(
                         )
                     )
                     Box {
-                        Surface(
+                        HeaderIconButton(
                             onClick = { showSortMenu = !showSortMenu },
-                            shape = MaterialTheme.shapes.medium,
-                            color = MaterialTheme.colorScheme.surface,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                            shadowElevation = 1.dp
-                        ) {
-                            Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.Sort,
-                                    contentDescription = "Trier",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
+                            icon = Icons.AutoMirrored.Filled.Sort,
+                            contentDescription = "Trier",
+                            isActive = ui.sortOrder != SortOrder.EXPIRATION
+                        )
                         DropdownMenu(
                             expanded = showSortMenu,
                             onDismissRequest = { showSortMenu = false }
@@ -264,32 +280,62 @@ fun IndexScreen(
                             )
                         }
                     }
-                }
-
-                LazyRow(
-                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(PRODUCT_CATEGORIES.filter { it.key != "all" }.let {
-                        listOf(PRODUCT_CATEGORIES.first()) + it
-                    }) { cat ->
-                        FilterChip(
-                            selected = ui.selectedCategory == cat.key,
-                            onClick = { vm.setCategory(cat.key) },
-                            label = { Text(cat.label, style = MaterialTheme.typography.labelSmall) },
-                            shape = MaterialTheme.shapes.small,
-                            colors = FilterChipDefaults.filterChipColors(
-                                containerColor = MaterialTheme.colorScheme.surface,
-                                selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                            ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = ui.selectedCategory == cat.key,
-                                borderColor = MaterialTheme.colorScheme.outlineVariant,
-                                selectedBorderColor = MaterialTheme.colorScheme.primary
-                            )
+                    Box {
+                        HeaderIconButton(
+                            onClick = { showFilterMenu = !showFilterMenu },
+                            icon = Icons.Default.Tune,
+                            contentDescription = "Filtrer",
+                            isActive = hasActiveFilter
                         )
+                        DropdownMenu(
+                            expanded = showFilterMenu,
+                            onDismissRequest = { showFilterMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Tous les statuts") },
+                                onClick = { vm.setStatusFilter(StatusFilter.ALL); showFilterMenu = false },
+                                trailingIcon = if (ui.statusFilter == StatusFilter.ALL) {
+                                    { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
+                                } else null
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Périmés") },
+                                onClick = { vm.setStatusFilter(StatusFilter.EXPIRED); showFilterMenu = false },
+                                leadingIcon = { Icon(Icons.Default.Warning, null, tint = ColorExpired) },
+                                trailingIcon = if (ui.statusFilter == StatusFilter.EXPIRED) {
+                                    { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
+                                } else null
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Bientôt") },
+                                onClick = { vm.setStatusFilter(StatusFilter.SOON); showFilterMenu = false },
+                                leadingIcon = { Icon(Icons.Default.Schedule, null, tint = ColorSoon) },
+                                trailingIcon = if (ui.statusFilter == StatusFilter.SOON) {
+                                    { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
+                                } else null
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Frais") },
+                                onClick = { vm.setStatusFilter(StatusFilter.FRESH); showFilterMenu = false },
+                                leadingIcon = { Icon(Icons.Default.CheckCircle, null, tint = ColorFresh) },
+                                trailingIcon = if (ui.statusFilter == StatusFilter.FRESH) {
+                                    { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
+                                } else null
+                            )
+                            HorizontalDivider()
+                            PRODUCT_CATEGORIES.forEach { cat ->
+                                DropdownMenuItem(
+                                    text = { Text(if (cat.key == "all") "Toutes les catégories" else cat.label) },
+                                    onClick = {
+                                        vm.setCategory(cat.key)
+                                        showFilterMenu = false
+                                    },
+                                    trailingIcon = if (ui.selectedCategory == cat.key) {
+                                        { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
+                                    } else null
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -356,27 +402,21 @@ fun IndexScreen(
                 }
                 else -> {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        item(key = "stat_cards", contentType = "stat_cards") {
-                            StatCardsRow(
-                                expiredCount = totalCounts.expired,
-                                soonCount = totalCounts.soon,
-                                freshCount = totalCounts.fresh,
-                                activeFilter = ui.statusFilter,
-                                onFilterChange = { vm.setStatusFilter(it) }
-                            )
-                        }
-
                         if (totalCounts.expired > 0 && ui.statusFilter == StatusFilter.ALL) {
                             item(key = "alert_banner", contentType = "alert_banner") {
-                                AlertBanner(totalCounts.expired)
+                                AlertBanner(
+                                    expiredCount = totalCounts.expired,
+                                    onClick = { vm.setStatusFilter(StatusFilter.EXPIRED) }
+                                )
                             }
                         }
 
                         if (groups.expired.isNotEmpty()) {
                             stickyHeader(key = "header_expired", contentType = "section_header") {
                                 CollapsibleSectionHeader(
-                                    title = "⚠ Périmés (${groups.expired.size})",
+                                    title = "Périmés (${groups.expired.size})",
                                     color = ColorExpired,
+                                    icon = Icons.Default.Warning,
                                     isCollapsed = expiredCollapsed,
                                     onToggle = { expiredCollapsed = !expiredCollapsed }
                                 )
@@ -415,8 +455,9 @@ fun IndexScreen(
                         if (groups.soon.isNotEmpty()) {
                             stickyHeader(key = "header_soon", contentType = "section_header") {
                                 CollapsibleSectionHeader(
-                                    title = "⏰ Bientôt périmés (${groups.soon.size})",
+                                    title = "Bientôt périmés (${groups.soon.size})",
                                     color = ColorSoon,
+                                    icon = Icons.Default.Schedule,
                                     isCollapsed = soonCollapsed,
                                     onToggle = { soonCollapsed = !soonCollapsed }
                                 )
@@ -455,8 +496,9 @@ fun IndexScreen(
                         if (groups.fresh.isNotEmpty()) {
                             stickyHeader(key = "header_fresh", contentType = "section_header") {
                                 CollapsibleSectionHeader(
-                                    title = "✓ Frais (${groups.fresh.size})",
+                                    title = "Frais (${groups.fresh.size})",
                                     color = ColorFresh,
+                                    icon = Icons.Default.CheckCircle,
                                     isCollapsed = freshCollapsed,
                                     onToggle = { freshCollapsed = !freshCollapsed }
                                 )
@@ -576,16 +618,54 @@ private fun EmptyFridgeState() {
 // ── Stat cards (M1 + H5) ─────────────────────────────────────────────────────
 
 @Composable
+private fun HeaderIconButton(
+    onClick: () -> Unit,
+    icon: ImageVector,
+    contentDescription: String,
+    isActive: Boolean
+) {
+    Box {
+        Surface(
+            onClick = onClick,
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            shadowElevation = 1.dp
+        ) {
+            Box(Modifier.size(46.dp), contentAlignment = Alignment.Center) {
+                Icon(
+                    icon,
+                    contentDescription = contentDescription,
+                    tint = if (isActive) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(19.dp)
+                )
+            }
+        }
+        if (isActive) {
+            Box(
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+            )
+        }
+    }
+}
+
+@Composable
 private fun StatCardsRow(
     expiredCount: Int,
     soonCount: Int,
     freshCount: Int,
     activeFilter: StatusFilter,
-    onFilterChange: (StatusFilter) -> Unit
+    onFilterChange: (StatusFilter) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         StatCard(expiredCount, "Périmés", ColorExpired,
             activeFilter == StatusFilter.EXPIRED, Icons.Default.Warning, Modifier.weight(1f)) {
@@ -620,7 +700,7 @@ private fun StatCard(
         shape = MaterialTheme.shapes.medium
     ) {
         Row(
-            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -651,15 +731,15 @@ private fun StatCard(
 // ── Alert banner (M5) ────────────────────────────────────────────────────────
 
 @Composable
-private fun AlertBanner(expiredCount: Int) {
+private fun AlertBanner(expiredCount: Int, onClick: () -> Unit) {
     val plural = expiredCount > 1
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 4.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
             .clip(MaterialTheme.shapes.medium)
-            .background(ColorExpired.copy(alpha = 0.10f))
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .background(ColorExpired.copy(alpha = 0.09f))
+            .padding(horizontal = 14.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(Icons.Default.Warning, null, tint = ColorExpired, modifier = Modifier.size(18.dp))
@@ -668,8 +748,22 @@ private fun AlertBanner(expiredCount: Int) {
             "$expiredCount produit${if (plural) "s" else ""} ${if (plural) "sont" else "est"} périmé${if (plural) "s" else ""}",
             style = MaterialTheme.typography.bodyMedium,
             color = ColorExpired,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f)
         )
+        Surface(
+            onClick = onClick,
+            shape = CircleShape,
+            color = ColorExpired.copy(alpha = 0.10f)
+        ) {
+            Text(
+                "Voir",
+                color = ColorExpired,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+            )
+        }
     }
 }
 
@@ -677,16 +771,22 @@ private fun AlertBanner(expiredCount: Int) {
 
 @Composable
 private fun CollapsibleSectionHeader(
-    title: String, color: Color, isCollapsed: Boolean, onToggle: () -> Unit
+    title: String,
+    color: Color,
+    icon: ImageVector,
+    isCollapsed: Boolean,
+    onToggle: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
             .clickable { onToggle() }
-            .padding(horizontal = 20.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
+        Spacer(Modifier.width(6.dp))
         Text(
             title.uppercase(),
             style = MaterialTheme.typography.labelMedium,
@@ -832,7 +932,7 @@ fun ProductCard(
 
     SwipeToDismissBox(
         state = dismissState,
-        modifier = Modifier.padding(horizontal = 20.dp, vertical = verticalPadding),
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = verticalPadding),
         enableDismissFromStartToEnd = !isSelectionMode && onConsume != null,
         enableDismissFromEndToStart = !isSelectionMode && onThrow != null,
         backgroundContent = {
@@ -887,7 +987,7 @@ fun ProductCard(
                         )
                     }
                     .padding(start = 4.dp)
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .padding(horizontal = 12.dp, vertical = 11.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (isSelectionMode) {
@@ -900,12 +1000,12 @@ fun ProductCard(
                         AsyncImage(
                             model = imageRequest,
                             contentDescription = null,
-                            modifier = Modifier.size(48.dp).clip(MaterialTheme.shapes.small),
+                            modifier = Modifier.size(52.dp).clip(MaterialTheme.shapes.small),
                             contentScale = ContentScale.Crop
                         )
                     } else {
                         Box(
-                            Modifier.size(48.dp)
+                            Modifier.size(52.dp)
                                 .clip(MaterialTheme.shapes.small)
                                 .background(MaterialTheme.colorScheme.surfaceVariant),
                             contentAlignment = Alignment.Center
@@ -941,14 +1041,16 @@ fun ProductCard(
                         product.name,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
-                        maxLines = 1
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     if (!product.brand.isNullOrBlank()) {
                         Text(
                             product.brand,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                     Row(
@@ -970,10 +1072,6 @@ fun ProductCard(
                                 )
                             }
                         }
-                        // Nutri-Score badge (M8)
-                        if (!product.nutriScore.isNullOrBlank()) {
-                            NutriScoreBadge(product.nutriScore)
-                        }
                     }
                     // Ajouté par (L2)
                     if (!product.addedByName.isNullOrBlank()) {
@@ -988,28 +1086,37 @@ fun ProductCard(
                                 modifier = Modifier.size(10.dp)
                             )
                             Text(
-                                product.addedByName,
+                                "Ajouté par ${product.addedByName}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
                 }
 
                 Column(horizontalAlignment = Alignment.End) {
-                    Box(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(statusColor)
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = daysLabel,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(statusColor)
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = daysLabel,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        if (!product.nutriScore.isNullOrBlank()) {
+                            NutriScoreBadge(product.nutriScore)
+                        }
                     }
                     // Context menu (M9)
                     if (!isSelectionMode) {
