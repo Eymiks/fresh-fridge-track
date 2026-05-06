@@ -20,7 +20,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Restore
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.runtime.key
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
@@ -93,14 +97,16 @@ fun StatsScreen(vm: StatsViewModel = hiltViewModel()) {
             return
         }
 
-        Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            when (tab) {
-                0 -> FrigoTab(products)
-                1 -> AntiGaspiTab(s)
-                2 -> TendancesTab(s)
+        key(tab) {
+            Column(
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                when (tab) {
+                    0 -> FrigoTab(products)
+                    1 -> AntiGaspiTab(s)
+                    2 -> TendancesTab(s)
+                }
             }
         }
     }
@@ -241,9 +247,9 @@ private fun AntiGaspiTab(stats: StatsResult) {
     }
 
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        SmallMetric("Série", "${stats.streak}", "mois ≥75%", Modifier.weight(1f))
-        SmallMetric("Utilisation", "${stats.avgUtilizationRate.roundToInt()}%", "vie utilisée", Modifier.weight(1f))
-        SmallMetric("Conso moy.", "${stats.avgConsumptionDays.roundToInt()}j", "après ajout", Modifier.weight(1f))
+        SmallMetric("Série", "${stats.streak}", "mois ≥75%", Icons.Default.Star, Modifier.weight(1f))
+        SmallMetric("Utilisation", "${stats.avgUtilizationRate.roundToInt()}%", "vie utilisée", Icons.AutoMirrored.Filled.TrendingUp, Modifier.weight(1f))
+        SmallMetric("Conso moy.", "${stats.avgConsumptionDays.roundToInt()}j", "après ajout", Icons.Default.Schedule, Modifier.weight(1f))
     }
 
     Text("Évolution mensuelle", fontWeight = FontWeight.SemiBold)
@@ -274,7 +280,7 @@ private fun TendancesTab(stats: StatsResult) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.TrendingUp, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.size(8.dp))
                 Text("Durée moyenne avant consommation", fontWeight = FontWeight.SemiBold)
             }
@@ -284,6 +290,14 @@ private fun TendancesTab(stats: StatsResult) {
 
     Text("Ajouts / consommés / jetés", fontWeight = FontWeight.SemiBold)
     MonthlyAddedChart(stats.monthly)
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
+    ) {
+        ChartLegend("Ajoutés", MaterialTheme.colorScheme.primary)
+        ChartLegend("Consommés", ColorFresh)
+        ChartLegend("Jetés", ColorExpired)
+    }
     MonthLabels(stats.monthly)
 
     if (stats.topRecurrent.isNotEmpty()) {
@@ -299,10 +313,18 @@ private fun TendancesTab(stats: StatsResult) {
 }
 
 @Composable
-private fun SmallMetric(title: String, value: String, subtitle: String, modifier: Modifier = Modifier) {
+private fun ChartLegend(label: String, color: androidx.compose.ui.graphics.Color) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Box(Modifier.size(10.dp).clip(RoundedCornerShape(2.dp)).background(color))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun SmallMetric(title: String, value: String, subtitle: String, icon: ImageVector = Icons.Default.Restore, modifier: Modifier = Modifier) {
     Card(modifier) {
         Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+            Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
             Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
             Text(title, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
             Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

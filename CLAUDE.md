@@ -292,6 +292,16 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - `ProductDetailScreen.kt` : `OpeningDialog` plafonne `days` à 365 — le bouton "+" est désormais bloqué au-delà de 365 jours après ouverture.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 24 : corrections et améliorations groupées**
+- `SettingsScreen.kt` : `copiedInvite` se réinitialise à `false` après 2 secondes via `LaunchedEffect(copiedInvite)` — cohérent avec le fix `copiedBarcode` de l'étape 23.
+- `StatsScreen.kt` : `key(tab)` enveloppe la `Column` scrollable — le scroll est maintenant remis à zéro à chaque changement d'onglet (Frigo/Anti-Gaspi/Tendances).
+- `StatsScreen.kt` : `SmallMetric` accepte un paramètre `icon: ImageVector` ; les trois métriques affichent désormais des icônes sémantiques (⭐ Série, TrendingUp Utilisation, Schedule Conso moy.).
+- `StatsScreen.kt` : Légende colorée ajoutée sous le chart barres groupées dans l'onglet Tendances (Ajoutés / Consommés / Jetés).
+- `HistoryViewModel.kt` : `restoreProduct()` expose maintenant les erreurs via `error: StateFlow<String?>` + `clearError()`.
+- `HistoryScreen.kt` : `SnackbarHost` ajouté dans un `Box` racine — affiche le message d'erreur si la restauration d'un produit échoue.
+- Correction dépréciation : `Icons.Default.TrendingUp` → `Icons.AutoMirrored.Filled.TrendingUp` dans StatsScreen.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK, aucun warning.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

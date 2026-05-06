@@ -31,10 +31,13 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,11 +62,20 @@ fun HistoryScreen(
     vm: HistoryViewModel = hiltViewModel()
 ) {
     val products by vm.historyProducts.collectAsState()
+    val error by vm.error.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
     var filter by remember { mutableStateOf(HistoryFilter.ALL) }
     val openedList = remember(products) { products.filter { it.status == ProductStatus.OPENED } }
     val consumedList = remember(products) { products.filter { it.status == ProductStatus.CONSUMED } }
     val thrownList = remember(products) { products.filter { it.status == ProductStatus.THROWN } }
 
+    LaunchedEffect(error) {
+        val msg = error ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(msg)
+        vm.clearError()
+    }
+
+    Box(Modifier.fillMaxSize()) {
     Surface(Modifier.fillMaxSize()) {
         LazyColumn(
             contentPadding = PaddingValues(16.dp),
@@ -123,6 +135,11 @@ fun HistoryScreen(
                 }
             }
         }
+    }
+    SnackbarHost(
+        hostState = snackbarHostState,
+        modifier = Modifier.align(Alignment.BottomCenter)
+    )
     }
 }
 

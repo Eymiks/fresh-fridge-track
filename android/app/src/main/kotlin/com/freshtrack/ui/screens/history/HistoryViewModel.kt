@@ -9,7 +9,9 @@ import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.model.ProductStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -26,6 +28,9 @@ class HistoryViewModel @Inject constructor(
 
     private val authState = authRepository.authState
         .stateIn(viewModelScope, SharingStarted.Eagerly, AuthState.Loading)
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error = _error.asStateFlow()
 
     val historyProducts = authState.flatMapLatest { state ->
         if (state is AuthState.Authenticated && state.household != null) {
@@ -55,14 +60,16 @@ class HistoryViewModel @Inject constructor(
         when (val state = authState.value) {
             is AuthState.Guest -> runCatching {
                 productRepository.setGuestStatus(product, ProductStatus.ACTIVE)
-            }
+            }.onFailure { _error.value = "Impossible de restaurer le produit" }
             is AuthState.Authenticated -> {
                 val householdId = state.household?.id ?: return@launch
                 runCatching {
                     productRepository.setStatus(product, householdId, ProductStatus.ACTIVE)
-                }
+                }.onFailure { _error.value = "Impossible de restaurer le produit" }
             }
             else -> {}
         }
     }
+
+    fun clearError() { _error.value = null }
 }

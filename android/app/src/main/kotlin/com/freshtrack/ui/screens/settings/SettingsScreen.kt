@@ -92,6 +92,7 @@ import com.freshtrack.ui.theme.AccentColor
 import com.freshtrack.ui.theme.AppearanceViewModel
 import com.freshtrack.ui.theme.Density
 import com.freshtrack.ui.theme.ThemeMode
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -134,6 +135,12 @@ fun SettingsScreen(
     var editedName by remember { mutableStateOf("") }
     var householdName by remember(effectiveHousehold?.name) { mutableStateOf(effectiveHousehold?.name.orEmpty()) }
     var copiedInvite by remember { mutableStateOf(false) }
+    LaunchedEffect(copiedInvite) {
+        if (copiedInvite) {
+            delay(2_000L)
+            copiedInvite = false
+        }
+    }
 
     val myMember = effectiveMembers.firstOrNull { it.userId == auth?.userId }
     val displayName = myMember?.displayName ?: auth?.displayName ?: "Invité"
