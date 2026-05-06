@@ -22,10 +22,8 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
-import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.daysUntil
-import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import java.util.concurrent.TimeUnit
 
@@ -58,14 +56,14 @@ class ExpirationCheckWorker @AssistedInject constructor(
         val today = Clock.System.now().toLocalDateTime(tz).date
         val lastCheck = prefs.notifLastCheck.first()
         val doneIds = if (lastCheck == today.toString()) prefs.notifDoneIds.first() else emptySet()
-        val threshold = today.plus(notifDays, DateTimeUnit.DAY)
 
         val toNotify = products
             .filter { it.status == ProductStatus.ACTIVE || it.status == ProductStatus.OPENED }
             .filter { product ->
                 val effective = product.getEffectiveExpirationDate()
                 val daysLeft = today.daysUntil(effective)
-                daysLeft <= notifDays && effective <= threshold && product.id !in doneIds
+                // produits périmés : toujours notifier ; bientôt périmés : dans la fenêtre notifDays
+                (daysLeft < 0 || daysLeft <= notifDays) && product.id !in doneIds
             }
 
         if (toNotify.isEmpty()) {
@@ -128,10 +126,11 @@ class ExpirationCheckWorker @AssistedInject constructor(
 
         fun schedule(context: Context) {
             val request = PeriodicWorkRequestBuilder<ExpirationCheckWorker>(24, TimeUnit.HOURS)
+                .setInitialDelay(1, TimeUnit.HOURS)
                 .build()
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.UPDATE,
                 request
             )
         }

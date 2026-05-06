@@ -275,6 +275,13 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - À vérifier sur appareil : exécution WorkManager réelle, notifications en mode invité, et retour depuis les paramètres Android.
 - Vérifications : `./gradlew.bat :app:assembleDebug` OK ; `./gradlew.bat :app:testDebugUnitTest` OK (`NO-SOURCE`).
 
+**2026-05-06 — Étape 21 : fiabilisation notifications locales**
+- `BootReceiver` créé (`notifications/BootReceiver.kt`) : reçoit `BOOT_COMPLETED` et `QUICKBOOT_POWERON`, relance `ExpirationCheckWorker.schedule()` après un redémarrage du téléphone.
+- `AndroidManifest.xml` : déclaration du receiver avec `android:exported="false"`.
+- `ExpirationCheckWorker` : politique `KEEP` → `UPDATE` (relance un worker en état FAILED/CANCELLED) ; ajout d'un `setInitialDelay(1h)` pour éviter un run immédiat au boot.
+- Filtre corrigé : les produits déjà périmés (`daysLeft < 0`) sont toujours notifiés, indépendamment du seuil `notifDays` (avant, un produit périmé depuis plus de `notifDays` jours était silencieusement ignoré).
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

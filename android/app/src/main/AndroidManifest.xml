@@ -28,6 +28,15 @@
             </intent-filter>
         </activity>
 
+        <receiver
+            android:name=".notifications.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
         <!-- Désactive l'init auto de WorkManager pour utiliser HiltWorkerFactory via Configuration.Provider -->
         <provider
             android:name="androidx.startup.InitializationProvider"
