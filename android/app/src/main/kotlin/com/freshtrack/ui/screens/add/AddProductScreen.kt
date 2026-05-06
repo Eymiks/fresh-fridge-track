@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -30,6 +31,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -145,6 +148,8 @@ fun AddProductScreen(
 
     var categoryExpanded by remember { mutableStateOf(false) }
     var subcategoryExpanded by remember { mutableStateOf(false) }
+    var conservationExpanded by remember { mutableStateOf(false) }
+    var advancedExpanded by remember { mutableStateOf(false) }
     var showExpirationDatePicker by remember { mutableStateOf(false) }
     val categories = remember { PRODUCT_CATEGORIES.filter { it.key != "all" } }
     val resolvedCategoryKey = remember(ui.category, ui.name) {
@@ -213,300 +218,306 @@ fun AddProductScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Nom (requis)
-            OutlinedTextField(
-                value = ui.name,
-                onValueChange = vm::setName,
-                label = { Text("Nom du produit *") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = ui.error != null && ui.name.isBlank()
-            )
-
-            // Marque
-            OutlinedTextField(
-                value = ui.brand,
-                onValueChange = vm::setBrand,
-                label = { Text("Marque") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-
-            // Catégorie
-            ExposedDropdownMenuBox(
-                expanded = categoryExpanded,
-                onExpandedChange = { categoryExpanded = it },
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            CompactFormSection(title = "Essentiel") {
                 OutlinedTextField(
-                    value = currentCategory?.label ?: "Automatique",
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Catégorie") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
-                )
-                ExposedDropdownMenu(
-                    expanded = categoryExpanded,
-                    onDismissRequest = { categoryExpanded = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Automatique") },
-                        onClick = {
-                            vm.setCategory("")
-                            categoryExpanded = false
-                        }
-                    )
-                    categories.forEach { cat ->
-                        DropdownMenuItem(
-                            text = { Text(cat.label) },
-                            onClick = {
-                                vm.setCategory(cat.key)
-                                categoryExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            ExposedDropdownMenuBox(
-                expanded = subcategoryExpanded,
-                onExpandedChange = { subcategoryExpanded = it },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                OutlinedTextField(
-                    value = ui.subcategory.ifBlank { "Automatique" },
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Sous-catégorie") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = subcategoryExpanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth(),
-                    singleLine = true
-                )
-                ExposedDropdownMenu(
-                    expanded = subcategoryExpanded,
-                    onDismissRequest = { subcategoryExpanded = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Automatique") },
-                        onClick = {
-                            vm.setSubcategory("")
-                            subcategoryExpanded = false
-                        }
-                    )
-                    subcategoryOptions.forEach { sub ->
-                        DropdownMenuItem(
-                            text = { Text(sub.label) },
-                            onClick = {
-                                vm.setSubcategory(sub.label)
-                                subcategoryExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            // Quantité
-            OutlinedTextField(
-                value = ui.quantity,
-                onValueChange = vm::setQuantity,
-                label = { Text("Quantité (ex: 500g, 1L)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = ui.barcode,
-                    onValueChange = vm::setBarcode,
-                    label = { Text("Code-barres") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
-                )
-                OutlinedButton(
-                    onClick = { vm.lookupBarcode(ui.barcode) },
-                    enabled = ui.barcode.isNotBlank()
-                ) {
-                    Text("OK")
-                }
-            }
-
-            // Date de péremption
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = ui.expirationDate,
-                    onValueChange = vm::setExpirationDate,
-                    label = { Text("Date de péremption *") },
-                    placeholder = { Text("JJ/MM/AAAA") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f),
+                    value = ui.name,
+                    onValueChange = vm::setName,
+                    label = { Text("Nom du produit *") },
+                    modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    isError = ui.error?.contains("Date") == true
+                    isError = ui.error != null && ui.name.isBlank()
                 )
-                OutlinedButton(
-                    onClick = { showExpirationDatePicker = true }
+
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.DateRange, contentDescription = "Choisir une date")
+                    OutlinedTextField(
+                        value = ui.expirationDate,
+                        onValueChange = vm::setExpirationDate,
+                        label = { Text("Date de péremption *") },
+                        placeholder = { Text("JJ/MM/AAAA") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        isError = ui.error?.contains("Date") == true
+                    )
+                    OutlinedButton(onClick = { showExpirationDatePicker = true }) {
+                        Icon(Icons.Default.DateRange, contentDescription = "Choisir une date")
+                    }
+                    OutlinedButton(
+                        onClick = { navController.navigate(Routes.dateScanner(ui.barcode.ifBlank { "_" })) }
+                    ) {
+                        Icon(Icons.Default.CameraAlt, contentDescription = null)
+                    }
                 }
-                OutlinedButton(
-                    onClick = { navController.navigate(Routes.dateScanner(ui.barcode.ifBlank { "_" })) }
+
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ExposedDropdownMenuBox(
+                        expanded = categoryExpanded,
+                        onExpandedChange = { categoryExpanded = it },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        OutlinedTextField(
+                            value = currentCategory?.label ?: "Automatique",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Catégorie") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            singleLine = true
+                        )
+                        ExposedDropdownMenu(
+                            expanded = categoryExpanded,
+                            onDismissRequest = { categoryExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Automatique") },
+                                onClick = {
+                                    vm.setCategory("")
+                                    categoryExpanded = false
+                                }
+                            )
+                            categories.forEach { cat ->
+                                DropdownMenuItem(
+                                    text = { Text(cat.label) },
+                                    onClick = {
+                                        vm.setCategory(cat.key)
+                                        categoryExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    ExposedDropdownMenuBox(
+                        expanded = subcategoryExpanded,
+                        onExpandedChange = { subcategoryExpanded = it },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        OutlinedTextField(
+                            value = ui.subcategory.ifBlank { "Automatique" },
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Sous-cat.") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = subcategoryExpanded) },
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            singleLine = true
+                        )
+                        ExposedDropdownMenu(
+                            expanded = subcategoryExpanded,
+                            onDismissRequest = { subcategoryExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Automatique") },
+                                onClick = {
+                                    vm.setSubcategory("")
+                                    subcategoryExpanded = false
+                                }
+                            )
+                            subcategoryOptions.forEach { sub ->
+                                DropdownMenuItem(
+                                    text = { Text(sub.label) },
+                                    onClick = {
+                                        vm.setSubcategory(sub.label)
+                                        subcategoryExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = ui.quantity,
+                        onValueChange = vm::setQuantity,
+                        label = { Text("Quantité") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = ui.brand,
+                        onValueChange = vm::setBrand,
+                        label = { Text("Marque") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                }
+
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.CameraAlt, contentDescription = null)
+                    OutlinedTextField(
+                        value = ui.barcode,
+                        onValueChange = vm::setBarcode,
+                        label = { Text("Code-barres") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    OutlinedButton(
+                        onClick = { vm.lookupBarcode(ui.barcode) },
+                        enabled = ui.barcode.isNotBlank()
+                    ) {
+                        Text("OK")
+                    }
                 }
             }
 
-            OutlinedTextField(
-                value = ui.frozenUntil,
-                onValueChange = vm::setFrozenUntil,
-                label = { Text("Congelé jusqu'au") },
-                placeholder = { Text("JJ/MM/AAAA") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = ui.error?.contains("congélation", ignoreCase = true) == true
-            )
-
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text("Produit ouvert", style = MaterialTheme.typography.bodyLarge)
-                    Text("Utilise une durée après ouverture pour la date effective",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+            CompactFormSection(title = "Image") {
+                if (ui.imageUrl.isNotBlank()) {
+                    AsyncImage(
+                        model = ui.imageUrl,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxWidth().height(140.dp),
+                        contentScale = ContentScale.Crop
+                    )
                 }
-                Switch(checked = ui.isOpened, onCheckedChange = vm::setOpened)
-            }
-
-            if (ui.isOpened) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = { imagePicker.launch(arrayOf("image/*")) },
+                        modifier = Modifier.weight(1f),
+                        enabled = !ui.isUploadingImage
+                    ) {
+                        Icon(Icons.Default.Image, contentDescription = null)
+                        Text(if (ui.isUploadingImage) "Envoi…" else "Choisir une image")
+                    }
+                    if (ui.isUploadingImage) {
+                        CircularProgressIndicator(strokeWidth = 2.dp)
+                    }
+                }
                 OutlinedTextField(
-                    value = ui.daysAfterOpening,
-                    onValueChange = vm::setDaysAfterOpening,
-                    label = { Text("Jours après ouverture") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    value = ui.imageUrl,
+                    onValueChange = vm::setImageUrl,
+                    label = { Text("Image produit (URL)") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
             }
 
-            if (ui.imageUrl.isNotBlank()) {
-                AsyncImage(
-                    model = ui.imageUrl,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxWidth().height(180.dp),
-                    contentScale = ContentScale.Crop
-                )
-            }
-
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedButton(
-                    onClick = { imagePicker.launch(arrayOf("image/*")) },
-                    modifier = Modifier.weight(1f),
-                    enabled = !ui.isUploadingImage
-                ) {
-                    Icon(Icons.Default.Image, contentDescription = null)
-                    Text(if (ui.isUploadingImage) "Envoi…" else "Choisir une image")
-                }
-                if (ui.isUploadingImage) {
-                    CircularProgressIndicator(strokeWidth = 2.dp)
-                }
-            }
-
-            OutlinedTextField(
-                value = ui.imageUrl,
-                onValueChange = vm::setImageUrl,
-                label = { Text("Image produit (URL)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-
-            OutlinedTextField(
-                value = ui.notes,
-                onValueChange = vm::setNotes,
-                label = { Text("Notes") },
-                modifier = Modifier.fillMaxWidth().height(120.dp),
-                maxLines = 5
-            )
-
-            Text(
-                "Informations avancées",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            CompactFormSection(
+                title = "Conservation",
+                expanded = conservationExpanded,
+                onToggle = { conservationExpanded = !conservationExpanded }
             ) {
                 OutlinedTextField(
-                    value = ui.nutriScore,
-                    onValueChange = vm::setNutriScore,
-                    label = { Text("Nutri-Score") },
-                    placeholder = { Text("A-E") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = ui.novaGroup,
-                    onValueChange = vm::setNovaGroup,
-                    label = { Text("NOVA") },
-                    placeholder = { Text("1-4") },
+                    value = ui.frozenUntil,
+                    onValueChange = vm::setFrozenUntil,
+                    label = { Text("Congelé jusqu'au") },
+                    placeholder = { Text("JJ/MM/AAAA") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = ui.error?.contains("congélation", ignoreCase = true) == true
                 )
-                OutlinedTextField(
-                    value = ui.ecoScore,
-                    onValueChange = vm::setEcoScore,
-                    label = { Text("Eco-Score") },
-                    placeholder = { Text("A-E") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
-                )
+
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Produit ouvert", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "Utilise une durée après ouverture pour la date effective",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(checked = ui.isOpened, onCheckedChange = vm::setOpened)
+                }
+
+                if (ui.isOpened) {
+                    OutlinedTextField(
+                        value = ui.daysAfterOpening,
+                        onValueChange = vm::setDaysAfterOpening,
+                        label = { Text("Jours après ouverture") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
             }
 
-            OutlinedTextField(
-                value = ui.allergens,
-                onValueChange = vm::setAllergens,
-                label = { Text("Allergènes") },
-                placeholder = { Text("Ex: Lait, gluten") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
+            CompactFormSection(
+                title = "Informations avancées",
+                expanded = advancedExpanded,
+                onToggle = { advancedExpanded = !advancedExpanded }
+            ) {
+                OutlinedTextField(
+                    value = ui.notes,
+                    onValueChange = vm::setNotes,
+                    label = { Text("Notes") },
+                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                    maxLines = 4
+                )
 
-            OutlinedTextField(
-                value = ui.ingredients,
-                onValueChange = vm::setIngredients,
-                label = { Text("Ingrédients") },
-                modifier = Modifier.fillMaxWidth().height(120.dp),
-                maxLines = 5
-            )
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = ui.nutriScore,
+                        onValueChange = vm::setNutriScore,
+                        label = { Text("Nutri") },
+                        placeholder = { Text("A-E") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = ui.novaGroup,
+                        onValueChange = vm::setNovaGroup,
+                        label = { Text("NOVA") },
+                        placeholder = { Text("1-4") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = ui.ecoScore,
+                        onValueChange = vm::setEcoScore,
+                        label = { Text("Eco") },
+                        placeholder = { Text("A-E") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                }
 
-            OutlinedTextField(
-                value = ui.nutritionData,
-                onValueChange = vm::setNutritionData,
-                label = { Text("Données nutritionnelles JSON") },
-                placeholder = { Text("""{"energy_kcal":120,"proteins":4}""") },
-                modifier = Modifier.fillMaxWidth().height(100.dp),
-                maxLines = 4
-            )
+                OutlinedTextField(
+                    value = ui.allergens,
+                    onValueChange = vm::setAllergens,
+                    label = { Text("Allergènes") },
+                    placeholder = { Text("Ex: Lait, gluten") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = ui.ingredients,
+                    onValueChange = vm::setIngredients,
+                    label = { Text("Ingrédients") },
+                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                    maxLines = 4
+                )
+
+                OutlinedTextField(
+                    value = ui.nutritionData,
+                    onValueChange = vm::setNutritionData,
+                    label = { Text("Données nutritionnelles JSON") },
+                    placeholder = { Text("""{"energy_kcal":120,"proteins":4}""") },
+                    modifier = Modifier.fillMaxWidth().height(90.dp),
+                    maxLines = 3
+                )
+            }
 
             // Message d'erreur
             ui.error?.let { error ->
@@ -535,6 +546,41 @@ fun AddProductScreen(
             onDateSelected = vm::setExpirationDate,
             onDismiss = { showExpirationDatePicker = false }
         )
+    }
+}
+
+@Composable
+private fun CompactFormSection(
+    title: String,
+    expanded: Boolean = true,
+    onToggle: (() -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .then(if (onToggle != null) Modifier.clickable(onClick = onToggle) else Modifier),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                if (onToggle != null) {
+                    Icon(
+                        if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (expanded) "Replier" else "Déplier"
+                    )
+                }
+            }
+            if (expanded) {
+                content()
+            }
+        }
     }
 }
 

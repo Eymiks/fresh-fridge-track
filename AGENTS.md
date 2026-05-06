@@ -219,6 +219,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - `AddProductScreen` ajoute l'option `Automatique` aux catégories et remplace la saisie libre de sous-catégorie par un sélecteur lié à la catégorie courante.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 12 : formulaire d'ajout compact**
+- Issue GitHub `Android` reprise : #4 `Ajout produit trop long`.
+- `AddProductScreen` regroupe le formulaire en sections compactes : `Essentiel`, `Image`, `Conservation` et `Informations avancées`.
+- Les champs de conservation et les informations avancées sont repliés par défaut, tandis que les champs essentiels et les actions image restent immédiatement accessibles.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
