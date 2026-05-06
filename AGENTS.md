@@ -262,6 +262,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - À vérifier sur appareil : rendu exact des contrastes header selon thème et couleur d'accent.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 19 : fallback manuel scanner date**
+- `DateScannerScreen` ajoute une action commune de saisie manuelle qui conserve le contexte du flux.
+- En scan simple, "Saisir manuellement" ouvre le formulaire avec le code-barres conservé ; en multi-scan, il ouvre le formulaire chaîne avec date vide.
+- Le bouton manuel est visible même quand la caméra est autorisée mais qu'aucune date n'est encore détectée.
+- Vérifications : `./gradlew.bat :app:assembleDebug` OK ; `./gradlew.bat :app:testDebugUnitTest` OK (`NO-SOURCE`).
+
 ---
 
 ## Android — Référence fonctionnalités PWA

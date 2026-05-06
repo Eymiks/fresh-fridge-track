@@ -246,6 +246,22 @@ fun DateScannerScreen(
         }
     }
 
+    fun openManualEntry() {
+        if (dateAccepted) return
+        dateAccepted = true
+        if (isMultiScan) {
+            navController.navigate(Routes.addProductMulti(barcode, "")) {
+                popUpTo(Routes.DATE_SCANNER_MULTI) { inclusive = true }
+            }
+        } else if (isAddFlow) {
+            navController.navigate(Routes.addProduct(barcode)) {
+                popUpTo(Routes.DATE_SCANNER_ADD) { inclusive = true }
+            }
+        } else {
+            navController.popBackStack()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -280,6 +296,12 @@ fun DateScannerScreen(
                         color = Color.White,
                         style = MaterialTheme.typography.bodyLarge
                     )
+                    Button(
+                        onClick = { openManualEntry() },
+                        modifier = Modifier.align(Alignment.BottomStart).padding(16.dp)
+                    ) {
+                        Text("Saisir manuellement")
+                    }
                 }
 
                 // Bouton Cloud OCR (fallback Gemini)
@@ -349,7 +371,7 @@ fun DateScannerScreen(
                         ) { Text("Autoriser la caméra") }
                         Spacer(Modifier.height(8.dp))
                         Button(
-                            onClick = { navController.popBackStack() },
+                            onClick = { openManualEntry() },
                             modifier = Modifier.fillMaxWidth()
                         ) { Text("Saisir la date manuellement") }
                     }
