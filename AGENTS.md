@@ -182,6 +182,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - `SettingsScreen` lit le fichier choisi dans `Dispatchers.IO` avant d'appeler l'upload.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 6 : insets des barres basses**
+- Issue GitHub `Android` reprise : #4 `Ajout produit trop long`.
+- `AddProductBottomBar` applique `navigationBarsPadding()` et `imePadding()` afin que les actions restent au-dessus de la barre système et du clavier.
+- `MainScreen` et la barre batch de `IndexScreen` appliquent aussi `navigationBarsPadding()` sur leurs barres basses.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

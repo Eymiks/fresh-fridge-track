@@ -2,6 +2,7 @@ package com.freshtrack.ui.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
@@ -167,7 +168,7 @@ private fun MainScreen(rootNavController: androidx.navigation.NavController) {
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
+            NavigationBar(modifier = Modifier.navigationBarsPadding()) {
                 bottomTabs.forEach { tab ->
                     NavigationBarItem(
                         selected = currentRoute == tab.route,
