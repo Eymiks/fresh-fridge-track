@@ -106,6 +106,7 @@ import com.freshtrack.ui.navigation.Routes
 import com.freshtrack.ui.theme.ColorExpired
 import com.freshtrack.ui.theme.ColorFresh
 import com.freshtrack.ui.theme.ColorSoon
+import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonObject
@@ -123,6 +124,12 @@ fun ProductDetailScreen(
     var notes by rememberSaveable(product?.notes) { mutableStateOf(product?.notes ?: "") }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var copiedBarcode by remember(product?.barcode) { mutableStateOf(false) }
+    LaunchedEffect(copiedBarcode) {
+        if (copiedBarcode) {
+            delay(2_000L)
+            copiedBarcode = false
+        }
+    }
     var scoreDialog by remember { mutableStateOf<ScoreDialogType?>(null) }
     var showFullscreenImage by remember { mutableStateOf(false) }
     var nutritionOpen by remember { mutableStateOf(true) }
@@ -1292,7 +1299,7 @@ private fun OpeningDialog(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = { if (days > 1) days-- }, enabled = !isMutating) { Text("-") }
                     Text("$days jour(s)", style = MaterialTheme.typography.titleMedium)
-                    TextButton(onClick = { days++ }, enabled = !isMutating) { Text("+") }
+                    TextButton(onClick = { if (days < 365) days++ }, enabled = !isMutating) { Text("+") }
                 }
             }
         },

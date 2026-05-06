@@ -287,6 +287,11 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - `IndexScreen` : remplacement de la `SearchBar` Material3 (expansive plein écran) par un `OutlinedTextField` compact dans un `Row`, plus proche du comportement de la PWA. Suppression de la variable `searchActive` devenue inutile. Correction du warning `Icons.Default.Sort` → `Icons.AutoMirrored.Filled.Sort`.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 23 : polish ProductDetailScreen**
+- `ProductDetailScreen.kt` : `copiedBarcode` se réinitialise à `false` après 2 secondes via `LaunchedEffect(copiedBarcode)` — l'icône "Copier" revient correctement à son état initial après la copie du code-barres.
+- `ProductDetailScreen.kt` : `OpeningDialog` plafonne `days` à 365 — le bouton "+" est désormais bloqué au-delà de 365 jours après ouverture.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
