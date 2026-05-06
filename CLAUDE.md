@@ -302,6 +302,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Correction dépréciation : `Icons.Default.TrendingUp` → `Icons.AutoMirrored.Filled.TrendingUp` dans StatsScreen.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK, aucun warning.
 
+**2026-05-07 — Mission alignement visuel Android / PWA**
+- Thème Android rapproché de la PWA : fond vert très pâle, surfaces carte, bordures, couleurs statut, arrondis et graisses typographiques Compose.
+- `AuthScreen`, `IndexScreen`, `AddProductScreen` et `AppNavigation` polis visuellement sans changement de logique métier : Auth vertical, header accueil, stat-cards, cartes produit avec badges courts, sections formulaire et barre de navigation.
+- Commits créés par étape : thème, Auth, accueil, cartes produit, formulaire produit, navigation + documentation.
+- À vérifier sur appareil : contraste clair/sombre, header accueil selon alertes, clavier sur Auth/AddProduct, bottom nav avec barre système, lisibilité des badges courts.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
