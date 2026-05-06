@@ -60,8 +60,10 @@ object Routes {
     const val PRODUCT_DETAIL = "product/{productId}"
     const val BARCODE_SCANNER = "barcode_scanner"
     const val DATE_SCANNER = "date_scanner/{barcode}"
+    const val DATE_SCANNER_ADD = "date_scanner_add/{barcode}"
     const val ADD_PRODUCT_MANUAL = "add_product"
     const val ADD_PRODUCT = "add_product/{barcode}"
+    const val ADD_PRODUCT_SCANNED_DATE = "add_product/{barcode}/{date}"
     const val EDIT_PRODUCT = "edit_product/{productId}"
 
     // Multi-scan : barcode → date → formulaire → "Ajouter & scanner le suivant"
@@ -71,8 +73,11 @@ object Routes {
 
     fun productDetail(id: String) = "product/$id"
     fun dateScanner(barcode: String = "") = "date_scanner/$barcode"
+    fun dateScannerAdd(barcode: String = "") = "date_scanner_add/${barcode.ifBlank { "-" }}"
     fun addProduct(barcode: String = "") =
         if (barcode.isBlank()) ADD_PRODUCT_MANUAL else "add_product/$barcode"
+    fun addProductWithDate(barcode: String, date: String) =
+        "add_product/${barcode.ifBlank { "-" }}/${date.replace("/", "_").ifBlank { "-" }}"
     fun editProduct(id: String) = "edit_product/$id"
     fun dateScannerMulti(barcode: String) = "date_scanner_multi/$barcode"
     fun addProductMulti(barcode: String, date: String) =
@@ -131,11 +136,26 @@ fun AppNavigation() {
         composable(Routes.DATE_SCANNER) { back ->
             DateScannerScreen(navController, back.arguments?.getString("barcode") ?: "")
         }
+        composable(Routes.DATE_SCANNER_ADD) { back ->
+            DateScannerScreen(
+                navController,
+                barcode = (back.arguments?.getString("barcode") ?: "-").let { if (it == "-") "" else it },
+                isAddFlow = true
+            )
+        }
         composable(Routes.ADD_PRODUCT_MANUAL) {
             AddProductScreen(navController, "")
         }
         composable(Routes.ADD_PRODUCT) { back ->
             AddProductScreen(navController, back.arguments?.getString("barcode") ?: "")
+        }
+        composable(Routes.ADD_PRODUCT_SCANNED_DATE) { back ->
+            val rawDate = back.arguments?.getString("date") ?: "-"
+            AddProductScreen(
+                navController,
+                barcode = (back.arguments?.getString("barcode") ?: "-").let { if (it == "-") "" else it },
+                initialDate = if (rawDate == "-") "" else rawDate.replace("_", "/")
+            )
         }
         composable(Routes.EDIT_PRODUCT) {
             AddProductScreen(navController, "")

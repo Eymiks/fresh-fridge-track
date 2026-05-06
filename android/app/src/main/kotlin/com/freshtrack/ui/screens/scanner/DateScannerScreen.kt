@@ -208,6 +208,7 @@ fun DateScannerScreen(
     navController: NavController,
     barcode: String,
     isMultiScan: Boolean = false,
+    isAddFlow: Boolean = false,
     vm: DateScannerViewModel = hiltViewModel()
 ) {
     var hasPermission by remember { mutableStateOf(false) }
@@ -233,6 +234,10 @@ fun DateScannerScreen(
                 // Mode multi : naviguer en avant vers le formulaire avec barcode + date
                 navController.navigate(Routes.addProductMulti(barcode, normalized)) {
                     popUpTo(Routes.DATE_SCANNER_MULTI) { inclusive = true }
+                }
+            } else if (isAddFlow) {
+                navController.navigate(Routes.addProductWithDate(barcode, normalized)) {
+                    popUpTo(Routes.DATE_SCANNER_ADD) { inclusive = true }
                 }
             } else {
                 navController.previousBackStackEntry?.savedStateHandle?.set("detected_date", normalized)

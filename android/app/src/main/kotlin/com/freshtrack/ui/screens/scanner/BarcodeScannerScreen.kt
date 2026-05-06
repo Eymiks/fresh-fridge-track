@@ -92,7 +92,7 @@ fun BarcodeScannerScreen(navController: NavController, isMultiScan: Boolean = fa
                                 // Mode multi : aller au scanner de date sans popper le scanner barcode
                                 navController.navigate(Routes.dateScannerMulti(barcode))
                             } else {
-                                navController.navigate(Routes.addProduct(barcode)) {
+                                navController.navigate(Routes.dateScannerAdd(barcode)) {
                                     popUpTo(selfRoute) { inclusive = true }
                                 }
                             }

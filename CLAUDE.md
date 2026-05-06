@@ -243,6 +243,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - `NotificationsScreen` affiche la carte rouge "Notifications bloquées" uniquement après une demande de permission déjà effectuée, refusée, et sans rationale système.
 - Vérifications : `./gradlew.bat :app:assembleDebug` OK ; `./gradlew.bat :app:testDebugUnitTest` OK (`NO-SOURCE`).
 
+**2026-05-06 — Étape 16 : flux scan simple barcode puis date**
+- Écart PWA / Android corrigé : le scan simple enchaîne désormais code-barres → scanner de date → formulaire prérempli.
+- `AppNavigation` ajoute `DATE_SCANNER_ADD` et `ADD_PRODUCT_SCANNED_DATE`, avec dates encodées via `_` comme en multi-scan.
+- `DateScannerScreen` garde le retour `savedStateHandle` pour le bouton caméra du formulaire, et navigue vers le formulaire seulement pour le flux d'ajout issu du scanner code-barres.
+- Vérifications : `./gradlew.bat :app:assembleDebug` OK ; `./gradlew.bat :app:testDebugUnitTest` OK (`NO-SOURCE`).
+
 ---
 
 ## Android — Référence fonctionnalités PWA
