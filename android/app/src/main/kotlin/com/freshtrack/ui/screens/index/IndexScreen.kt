@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -143,10 +144,36 @@ fun IndexScreen(
     Scaffold(
         topBar = {
             Column(Modifier.background(headerBg)) {
+                // Ligne branding : icône + "FreshTrack" + paramètres
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Eco,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "FreshTrack",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(Icons.Default.Settings, "Paramètres")
+                    }
+                }
+                // Barre de recherche + tri
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
@@ -195,9 +222,6 @@ fun IndexScreen(
                                 } else null
                             )
                         }
-                    }
-                    IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Default.Settings, "Paramètres")
                     }
                 }
 
@@ -511,9 +535,11 @@ private fun StatCard(
         onClick = onClick, modifier = modifier,
         colors = CardDefaults.cardColors(
             containerColor = if (isActive) color.copy(alpha = 0.14f)
-            else MaterialTheme.colorScheme.surfaceVariant
+            else MaterialTheme.colorScheme.surface
         ),
-        border = if (isActive) BorderStroke(1.dp, color) else null
+        border = if (isActive) BorderStroke(1.dp, color)
+        else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp).fillMaxWidth(),

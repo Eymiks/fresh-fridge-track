@@ -18,7 +18,7 @@ import com.freshtrack.ui.theme.AppearanceViewModel
 private val FreshTrackShapes = Shapes(
     extraSmall = RoundedCornerShape(6.dp),
     small       = RoundedCornerShape(10.dp),
-    medium      = RoundedCornerShape(16.dp),
+    medium      = RoundedCornerShape(20.dp),
     large       = RoundedCornerShape(20.dp),
     extraLarge  = RoundedCornerShape(28.dp)
 )
