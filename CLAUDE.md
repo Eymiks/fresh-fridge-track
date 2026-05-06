@@ -231,6 +231,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - `NotificationsScreen` ne rend plus sa propre bannière hors ligne pour éviter un doublon dans l'onglet Alertes.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 14 : fiche produit alignée PWA**
+- Écart PWA / Android repris : `ProductDetailScreen` abandonne la `TopAppBar` et les tabs au profit d'un hero immersif, d'une carte produit flottante, d'une carte date limite et d'accordéons verticaux.
+- Les actions rapides sont regroupées dans une carte dédiée avec `Ouvert`, `Consommé`, `Jeté`, congélation et remise active pour les produits archivés.
+- Les actions bas d'écran affichent désormais `Modifier` puis `Supprimer` sous forme de boutons full-width avec `navigationBarsPadding()`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
@@ -254,7 +260,7 @@ Ce guide documente les comportements de la PWA à reproduire sur Android. Toujou
 - **Actions produit** : grille 3 boutons côte à côte, toujours visibles : [Ouvert] [Consommé] [Jeté]. Bouton "Remettre actif" séparé pour les produits archivés.
 - **Accordéons** (PWA) vs **Tabs** (Android acceptable) : sur la PWA, 3 accordéons verticaux (Nutrition & Allergènes / Ingrédients / Détails & Historique). Sur Android, tabs sont une adaptation native valide.
 - **Notes auto-save** : sauvegarder automatiquement à la perte de focus (`onFocusChanged hasFocus=false`), pas de bouton "Sauvegarder" explicite.
-- **Boutons Modifier/Supprimer** : full-width en bas de page sur la PWA. Sur Android, icônes dans TopAppBar acceptable.
+- **Boutons Modifier/Supprimer** : full-width en bas de page sur la PWA. Sur Android, boutons fixes en bas avec `navigationBarsPadding()`.
 
 ### Stats
 
