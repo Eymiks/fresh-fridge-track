@@ -175,6 +175,13 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Le formulaire reste scrollable avec les mêmes champs ; cette étape ne réorganise pas encore les sections avancées.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 5 : robustesse upload avatar**
+- Issue GitHub `Android` reprise : #1 `Upload image profil`.
+- `HouseholdRepository.uploadAvatar()` utilise désormais un chemin Storage unique par timestamp, stocke l'URL publique réelle sans query string et relit la ligne `household_members` mise à jour via `select()`.
+- `HouseholdSettingsViewModel` conserve un `avatarUrlOverride` pour afficher immédiatement la nouvelle photo après succès.
+- `SettingsScreen` lit le fichier choisi dans `Dispatchers.IO` avant d'appeler l'upload.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

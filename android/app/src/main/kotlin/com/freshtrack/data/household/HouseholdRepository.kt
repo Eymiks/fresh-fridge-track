@@ -61,19 +61,23 @@ class HouseholdRepository @Inject constructor(private val supabase: SupabaseClie
         supabase.from("household_members").delete { filter { eq("id", memberId) } }
     }
 
-    suspend fun uploadAvatar(householdId: String, userId: String, bytes: ByteArray, ext: String): String {
-        val path = "$householdId/avatar_$userId.$ext"
+    suspend fun uploadAvatar(householdId: String, userId: String, bytes: ByteArray, ext: String): MemberRow {
+        val timestamp = Clock.System.now().toEpochMilliseconds()
+        val path = "$householdId/avatar_${userId}_$timestamp.$ext"
         val bucket = supabase.storage.from("product-images")
-        bucket.upload(path, bytes, options = { upsert = true })
-        val publicUrl = "${bucket.publicUrl(path)}?v=${Clock.System.now().toEpochMilliseconds()}"
-        supabase.from("household_members")
+        bucket.upload(path, bytes)
+        val publicUrl = bucket.publicUrl(path)
+        val updated = supabase.from("household_members")
             .update(mapOf("avatar_url" to publicUrl)) {
+                select()
                 filter {
                     eq("household_id", householdId)
                     eq("user_id", userId)
                 }
             }
-        return publicUrl
+            .decodeList<MemberRow>()
+        return updated.firstOrNull()
+            ?: error("Avatar envoyé, mais aucun profil n'a été mis à jour.")
     }
 
     suspend fun getMembers(householdId: String): List<Member> =

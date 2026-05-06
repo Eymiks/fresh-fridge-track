@@ -64,6 +64,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -89,6 +90,9 @@ import com.freshtrack.ui.theme.AccentColor
 import com.freshtrack.ui.theme.AppearanceViewModel
 import com.freshtrack.ui.theme.Density
 import com.freshtrack.ui.theme.ThemeMode
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private val accentColorMap: Map<AccentColor, Color> = mapOf(
     AccentColor.GREEN to Color(0xFF388E3C),
@@ -117,6 +121,7 @@ fun SettingsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     var showSignOutConfirm by remember { mutableStateOf(false) }
     var memberToRemove by remember { mutableStateOf<Member?>(null) }
@@ -149,8 +154,12 @@ fun SettingsScreen(
         val userId = auth?.userId ?: return@rememberLauncherForActivityResult
         val mimeType = context.contentResolver.getType(uri)
         val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "jpg"
-        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return@rememberLauncherForActivityResult
-        householdVm.uploadAvatar(hh.id, userId, bytes, ext)
+        scope.launch {
+            val bytes = withContext(Dispatchers.IO) {
+                context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            } ?: return@launch
+            householdVm.uploadAvatar(hh.id, userId, bytes, ext)
+        }
     }
 
     Scaffold(
@@ -183,7 +192,7 @@ fun SettingsScreen(
                     is AuthState.Authenticated -> "${auth?.email.orEmpty()} · ${household?.name.orEmpty()}"
                     else -> ""
                 },
-                avatarUrl = myMember?.avatarUrl,
+                avatarUrl = householdUi.avatarUrlOverride ?: myMember?.avatarUrl,
                 isLoading = householdUi.isLoading,
                 onAvatarClick = { if (auth != null) avatarLauncher.launch(arrayOf("image/*")) }
             )

@@ -20,7 +20,8 @@ import javax.inject.Inject
 data class HouseholdSettingsUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    val avatarUrlOverride: String? = null
 )
 
 @HiltViewModel
@@ -76,9 +77,15 @@ class HouseholdSettingsViewModel @Inject constructor(
     fun uploadAvatar(householdId: String, userId: String, bytes: ByteArray, ext: String) = viewModelScope.launch {
         _ui.update { it.copy(isLoading = true) }
         runCatching { householdRepository.uploadAvatar(householdId, userId, bytes, ext) }
-            .onSuccess {
+            .onSuccess { member ->
                 authRepository.refreshHousehold()
-                _ui.update { it.copy(isLoading = false, successMessage = "Avatar mis à jour") }
+                _ui.update {
+                    it.copy(
+                        isLoading = false,
+                        successMessage = "Avatar mis à jour",
+                        avatarUrlOverride = member.avatarUrl
+                    )
+                }
             }
             .onFailure { e -> _ui.update { it.copy(isLoading = false, error = e.message) } }
     }
