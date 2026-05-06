@@ -67,6 +67,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -119,7 +120,7 @@ fun ProductDetailScreen(
     val ui by vm.ui.collectAsState()
     val product = ui.product
     val snackbarHostState = remember { SnackbarHostState() }
-    var notes by remember(product?.notes) { mutableStateOf(product?.notes ?: "") }
+    var notes by rememberSaveable(product?.notes) { mutableStateOf(product?.notes ?: "") }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var copiedBarcode by remember(product?.barcode) { mutableStateOf(false) }
     var scoreDialog by remember { mutableStateOf<ScoreDialogType?>(null) }

@@ -1,5 +1,6 @@
 package com.freshtrack.data.auth
 
+import android.util.Log
 import com.freshtrack.data.prefs.AppPreferences
 import com.freshtrack.data.supabase.HouseholdRow
 import com.freshtrack.data.supabase.MemberRow
@@ -61,6 +62,7 @@ class AuthRepository @Inject constructor(
                     val (household, members) = loadHouseholdData(userId)
                     AuthState.Authenticated(userId, email, displayName, household, members)
                 } catch (e: Exception) {
+                    Log.e("AuthRepository", "Échec chargement foyer pour $userId", e)
                     AuthState.Authenticated(userId, email, displayName, null, emptyList())
                 }
             }

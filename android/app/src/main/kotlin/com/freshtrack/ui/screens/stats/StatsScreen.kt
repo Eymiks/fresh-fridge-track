@@ -85,7 +85,8 @@ fun StatsScreen(vm: StatsViewModel = hiltViewModel()) {
             Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Tendances") })
         }
 
-        if (stats == null) {
+        val s = stats
+        if (s == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
@@ -98,8 +99,8 @@ fun StatsScreen(vm: StatsViewModel = hiltViewModel()) {
         ) {
             when (tab) {
                 0 -> FrigoTab(products)
-                1 -> AntiGaspiTab(stats!!)
-                2 -> TendancesTab(stats!!)
+                1 -> AntiGaspiTab(s)
+                2 -> TendancesTab(s)
             }
         }
     }

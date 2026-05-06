@@ -1,5 +1,6 @@
 package com.freshtrack.data.products
 
+import android.util.Log
 import com.freshtrack.data.db.ProductDao
 import com.freshtrack.data.supabase.ProductRow
 import com.freshtrack.domain.model.Member
@@ -201,7 +202,9 @@ class ProductRepository @Inject constructor(
                         else -> {}
                     }
                     trySend(Unit)
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    Log.w("ProductRepo", "Realtime update ignoré", e)
+                }
             }
         }
 
@@ -210,7 +213,7 @@ class ProductRepository @Inject constructor(
 
         awaitClose {
             realtimeJob.cancel()
-            launch { runCatching { channel.unsubscribe() } }
+            launch { runCatching { channel.unsubscribe(); supabase.realtime.disconnect() } }
         }
     }
 }

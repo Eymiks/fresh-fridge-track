@@ -27,7 +27,8 @@ class OcrEdgeFunction @Inject constructor(
     // imageDataUrl: "data:image/jpeg;base64,…"
     // Edge Function returns {"date": "YYYY-MM-DD", "raw_text": "…"}
     suspend fun parseDate(imageDataUrl: String): String? = runCatching {
-        val token = supabase.auth.currentSessionOrNull()?.accessToken ?: ""
+        val token = supabase.auth.currentSessionOrNull()?.accessToken
+            ?: return@runCatching null
         val body = buildJsonObject { put("image", imageDataUrl) }.toString()
 
         val response = httpClient.post(

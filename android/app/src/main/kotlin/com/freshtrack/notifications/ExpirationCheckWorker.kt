@@ -2,7 +2,10 @@ package com.freshtrack.notifications
 
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -68,6 +71,11 @@ class ExpirationCheckWorker @AssistedInject constructor(
             prefs.setNotifLastCheck(today.toString())
             return Result.success()
         }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(applicationContext, android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+        ) return Result.success()
 
         val manager = applicationContext.getSystemService(NotificationManager::class.java)
         val newDoneIds = doneIds.toMutableSet()
