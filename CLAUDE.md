@@ -201,6 +201,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - `SettingsScreen` ne quitte plus silencieusement le callback avatar si le foyer, l'utilisateur ou la lecture de l'image échoue ; une erreur explicite est envoyée au snackbar.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-06 — Étape 9 : fallback foyer Paramètres**
+- Issue GitHub `Android` reprise : #1 `Upload image profil`.
+- `SettingsScreen` utilise `AuthState.Authenticated.household` et `members` comme source de secours lorsque `HouseholdSettingsViewModel` n'a pas encore réémis le foyer après le retour du picker.
+- Le fallback couvre l'upload avatar, l'affichage du profil, le nom du foyer, le code d'invitation et la liste des membres.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

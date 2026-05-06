@@ -122,17 +122,19 @@ fun SettingsScreen(
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val auth = authState as? AuthState.Authenticated
+    val effectiveHousehold = household ?: auth?.household
+    val effectiveMembers = if (members.isNotEmpty()) members else auth?.members.orEmpty()
 
     var showSignOutConfirm by remember { mutableStateOf(false) }
     var memberToRemove by remember { mutableStateOf<Member?>(null) }
     var editedName by remember { mutableStateOf("") }
-    var householdName by remember(household?.name) { mutableStateOf(household?.name.orEmpty()) }
+    var householdName by remember(effectiveHousehold?.name) { mutableStateOf(effectiveHousehold?.name.orEmpty()) }
     var copiedInvite by remember { mutableStateOf(false) }
 
-    val auth = authState as? AuthState.Authenticated
-    val myMember = members.firstOrNull { it.userId == auth?.userId }
+    val myMember = effectiveMembers.firstOrNull { it.userId == auth?.userId }
     val displayName = myMember?.displayName ?: auth?.displayName ?: "Invité"
-    val isOwner = household?.createdBy == auth?.userId
+    val isOwner = effectiveHousehold?.createdBy == auth?.userId
 
     LaunchedEffect(myMember?.displayName, auth?.displayName) {
         editedName = myMember?.displayName ?: auth?.displayName.orEmpty()
@@ -150,7 +152,7 @@ fun SettingsScreen(
 
     val avatarLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
-        val hh = household ?: run {
+        val hh = effectiveHousehold ?: run {
             householdVm.reportError("Impossible d'envoyer l'avatar : foyer introuvable.")
             return@rememberLauncherForActivityResult
         }
@@ -198,7 +200,7 @@ fun SettingsScreen(
                 displayName = displayName,
                 subtitle = when (authState) {
                     is AuthState.Guest -> "Mode invité · Frigo local"
-                    is AuthState.Authenticated -> "${auth?.email.orEmpty()} · ${household?.name.orEmpty()}"
+                    is AuthState.Authenticated -> "${auth?.email.orEmpty()} · ${effectiveHousehold?.name.orEmpty()}"
                     else -> ""
                 },
                 avatarUrl = householdUi.avatarUrlOverride ?: myMember?.avatarUrl,
@@ -304,7 +306,7 @@ fun SettingsScreen(
                 }
             }
 
-            if (auth != null && household != null) {
+            if (auth != null && effectiveHousehold != null) {
                 SectionCard(title = "Foyer", icon = Icons.Default.Home) {
                     OutlinedTextField(
                         value = householdName,
@@ -314,8 +316,8 @@ fun SettingsScreen(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         trailingIcon = {
-                            if (isOwner && householdName.isNotBlank() && householdName != household?.name) {
-                                IconButton(onClick = { household?.let { householdVm.updateHouseholdName(it.id, householdName.trim()) } }) {
+                            if (isOwner && householdName.isNotBlank() && householdName != effectiveHousehold.name) {
+                                IconButton(onClick = { householdVm.updateHouseholdName(effectiveHousehold.id, householdName.trim()) }) {
                                     Icon(Icons.Default.Check, contentDescription = "Renommer")
                                 }
                             }
@@ -326,24 +328,24 @@ fun SettingsScreen(
                     }
                     Spacer(Modifier.height(12.dp))
                     InviteCodeRow(
-                        inviteCode = household!!.inviteCode,
+                        inviteCode = effectiveHousehold.inviteCode,
                         copied = copiedInvite,
                         onCopy = {
-                            clipboard.setText(AnnotatedString(household!!.inviteCode))
+                            clipboard.setText(AnnotatedString(effectiveHousehold.inviteCode))
                             copiedInvite = true
                         },
                         onShare = {
                             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, "Rejoins mon frigo sur FreshTrack avec le code : ${household!!.inviteCode}")
+                                putExtra(Intent.EXTRA_TEXT, "Rejoins mon frigo sur FreshTrack avec le code : ${effectiveHousehold.inviteCode}")
                             }
                             context.startActivity(Intent.createChooser(shareIntent, "Partager le code d'invitation"))
                         }
                     )
                     Spacer(Modifier.height(12.dp))
-                    Text("Membres (${members.size})", fontWeight = FontWeight.SemiBold)
+                    Text("Membres (${effectiveMembers.size})", fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(6.dp))
-                    members.forEach { member ->
+                    effectiveMembers.forEach { member ->
                         MemberRow(
                             member = member,
                             isMe = member.userId == auth.userId,
