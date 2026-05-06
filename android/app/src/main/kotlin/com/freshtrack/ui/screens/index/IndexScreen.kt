@@ -15,6 +15,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -41,6 +43,7 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.automirrored.filled.Sort
@@ -78,12 +81,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -481,15 +487,15 @@ private fun StatCardsRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         StatCard(expiredCount, "Périmés", ColorExpired,
-            activeFilter == StatusFilter.EXPIRED, Modifier.weight(1f)) {
+            activeFilter == StatusFilter.EXPIRED, Icons.Default.Warning, Modifier.weight(1f)) {
             onFilterChange(if (activeFilter == StatusFilter.EXPIRED) StatusFilter.ALL else StatusFilter.EXPIRED)
         }
         StatCard(soonCount, "Bientôt", ColorSoon,
-            activeFilter == StatusFilter.SOON, Modifier.weight(1f)) {
+            activeFilter == StatusFilter.SOON, Icons.Default.Schedule, Modifier.weight(1f)) {
             onFilterChange(if (activeFilter == StatusFilter.SOON) StatusFilter.ALL else StatusFilter.SOON)
         }
         StatCard(freshCount, "Frais", ColorFresh,
-            activeFilter == StatusFilter.FRESH, Modifier.weight(1f)) {
+            activeFilter == StatusFilter.FRESH, Icons.Default.CheckCircle, Modifier.weight(1f)) {
             onFilterChange(if (activeFilter == StatusFilter.FRESH) StatusFilter.ALL else StatusFilter.FRESH)
         }
     }
@@ -498,6 +504,7 @@ private fun StatCardsRow(
 @Composable
 private fun StatCard(
     count: Int, label: String, color: Color, isActive: Boolean,
+    icon: ImageVector,
     modifier: Modifier = Modifier, onClick: () -> Unit
 ) {
     Card(
@@ -512,6 +519,14 @@ private fun StatCard(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp).fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Box(
+                modifier = Modifier.size(36.dp).clip(MaterialTheme.shapes.small)
+                    .background(color.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.height(6.dp))
             Text(
                 count.toString(),
                 style = MaterialTheme.typography.titleLarge,
@@ -567,10 +582,11 @@ private fun CollapsibleSectionHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            title,
-            style = MaterialTheme.typography.labelLarge,
+            title.uppercase(),
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             color = color,
+            letterSpacing = 0.8.sp,
             modifier = Modifier.weight(1f)
         )
         Icon(
@@ -588,7 +604,9 @@ private fun CollapsibleSectionHeader(
 private fun ProductCardSkeleton() {
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -748,19 +766,21 @@ fun ProductCard(
                 containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
                 else MaterialTheme.colorScheme.surface
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            border = if (isSelected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             shape = MaterialTheme.shapes.medium
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .drawBehind {
-                        drawRect(
+                        drawRoundRect(
                             color = statusColor,
-                            size = Size(5.dp.toPx(), size.height)
+                            size = Size(4.dp.toPx(), size.height),
+                            cornerRadius = CornerRadius(4.dp.toPx())
                         )
                     }
-                    .padding(start = 5.dp)
+                    .padding(start = 4.dp)
                     .padding(horizontal = 10.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -813,7 +833,7 @@ fun ProductCard(
                     Text(
                         product.name,
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1
                     )
                     if (!product.brand.isNullOrBlank()) {
@@ -829,11 +849,19 @@ fun ProductCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (product.status == ProductStatus.OPENED) {
-                            Text(
-                                "Ouvert",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.tertiary
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    "Ouvert",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                         // Nutri-Score badge (M8)
                         if (!product.nutriScore.isNullOrBlank()) {

@@ -1,7 +1,9 @@
 package com.freshtrack.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -9,8 +11,17 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.freshtrack.ui.theme.AppearanceViewModel
+
+private val FreshTrackShapes = Shapes(
+    extraSmall = RoundedCornerShape(6.dp),
+    small       = RoundedCornerShape(10.dp),
+    medium      = RoundedCornerShape(16.dp),
+    large       = RoundedCornerShape(20.dp),
+    extraLarge  = RoundedCornerShape(28.dp)
+)
 
 private fun lightSchemeForAccent(accent: AccentColor) = when (accent) {
     AccentColor.GREEN -> lightColorScheme(
@@ -87,6 +98,7 @@ fun FreshTrackTheme(
     CompositionLocalProvider(LocalAppearance provides appearance) {
         MaterialTheme(
             colorScheme = colorScheme,
+            shapes = FreshTrackShapes,
             content = content
         )
     }
