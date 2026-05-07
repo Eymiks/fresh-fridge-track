@@ -313,6 +313,14 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 - À vérifier sur appareil : contraste de la section `Bientôt périmés`, confort des pills horizontales et rendu de la carte permission refusée.
 
+**2026-05-07 — Finalisation visuelle formulaire produit**
+- `AddProductScreen` affiche désormais le chargement dans une vraie carte bordée, au lieu d'un simple spinner isolé au centre.
+- Les erreurs sont regroupées dans une carte teintée avec icône d'alerte, et les sections du formulaire gagnent une pastille d'icône pour mieux rappeler la hiérarchie visuelle de la PWA.
+- Le dialog de sélection d'images OpenFoodFacts est densifié avec carte bordée et titrage plus net, sans changer le flux de sélection existant.
+- Commit : `android: finaliser les états visuels produit`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+- À vérifier sur appareil : confort du bas de formulaire avec clavier, contraste de la carte d'erreur, et rendu du dialog image en mode sombre.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
