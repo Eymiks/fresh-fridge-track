@@ -289,6 +289,14 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Vérifications : `./gradlew.bat :app:assembleDebug` OK ; `./gradlew.bat :app:testDebugUnitTest` OK (`NO-SOURCE`) ; APK installé et lancé sur l'appareil `ZY22HVMV3X`.
 - À vérifier sur appareil : densité exacte des cartes sur petit écran et lisibilité du menu filtre en mode sombre.
 
+**2026-05-07 — Polish Stats Android**
+- `StatsScreen` remplace le `TabRow` Material brut par un segmented control plus proche de la PWA et ajoute un header d'écran plus dense.
+- Les blocs Frigo, urgence, catégories, Anti-Gaspi, tendances et tops produits utilisent désormais des cartes bordées `rounded-2xl` avec titres en pastilles teintées, pour une hiérarchie visuelle plus cohérente avec la PWA.
+- Les états de chargement et de vide passent par des cartes centrées au lieu de simples textes isolés.
+- Commit : `android: polir les statistiques façon PWA`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+- À vérifier sur appareil : lisibilité exacte des charts Vico une fois enchâssés dans les cartes, et densité verticale sur petit écran.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

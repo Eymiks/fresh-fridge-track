@@ -1,10 +1,13 @@
 package com.freshtrack.ui.screens.stats
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -26,11 +29,11 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.key
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Surface
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -82,24 +85,35 @@ fun StatsScreen(vm: StatsViewModel = hiltViewModel()) {
     val products by vm.products.collectAsState()
     var tab by remember { mutableIntStateOf(0) }
 
-    Column(Modifier.fillMaxSize()) {
-        TabRow(selectedTabIndex = tab) {
-            Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Frigo") })
-            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Anti-Gaspi") })
-            Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Tendances") })
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text("Statistiques", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+            Text(
+                "Suivez le frigo, les alertes et l'anti-gaspi",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
+
+        StatsSegmentedTabs(selected = tab, onSelect = { tab = it })
 
         val s = stats
         if (s == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                LoadingStatsCard()
             }
             return
         }
 
         key(tab) {
             Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 when (tab) {
@@ -121,9 +135,9 @@ private fun FrigoTab(products: List<Product>) {
     val urgent = active.sortedBy { it.getDaysUntilExpiration() }.take(5)
     val categoryCounts = active.groupingBy { it.category ?: "autre" }.eachCount()
 
-    Card(Modifier.fillMaxWidth()) {
+    FreshStatsCard {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("En stock", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            SectionTitle("En stock", Icons.Default.Inventory2, MaterialTheme.colorScheme.primary)
             Text(active.size.toString(), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black)
             if (active.isNotEmpty()) {
                 StockDistributionBar(expired.size, soon.size, fresh.size, active.size)
@@ -139,20 +153,33 @@ private fun FrigoTab(products: List<Product>) {
     }
 
     if (urgent.isNotEmpty()) {
-        Text("Bientôt à vérifier", fontWeight = FontWeight.SemiBold)
-        urgent.forEach { product -> UrgentRow(product) }
+        SectionCard("Bientôt à vérifier", Icons.Default.Schedule, ColorSoon) {
+            urgent.forEach { product -> UrgentRow(product) }
+        }
     }
 
     if (categoryCounts.isNotEmpty()) {
-        Text("Par catégorie", fontWeight = FontWeight.SemiBold)
-        categoryCounts.entries.sortedByDescending { it.value }.forEach { (key, count) ->
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Category, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.size(8.dp))
-                Text(categoryLabel(key), modifier = Modifier.weight(1f))
-                Text(count.toString(), fontWeight = FontWeight.Bold)
+        SectionCard("Par catégorie", Icons.Default.Category, MaterialTheme.colorScheme.primary) {
+            categoryCounts.entries.sortedByDescending { it.value }.forEach { (key, count) ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Category, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.size(8.dp))
+                    Text(categoryLabel(key), modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                    Text(count.toString(), fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                }
             }
         }
+    }
+
+    if (active.isEmpty()) {
+        EmptyStatsCard("Aucun produit en stock", "Ajoutez des produits pour voir la répartition du frigo.")
     }
 }
 
@@ -204,7 +231,7 @@ private fun UrgentRow(product: Product) {
         lifeProgress > 0.2f -> ColorSoon
         else -> ColorExpired
     }
-    Card(Modifier.fillMaxWidth()) {
+    FreshStatsCard {
         Column(Modifier.padding(horizontal = 12.dp).padding(top = 12.dp, bottom = 10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Inventory2, contentDescription = null, tint = color)
@@ -228,9 +255,9 @@ private fun UrgentRow(product: Product) {
 
 @Composable
 private fun AntiGaspiTab(stats: StatsResult) {
-    Card(Modifier.fillMaxWidth()) {
+    FreshStatsCard {
         Column(Modifier.padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Score anti-gaspi ce mois", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            SectionTitle("Score anti-gaspi ce mois", Icons.Default.Restore, MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(4.dp))
             AntiGaspiGauge(stats.monthlyScore)
             val trend = stats.trend
@@ -252,32 +279,47 @@ private fun AntiGaspiTab(stats: StatsResult) {
         SmallMetric("Conso moy.", "${stats.avgConsumptionDays.roundToInt()}j", "après ajout", Icons.Default.Schedule, Modifier.weight(1f))
     }
 
-    Text("Évolution mensuelle", fontWeight = FontWeight.SemiBold)
-    MonthlyScoreChart(stats.monthly)
-    MonthLabels(stats.monthly)
+    SectionCard("Évolution mensuelle", Icons.AutoMirrored.Filled.TrendingUp, ColorFresh) {
+        MonthlyScoreChart(stats.monthly)
+        MonthLabels(stats.monthly)
+    }
 
     if (stats.categoryScores.isNotEmpty()) {
-        Text("Score par catégorie", fontWeight = FontWeight.SemiBold)
-        stats.categoryScores.forEach { (cat, score) ->
-            ProgressRow(categoryLabel(cat), score)
+        SectionCard("Score par catégorie", Icons.Default.Category, MaterialTheme.colorScheme.primary) {
+            stats.categoryScores.forEach { (cat, score) ->
+                ProgressRow(categoryLabel(cat), score)
+            }
         }
     }
 
     if (stats.topThrown.isNotEmpty()) {
-        Text("Produits les plus gaspillés", fontWeight = FontWeight.SemiBold)
-        stats.topThrown.forEachIndexed { i, (name, count) ->
-            val medal = when (i) { 0 -> "🥇"; 1 -> "🥈"; 2 -> "🥉"; else -> "${i + 1}." }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("$medal $name", maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                Text("x$count", color = ColorExpired, fontWeight = FontWeight.Bold)
+        SectionCard("Produits les plus gaspillés", Icons.Default.Inventory2, ColorExpired) {
+            stats.topThrown.forEachIndexed { i, (name, count) ->
+                val medal = when (i) { 0 -> "🥇"; 1 -> "🥈"; 2 -> "🥉"; else -> "${i + 1}." }
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (count >= 3) ColorExpired.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("$medal $name", maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                    Text("x$count", color = ColorExpired, fontWeight = FontWeight.Black)
+                }
             }
         }
+    }
+
+    if (stats.topThrown.isEmpty() && stats.categoryScores.isEmpty()) {
+        EmptyStatsCard("Pas encore de données anti-gaspi", "Marquez des produits consommés ou jetés pour alimenter ces statistiques.")
     }
 }
 
 @Composable
 private fun TendancesTab(stats: StatsResult) {
-    Card(Modifier.fillMaxWidth()) {
+    FreshStatsCard {
         Column(Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -288,26 +330,143 @@ private fun TendancesTab(stats: StatsResult) {
         }
     }
 
-    Text("Ajouts / consommés / jetés", fontWeight = FontWeight.SemiBold)
-    MonthlyAddedChart(stats.monthly)
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
-    ) {
-        ChartLegend("Ajoutés", MaterialTheme.colorScheme.primary)
-        ChartLegend("Consommés", ColorFresh)
-        ChartLegend("Jetés", ColorExpired)
+    SectionCard("Ajouts / consommés / jetés", Icons.AutoMirrored.Filled.TrendingUp, MaterialTheme.colorScheme.primary) {
+        MonthlyAddedChart(stats.monthly)
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
+        ) {
+            ChartLegend("Ajoutés", MaterialTheme.colorScheme.primary)
+            ChartLegend("Consommés", ColorFresh)
+            ChartLegend("Jetés", ColorExpired)
+        }
+        MonthLabels(stats.monthly)
     }
-    MonthLabels(stats.monthly)
 
     if (stats.topRecurrent.isNotEmpty()) {
-        Text("Produits récurrents", fontWeight = FontWeight.SemiBold)
-        stats.topRecurrent.forEachIndexed { i, (name, count) ->
-            val medal = when (i) { 0 -> "🥇"; 1 -> "🥈"; 2 -> "🥉"; else -> "${i + 1}." }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("$medal $name", modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("x$count", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+        SectionCard("Produits récurrents", Icons.Default.Restore, MaterialTheme.colorScheme.primary) {
+            stats.topRecurrent.forEachIndexed { i, (name, count) ->
+                val medal = when (i) { 0 -> "🥇"; 1 -> "🥈"; 2 -> "🥉"; else -> "${i + 1}." }
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("$medal $name", modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
+                    Text("x$count", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
+                }
             }
+        }
+    } else {
+        EmptyStatsCard("Aucune tendance récurrente", "Les produits ajoutés plusieurs fois apparaîtront ici.")
+    }
+}
+
+@Composable
+private fun StatsSegmentedTabs(selected: Int, onSelect: (Int) -> Unit) {
+    val tabs = listOf("Frigo", "Anti-Gaspi", "Tendances")
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        tabs.forEachIndexed { index, label ->
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (selected == index) MaterialTheme.colorScheme.surface else androidx.compose.ui.graphics.Color.Transparent)
+                    .clickable { onSelect(index) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Black,
+                    color = if (selected == index) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FreshStatsCard(content: @Composable () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        content = { content() }
+    )
+}
+
+@Composable
+private fun SectionCard(
+    title: String,
+    icon: ImageVector,
+    color: androidx.compose.ui.graphics.Color,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    FreshStatsCard {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            SectionTitle(title, icon, color)
+            content()
+        }
+    }
+}
+
+@Composable
+private fun SectionTitle(title: String, icon: ImageVector, color: androidx.compose.ui.graphics.Color) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(
+            Modifier
+                .size(34.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(color.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+        }
+        Text(title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
+    }
+}
+
+@Composable
+private fun LoadingStatsCard() {
+    FreshStatsCard {
+        Column(
+            Modifier.fillMaxWidth().padding(vertical = 30.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            CircularProgressIndicator()
+            Text("Calcul des statistiques…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun EmptyStatsCard(title: String, subtitle: String) {
+    FreshStatsCard {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 30.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(Icons.Default.Inventory2, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(34.dp))
+            Text(title, fontWeight = FontWeight.Black)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
