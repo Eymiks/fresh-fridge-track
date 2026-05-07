@@ -305,6 +305,14 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 - À vérifier sur appareil : confort de lecture des filtres sur petit écran et densité réelle des cartes réactivables.
 
+**2026-05-07 — Polish Alertes Android**
+- `NotificationsScreen` reçoit un header plus dense, des filtres pill custom et des en-têtes de sections avec icône + compteur plus proches de la PWA.
+- La carte de réglage des notifications push abandonne le rendu Material trop neutre au profit d'une surface bordée avec pastille d'icône et rappels visuels plus cohérents.
+- Les états vides et la carte `Notifications bloquées` sont harmonisés avec le reste de l'application Android.
+- Commit : `android: polir les alertes façon PWA`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+- À vérifier sur appareil : contraste de la section `Bientôt périmés`, confort des pills horizontales et rendu de la carte permission refusée.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
