@@ -1,5 +1,6 @@
 package com.freshtrack.ui.screens.history
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -24,11 +25,11 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Card
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.freshtrack.ui.theme.ColorFresh
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
@@ -75,94 +76,162 @@ fun HistoryScreen(
         vm.clearError()
     }
 
-    Box(Modifier.fillMaxSize()) {
-    Surface(Modifier.fillMaxSize()) {
-        LazyColumn(
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                Text("Historique", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text(
-                    formatHistorySubtitle(products),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            item {
-                Row(
-                    Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    HistoryFilterChip("Tout (${products.size})", filter == HistoryFilter.ALL) { filter = HistoryFilter.ALL }
-                    HistoryFilterChip("Ouverts (${openedList.size})", filter == HistoryFilter.OPENED) { filter = HistoryFilter.OPENED }
-                    HistoryFilterChip("Consommés (${consumedList.size})", filter == HistoryFilter.CONSUMED) { filter = HistoryFilter.CONSUMED }
-                    HistoryFilterChip("Jetés (${thrownList.size})", filter == HistoryFilter.THROWN) { filter = HistoryFilter.THROWN }
-                }
-            }
-
-            if (products.isEmpty()) {
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            LazyColumn(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
                 item {
-                    EmptyHistoryState("Aucun produit dans l'historique", "Les produits ouverts, consommés ou jetés apparaîtront ici.")
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text("Historique", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+                        Text(
+                            formatHistorySubtitle(products),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
-            }
 
-            if ((filter == HistoryFilter.ALL || filter == HistoryFilter.OPENED) && openedList.isNotEmpty()) {
                 item {
-                    SectionHeader("Ouverts", openedList.size, Icons.Default.Inventory2, MaterialTheme.colorScheme.primary)
+                    Row(
+                        Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        HistoryFilterChip(
+                            "Tout",
+                            products.size,
+                            filter == HistoryFilter.ALL,
+                            MaterialTheme.colorScheme.primary
+                        ) { filter = HistoryFilter.ALL }
+                        HistoryFilterChip(
+                            "Ouverts",
+                            openedList.size,
+                            filter == HistoryFilter.OPENED,
+                            MaterialTheme.colorScheme.primary
+                        ) { filter = HistoryFilter.OPENED }
+                        HistoryFilterChip(
+                            "Consommés",
+                            consumedList.size,
+                            filter == HistoryFilter.CONSUMED,
+                            ColorFresh
+                        ) { filter = HistoryFilter.CONSUMED }
+                        HistoryFilterChip(
+                            "Jetés",
+                            thrownList.size,
+                            filter == HistoryFilter.THROWN,
+                            MaterialTheme.colorScheme.error
+                        ) { filter = HistoryFilter.THROWN }
+                    }
                 }
-                items(openedList, key = { "o_${it.id}" }) { product ->
-                    HistoryItem(product = product, onClick = { onProductClick(product.id) }, onRestore = { vm.restoreProduct(product) })
-                }
-            }
 
-            if ((filter == HistoryFilter.ALL || filter == HistoryFilter.CONSUMED) && consumedList.isNotEmpty()) {
-                item {
-                    SectionHeader("Consommés", consumedList.size, Icons.Default.Restaurant, ColorFresh)
+                if (products.isEmpty()) {
+                    item {
+                        EmptyHistoryState("Aucun produit dans l'historique", "Les produits ouverts, consommés ou jetés apparaîtront ici.")
+                    }
                 }
-                items(consumedList, key = { "c_${it.id}" }) { product ->
-                    HistoryItem(product = product, onClick = { onProductClick(product.id) }, onRestore = { vm.restoreProduct(product) })
-                }
-            }
 
-            if ((filter == HistoryFilter.ALL || filter == HistoryFilter.THROWN) && thrownList.isNotEmpty()) {
-                item {
-                    SectionHeader("Jetés", thrownList.size, Icons.Default.Delete, MaterialTheme.colorScheme.error)
+                if ((filter == HistoryFilter.ALL || filter == HistoryFilter.OPENED) && openedList.isNotEmpty()) {
+                    item {
+                        SectionHeader("Ouverts", openedList.size, Icons.Default.Inventory2, MaterialTheme.colorScheme.primary)
+                    }
+                    items(openedList, key = { "o_${it.id}" }) { product ->
+                        HistoryItem(product = product, onClick = { onProductClick(product.id) }, onRestore = { vm.restoreProduct(product) })
+                    }
                 }
-                items(thrownList, key = { "t_${it.id}" }) { product ->
-                    HistoryItem(product = product, onClick = { onProductClick(product.id) }, onRestore = { vm.restoreProduct(product) })
+
+                if ((filter == HistoryFilter.ALL || filter == HistoryFilter.CONSUMED) && consumedList.isNotEmpty()) {
+                    item {
+                        SectionHeader("Consommés", consumedList.size, Icons.Default.Restaurant, ColorFresh)
+                    }
+                    items(consumedList, key = { "c_${it.id}" }) { product ->
+                        HistoryItem(product = product, onClick = { onProductClick(product.id) }, onRestore = { vm.restoreProduct(product) })
+                    }
+                }
+
+                if ((filter == HistoryFilter.ALL || filter == HistoryFilter.THROWN) && thrownList.isNotEmpty()) {
+                    item {
+                        SectionHeader("Jetés", thrownList.size, Icons.Default.Delete, MaterialTheme.colorScheme.error)
+                    }
+                    items(thrownList, key = { "t_${it.id}" }) { product ->
+                        HistoryItem(product = product, onClick = { onProductClick(product.id) }, onRestore = { vm.restoreProduct(product) })
+                    }
                 }
             }
         }
-    }
-    SnackbarHost(
-        hostState = snackbarHostState,
-        modifier = Modifier.align(Alignment.BottomCenter)
-    )
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
 
 @Composable
 private fun SectionHeader(label: String, count: Int, icon: ImageVector, color: androidx.compose.ui.graphics.Color) {
     Row(
-        Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+        Box(
+            Modifier
+                .size(34.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(color.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+        }
         Text(
-            "$label ($count)",
+            label,
             style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = color
+            fontWeight = FontWeight.Black,
+            color = color,
+            modifier = Modifier.weight(1f)
         )
+        StatusPill(count.toString(), color)
     }
 }
 
 @Composable
-private fun HistoryFilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    FilterChip(selected = selected, onClick = onClick, label = { Text(label) })
+private fun HistoryFilterChip(
+    label: String,
+    count: Int,
+    selected: Boolean,
+    color: androidx.compose.ui.graphics.Color,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(999.dp),
+        color = if (selected) color.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, if (selected) color.copy(alpha = 0.24f) else MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Row(
+            Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Black,
+                color = if (selected) color else MaterialTheme.colorScheme.onSurface
+            )
+            Surface(
+                shape = RoundedCornerShape(999.dp),
+                color = if (selected) color else MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Text(
+                    count.toString(),
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Black,
+                    color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -170,26 +239,29 @@ private fun HistoryItem(product: Product, onClick: () -> Unit, onRestore: () -> 
     val status = statusMeta(product.status)
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = MaterialTheme.shapes.large,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             if (!product.imageUrl.isNullOrBlank()) {
                 AsyncImage(
                     model = product.imageUrl,
                     contentDescription = product.name,
-                    modifier = Modifier.size(58.dp).clip(RoundedCornerShape(14.dp)),
+                    modifier = Modifier.size(58.dp).clip(RoundedCornerShape(16.dp)),
                     contentScale = ContentScale.Crop
                 )
             } else {
                 Box(
-                    Modifier.size(58.dp).clip(RoundedCornerShape(14.dp)).background(status.color.copy(alpha = 0.12f)),
+                    Modifier.size(58.dp).clip(RoundedCornerShape(16.dp)).background(status.color.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(status.icon, contentDescription = null, tint = status.color)
                 }
             }
             Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                Text(product.name, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(product.name, fontWeight = FontWeight.Black, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(
                     listOfNotNull(product.brand, product.quantity).joinToString(" · ").ifBlank { "Produit du foyer" },
                     style = MaterialTheme.typography.bodySmall,
@@ -203,12 +275,24 @@ private fun HistoryItem(product: Product, onClick: () -> Unit, onRestore: () -> 
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Column(horizontalAlignment = Alignment.End) {
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 StatusPill(status.label, status.color)
-                TextButton(onClick = onRestore) {
-                    Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.size(4.dp))
-                    Text("Remettre actif")
+                Surface(
+                    onClick = onRestore,
+                    shape = RoundedCornerShape(999.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(15.dp), tint = MaterialTheme.colorScheme.primary)
+                        Text("Réactiver", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                    }
                 }
             }
         }
@@ -230,14 +314,30 @@ private fun StatusPill(label: String, color: androidx.compose.ui.graphics.Color)
 
 @Composable
 private fun EmptyHistoryState(title: String, subtitle: String) {
-    Column(
-        Modifier.fillMaxWidth().padding(vertical = 40.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Icon(Icons.Default.Restore, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(title, fontWeight = FontWeight.Bold)
-        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 30.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                Modifier
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            }
+            Text(title, fontWeight = FontWeight.Black)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 

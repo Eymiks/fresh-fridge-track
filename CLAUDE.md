@@ -324,6 +324,14 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 - À vérifier sur appareil : lisibilité exacte des charts Vico une fois enchâssés dans les cartes, et densité verticale sur petit écran.
 
+**2026-05-07 — Polish Historique Android**
+- `HistoryScreen` adopte un header plus compact, des filtres pill avec compteur intégré et des sections plus proches du vocabulaire visuel de la PWA.
+- Les cartes produit gagnent une bordure légère, des coins plus généreux et une action `Réactiver` plus discrète que le `TextButton` Material d'origine.
+- L'état vide passe dans une carte centrée avec icône teintée pour rester cohérent avec les autres écrans Android polis.
+- Commit : `android: harmoniser l'historique avec la PWA`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+- À vérifier sur appareil : confort de lecture des filtres sur petit écran et densité réelle des cartes réactivables.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
