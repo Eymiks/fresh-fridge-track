@@ -11,11 +11,15 @@ import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.model.getExpirationStatus
 import com.freshtrack.domain.model.isActive
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -53,13 +57,25 @@ class NotificationsViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    val expiredProducts = products.map { list ->
-        list.filter { it.isActive() && it.getExpirationStatus() == ExpirationStatus.EXPIRED }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList<Product>())
+    private data class SplitProducts(val expired: List<Product>, val soon: List<Product>)
 
-    val soonProducts = products.map { list ->
-        list.filter { it.isActive() && it.getExpirationStatus() == ExpirationStatus.SOON }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList<Product>())
+    private val splitProducts = products.map { list ->
+        val active = list.filter { it.isActive() }
+        SplitProducts(
+            expired = active.filter { it.getExpirationStatus() == ExpirationStatus.EXPIRED },
+            soon = active.filter { it.getExpirationStatus() == ExpirationStatus.SOON }
+        )
+    }
+        .flowOn(Dispatchers.Default)
+        .shareIn(viewModelScope, SharingStarted.Eagerly, replay = 1)
+
+    val expiredProducts = splitProducts.map { it.expired }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList<Product>())
+
+    val soonProducts = splitProducts.map { it.soon }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList<Product>())
 
     fun setEnabled(enabled: Boolean) = viewModelScope.launch { prefs.setNotifEnabled(enabled) }
     fun setDays(days: Int) = viewModelScope.launch { prefs.setNotifDays(days) }

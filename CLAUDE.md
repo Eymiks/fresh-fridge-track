@@ -448,6 +448,11 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - Vérification : `./gradlew.bat :app:assembleDebug` OK (0 warning) ; APK installé sur `moto g54 5G - 15`.
 - À vérifier sur appareil : clic profil/foyer → Paramètres, share sheet code invitation, mode invité (boutons corrects), indicateur On/Off notifications.
 
+**2026-05-09 — Mission fluidité Android — Étape 5 : ViewModels secondaires filtrage optimisé**
+- `NotificationsViewModel` : double passage `filter` remplacé par un seul `map` → `SplitProducts` (interne) sur `Dispatchers.Default`, partagé via `shareIn(replay=1)`. `expiredProducts` et `soonProducts` dérivés avec `distinctUntilChanged`.
+- `HistoryViewModel` : duplication du filtre/tri entre les branches authenticated et guest éliminée avec `filterAndSort()` ; ajout `flowOn(Dispatchers.Default)` + `distinctUntilChanged`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK ; APK installé sur moto g54 5G.
+
 **2026-05-09 — Mission fluidité Android — Étape 4 : images stables dans les listes**
 - `ProductCards.kt` : `rememberProductImageRequest` construit un `ImageRequest` stable via `remember(imageUrl)` — Coil ne re-télécharge plus si l'URL n'a pas changé.
 - `HistoryScreen.kt` : `remember(product)` → `remember(product.id)` sur les 3 lambdas `restoreClick` — la capture de l'objet entier forçait une recréation inutile à chaque recomposition.
