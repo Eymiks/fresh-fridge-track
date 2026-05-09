@@ -34,8 +34,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -235,6 +241,7 @@ private fun MainScreen(rootNavController: androidx.navigation.NavController) {
         ThemeMode.LIGHT -> false
         ThemeMode.SYSTEM -> systemDark
     }
+    val context = LocalContext.current
 
     var showMenu by rememberSaveable { mutableStateOf(false) }
 
@@ -331,6 +338,14 @@ private fun MainScreen(rootNavController: androidx.navigation.NavController) {
                         else -> rootNavController.navigate(route)
                     }
                 },
+                onProfileClick = {
+                    showMenu = false
+                    rootNavController.navigate(Routes.SETTINGS)
+                },
+                onHouseholdClick = {
+                    showMenu = false
+                    rootNavController.navigate(Routes.SETTINGS)
+                },
                 onThemeToggle = {
                     val next = when (appearance.themeMode) {
                         ThemeMode.LIGHT -> ThemeMode.DARK
@@ -339,9 +354,15 @@ private fun MainScreen(rootNavController: androidx.navigation.NavController) {
                     }
                     appearanceVm.setThemeMode(next)
                 },
-                onInvite = {
-                    showMenu = false
-                    rootNavController.navigate(Routes.SETTINGS)
+                onInviteShare = { code ->
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, "Rejoins mon frigo sur FreshTrack ! Code d'invitation : $code")
+                    }
+                    context.startActivity(Intent.createChooser(intent, "Inviter via…"))
+                },
+                onLogin = {
+                    menuVm.signOut()
                 },
                 onSignOut = {
                     showMenu = false

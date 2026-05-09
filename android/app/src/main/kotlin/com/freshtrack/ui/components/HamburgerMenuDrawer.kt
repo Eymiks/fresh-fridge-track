@@ -1,5 +1,6 @@
 package com.freshtrack.ui.components
 
+import android.os.Build
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,25 +18,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -46,6 +45,11 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,14 +61,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationManagerCompat
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.freshtrack.ui.navigation.Routes
 import com.freshtrack.ui.screens.HamburgerMenuUiState
 import com.freshtrack.ui.theme.ColorExpired
 import com.freshtrack.ui.theme.ColorFresh
-import com.freshtrack.ui.theme.ColorSoon
+import kotlinx.coroutines.delay
 
 @Composable
 fun HamburgerMenuDrawer(
@@ -73,12 +77,32 @@ fun HamburgerMenuDrawer(
     isDarkMode: Boolean,
     onClose: () -> Unit,
     onNavigate: (String) -> Unit,
+    onProfileClick: () -> Unit,
+    onHouseholdClick: () -> Unit,
     onThemeToggle: () -> Unit,
-    onInvite: () -> Unit,
+    onInviteShare: (inviteCode: String) -> Unit,
+    onLogin: () -> Unit,
     onSignOut: () -> Unit
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val drawerWidth = minOf(360.dp, screenWidth * 0.85f)
+    val context = LocalContext.current
+
+    var copiedInvite by remember { mutableStateOf(false) }
+    LaunchedEffect(copiedInvite) {
+        if (copiedInvite) {
+            delay(2000)
+            copiedInvite = false
+        }
+    }
+
+    // Vérification permission notifications (point d'entrée Compose, sans clé = stable)
+    val notifGranted = remember {
+        NotificationManagerCompat.from(context).areNotificationsEnabled()
+    }
+    val notifStatusPill: String? = if (state.alertCount == 0) {
+        if (notifGranted && state.notifEnabled) "On" else "Off"
+    } else null
 
     Box(Modifier.fillMaxSize()) {
         // Scrim
@@ -105,7 +129,7 @@ fun HamburgerMenuDrawer(
                     .statusBarsPadding()
                     .navigationBarsPadding()
             ) {
-                // ─── Header ──────────────────────────────────────────────
+                // ─── Header profil (cliquable → Paramètres) ───────────────
                 Column(
                     Modifier
                         .fillMaxWidth()
@@ -113,7 +137,10 @@ fun HamburgerMenuDrawer(
                         .padding(horizontal = 20.dp, vertical = 16.dp)
                 ) {
                     Row(
-                        Modifier.fillMaxWidth(),
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(MaterialTheme.shapes.medium)
+                            .clickable(onClick = onProfileClick),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         AvatarImage(
@@ -130,15 +157,18 @@ fun HamburgerMenuDrawer(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            if (!state.householdName.isNullOrBlank()) {
-                                Text(
-                                    text = state.householdName,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
+                            val subtitle = when {
+                                state.isGuest -> "Mode invité · Frigo local"
+                                !state.householdName.isNullOrBlank() -> state.householdName
+                                else -> "Foyer"
                             }
+                            Text(
+                                text = subtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                         IconButton(onClick = onClose) {
                             Icon(
@@ -170,7 +200,7 @@ fun HamburgerMenuDrawer(
                         )
                         MenuStatCard(
                             count = state.memberCount,
-                            label = "membres",
+                            label = state.memberLabel,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.weight(1f)
                         )
@@ -203,6 +233,7 @@ fun HamburgerMenuDrawer(
                         label = "Notifications",
                         badge = if (state.alertCount > 0) state.alertCount else null,
                         badgeColor = ColorExpired,
+                        statusPill = notifStatusPill,
                         isActive = currentRoute == Routes.NOTIFICATIONS,
                         onClick = { onNavigate(Routes.NOTIFICATIONS); onClose() }
                     )
@@ -237,9 +268,10 @@ fun HamburgerMenuDrawer(
                         .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Foyer
-                    if (!state.householdName.isNullOrBlank()) {
+                    // Carte foyer (cliquable → Paramètres, masquée en mode invité)
+                    if (!state.isGuest && !state.householdName.isNullOrBlank()) {
                         Surface(
+                            onClick = onHouseholdClick,
                             modifier = Modifier.fillMaxWidth(),
                             shape = MaterialTheme.shapes.medium,
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -249,14 +281,22 @@ fun HamburgerMenuDrawer(
                                 Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    Icons.Default.Group,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
-                                )
+                                Box(
+                                    Modifier
+                                        .size(36.dp)
+                                        .clip(MaterialTheme.shapes.small)
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.Group,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
                                 Spacer(Modifier.width(10.dp))
-                                Column {
+                                Column(Modifier.weight(1f)) {
                                     Text(
                                         text = state.householdName,
                                         style = MaterialTheme.typography.bodyMedium,
@@ -274,7 +314,7 @@ fun HamburgerMenuDrawer(
                         }
                     }
 
-                    // Sombre + Inviter
+                    // Thème + Inviter / Compte
                     Row(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -290,44 +330,97 @@ fun HamburgerMenuDrawer(
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
-                        OutlinedButton(
-                            onClick = onInvite,
-                            modifier = Modifier.weight(1f),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                        ) {
-                            Icon(
-                                Icons.Default.PersonAdd,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                "Inviter",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold
-                            )
+
+                        if (state.isGuest) {
+                            // Mode invité : bouton "Compte"
+                            OutlinedButton(
+                                onClick = { onLogin(); onClose() },
+                                modifier = Modifier.weight(1f),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.Login,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    "Compte",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        } else {
+                            // Mode connecté : bouton "Inviter" avec clipboard + feedback
+                            OutlinedButton(
+                                onClick = {
+                                    val code = state.inviteCode ?: return@OutlinedButton
+                                    copiedInvite = true
+                                    onInviteShare(code)
+                                },
+                                enabled = state.inviteCode != null,
+                                modifier = Modifier.weight(1f),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                            ) {
+                                Icon(
+                                    if (copiedInvite) Icons.Default.Check else Icons.Default.PersonAdd,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    if (copiedInvite) "Copié !" else "Inviter",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
                     }
 
-                    // Se déconnecter
-                    FilledTonalButton(
-                        onClick = onSignOut,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = ColorExpired.copy(alpha = 0.10f),
-                            contentColor = ColorExpired
-                        )
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.Logout,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "Se déconnecter",
-                            fontWeight = FontWeight.SemiBold
-                        )
+                    // Bouton auth (déconnexion ou connexion selon le mode)
+                    if (state.isGuest) {
+                        FilledTonalButton(
+                            onClick = { onLogin(); onClose() },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+                                contentColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.Login,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Créer un compte / Se connecter",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    } else {
+                        FilledTonalButton(
+                            onClick = { onSignOut(); onClose() },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = ColorExpired.copy(alpha = 0.10f),
+                                contentColor = ColorExpired
+                            )
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.Logout,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Se déconnecter",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
             }
@@ -410,6 +503,7 @@ private fun MenuNavItem(
     isActive: Boolean,
     badge: Int? = null,
     badgeColor: Color = Color.Unspecified,
+    statusPill: String? = null,
     onClick: () -> Unit
 ) {
     val bgColor = if (isActive)
@@ -445,6 +539,7 @@ private fun MenuNavItem(
                 else MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
+            // Badge numérique (alertes, historique)
             if (badge != null) {
                 Surface(
                     shape = CircleShape,
@@ -455,6 +550,21 @@ private fun MenuNavItem(
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = badgeColor,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
+            // Pill statut On/Off (notifications seulement, quand pas de badge)
+            if (statusPill != null) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surfaceVariant
+                ) {
+                    Text(
+                        text = statusPill,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
                 }

@@ -414,6 +414,13 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - Vérification : `./gradlew.bat :app:assembleDebug` OK ; APK installé sur `moto g54 5G - 15`.
 - À vérifier sur appareil : rendu de l'avatar, badges corrects, toggle thème, navigation via les liens, déconnexion.
 
+**2026-05-09 — Parité complète hamburger menu Android / PWA**
+- `HamburgerMenuViewModel` : ajout de `isGuest`, `inviteCode`, `memberLabel`, `notifEnabled` (via `AppPreferences`) dans `HamburgerMenuUiState` ; `historyCount` corrigé pour inclure `OPENED` (conforme PWA) ; mode invité : `memberCount=1`, `memberLabel="local"`.
+- `HamburgerMenuDrawer` : profil cliquable → Paramètres ; carte foyer cliquable → Paramètres ; sous-titre profil affiche "Mode invité · Frigo local" en mode invité ; label stat membre dynamique ; bouton "Inviter" → share sheet Android natif (`Intent.ACTION_SEND`) avec feedback icône Check 2s ; désactivé si pas de foyer ; mode invité : bouton "Compte" + bouton "Créer un compte / Se connecter" au lieu de déconnexion ; indicateur "On"/"Off" sur lien Notifications quand aucune alerte.
+- `AppNavigation.kt` : nouveaux callbacks `onProfileClick`, `onHouseholdClick`, `onInviteShare`, `onLogin` ; `LocalContext.current` pour le partage natif.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK (0 warning) ; APK installé sur `moto g54 5G - 15`.
+- À vérifier sur appareil : clic profil/foyer → Paramètres, share sheet code invitation, mode invité (boutons corrects), indicateur On/Off notifications.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
