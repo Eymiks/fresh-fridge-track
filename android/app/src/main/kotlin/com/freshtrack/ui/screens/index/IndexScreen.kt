@@ -96,6 +96,7 @@ fun IndexScreen(
     onMultiScanClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onEditProduct: (String) -> Unit = {},
+    onMenuOpen: () -> Unit = {},
     vm: IndexViewModel = hiltViewModel()
 ) {
     val ui by vm.ui.collectAsState()
@@ -163,7 +164,7 @@ fun IndexScreen(
                     )
                     Box {
                         Surface(
-                            onClick = onSettingsClick,
+                            onClick = onMenuOpen,
                             shape = MaterialTheme.shapes.small,
                             color = MaterialTheme.colorScheme.surface,
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
@@ -172,7 +173,7 @@ fun IndexScreen(
                             Box(Modifier.size(42.dp), contentAlignment = Alignment.Center) {
                                 Icon(
                                     Icons.Default.Menu,
-                                    contentDescription = "Paramètres",
+                                    contentDescription = "Menu",
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -199,124 +200,6 @@ fun IndexScreen(
                         onFilterChange = { vm.setStatusFilter(it) },
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp)
                     )
-                }
-
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = ui.searchQuery,
-                        onValueChange = { vm.setSearch(it) },
-                        placeholder = { Text("Rechercher un produit...", style = MaterialTheme.typography.bodyMedium) },
-                        leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(18.dp)) },
-                        trailingIcon = if (ui.searchQuery.isNotEmpty()) {
-                            { IconButton(onClick = { vm.setSearch("") }) { Icon(Icons.Default.Close, null, Modifier.size(18.dp)) } }
-                        } else null,
-                        singleLine = true,
-                        modifier = Modifier.weight(1f).height(50.dp),
-                        shape = MaterialTheme.shapes.medium,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
-                        )
-                    )
-                    Box {
-                        HeaderIconButton(
-                            onClick = { showSortMenu = !showSortMenu },
-                            icon = Icons.AutoMirrored.Filled.Sort,
-                            contentDescription = "Trier",
-                            isActive = ui.sortOrder != SortOrder.EXPIRATION
-                        )
-                        DropdownMenu(
-                            expanded = showSortMenu,
-                            onDismissRequest = { showSortMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Par expiration") },
-                                onClick = { vm.setSortOrder(SortOrder.EXPIRATION); showSortMenu = false },
-                                trailingIcon = if (ui.sortOrder == SortOrder.EXPIRATION) {
-                                    { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
-                                } else null
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Par nom") },
-                                onClick = { vm.setSortOrder(SortOrder.NAME); showSortMenu = false },
-                                trailingIcon = if (ui.sortOrder == SortOrder.NAME) {
-                                    { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
-                                } else null
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Par date d'ajout") },
-                                onClick = { vm.setSortOrder(SortOrder.ADDED_DATE); showSortMenu = false },
-                                trailingIcon = if (ui.sortOrder == SortOrder.ADDED_DATE) {
-                                    { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
-                                } else null
-                            )
-                        }
-                    }
-                    Box {
-                        HeaderIconButton(
-                            onClick = { showFilterMenu = !showFilterMenu },
-                            icon = Icons.Default.Tune,
-                            contentDescription = "Filtrer",
-                            isActive = hasActiveFilter
-                        )
-                        DropdownMenu(
-                            expanded = showFilterMenu,
-                            onDismissRequest = { showFilterMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Tous les statuts") },
-                                onClick = { vm.setStatusFilter(StatusFilter.ALL); showFilterMenu = false },
-                                trailingIcon = if (ui.statusFilter == StatusFilter.ALL) {
-                                    { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
-                                } else null
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Périmés") },
-                                onClick = { vm.setStatusFilter(StatusFilter.EXPIRED); showFilterMenu = false },
-                                leadingIcon = { Icon(Icons.Default.Warning, null, tint = ColorExpired) },
-                                trailingIcon = if (ui.statusFilter == StatusFilter.EXPIRED) {
-                                    { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
-                                } else null
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Bientôt") },
-                                onClick = { vm.setStatusFilter(StatusFilter.SOON); showFilterMenu = false },
-                                leadingIcon = { Icon(Icons.Default.Schedule, null, tint = ColorSoon) },
-                                trailingIcon = if (ui.statusFilter == StatusFilter.SOON) {
-                                    { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
-                                } else null
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Frais") },
-                                onClick = { vm.setStatusFilter(StatusFilter.FRESH); showFilterMenu = false },
-                                leadingIcon = { Icon(Icons.Default.CheckCircle, null, tint = ColorFresh) },
-                                trailingIcon = if (ui.statusFilter == StatusFilter.FRESH) {
-                                    { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
-                                } else null
-                            )
-                            HorizontalDivider()
-                            PRODUCT_CATEGORIES.forEach { cat ->
-                                DropdownMenuItem(
-                                    text = { Text(if (cat.key == "all") "Toutes les catégories" else cat.label) },
-                                    onClick = {
-                                        vm.setCategory(cat.key)
-                                        showFilterMenu = false
-                                    },
-                                    trailingIcon = if (ui.selectedCategory == cat.key) {
-                                        { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
-                                    } else null
-                                )
-                            }
-                        }
-                    }
                 }
             }
         },
@@ -382,6 +265,132 @@ fun IndexScreen(
                 }
                 else -> {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        item(key = "search_controls", contentType = "controls") {
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp)
+                                    .padding(top = 16.dp, bottom = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = ui.searchQuery,
+                                    onValueChange = { vm.setSearch(it) },
+                                    placeholder = {
+                                        Text(
+                                            "Rechercher un produit...",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(18.dp)) },
+                                    trailingIcon = if (ui.searchQuery.isNotEmpty()) {
+                                        { IconButton(onClick = { vm.setSearch("") }) { Icon(Icons.Default.Close, null, Modifier.size(18.dp)) } }
+                                    } else null,
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f).height(42.dp),
+                                    shape = MaterialTheme.shapes.medium,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                                    )
+                                )
+                                Box {
+                                    HeaderIconButton(
+                                        onClick = { showSortMenu = !showSortMenu },
+                                        icon = Icons.AutoMirrored.Filled.Sort,
+                                        contentDescription = "Trier",
+                                        isActive = ui.sortOrder != SortOrder.EXPIRATION
+                                    )
+                                    DropdownMenu(
+                                        expanded = showSortMenu,
+                                        onDismissRequest = { showSortMenu = false }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("Par expiration") },
+                                            onClick = { vm.setSortOrder(SortOrder.EXPIRATION); showSortMenu = false },
+                                            trailingIcon = if (ui.sortOrder == SortOrder.EXPIRATION) {
+                                                { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
+                                            } else null
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Par nom") },
+                                            onClick = { vm.setSortOrder(SortOrder.NAME); showSortMenu = false },
+                                            trailingIcon = if (ui.sortOrder == SortOrder.NAME) {
+                                                { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
+                                            } else null
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Par date d'ajout") },
+                                            onClick = { vm.setSortOrder(SortOrder.ADDED_DATE); showSortMenu = false },
+                                            trailingIcon = if (ui.sortOrder == SortOrder.ADDED_DATE) {
+                                                { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
+                                            } else null
+                                        )
+                                    }
+                                }
+                                Box {
+                                    HeaderIconButton(
+                                        onClick = { showFilterMenu = !showFilterMenu },
+                                        icon = Icons.Default.Tune,
+                                        contentDescription = "Filtrer",
+                                        isActive = hasActiveFilter
+                                    )
+                                    DropdownMenu(
+                                        expanded = showFilterMenu,
+                                        onDismissRequest = { showFilterMenu = false }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("Tous les statuts") },
+                                            onClick = { vm.setStatusFilter(StatusFilter.ALL); showFilterMenu = false },
+                                            trailingIcon = if (ui.statusFilter == StatusFilter.ALL) {
+                                                { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
+                                            } else null
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Périmés") },
+                                            onClick = { vm.setStatusFilter(StatusFilter.EXPIRED); showFilterMenu = false },
+                                            leadingIcon = { Icon(Icons.Default.Warning, null, tint = ColorExpired) },
+                                            trailingIcon = if (ui.statusFilter == StatusFilter.EXPIRED) {
+                                                { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
+                                            } else null
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Bientôt") },
+                                            onClick = { vm.setStatusFilter(StatusFilter.SOON); showFilterMenu = false },
+                                            leadingIcon = { Icon(Icons.Default.Schedule, null, tint = ColorSoon) },
+                                            trailingIcon = if (ui.statusFilter == StatusFilter.SOON) {
+                                                { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
+                                            } else null
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Frais") },
+                                            onClick = { vm.setStatusFilter(StatusFilter.FRESH); showFilterMenu = false },
+                                            leadingIcon = { Icon(Icons.Default.CheckCircle, null, tint = ColorFresh) },
+                                            trailingIcon = if (ui.statusFilter == StatusFilter.FRESH) {
+                                                { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
+                                            } else null
+                                        )
+                                        HorizontalDivider()
+                                        PRODUCT_CATEGORIES.forEach { cat ->
+                                            DropdownMenuItem(
+                                                text = { Text(if (cat.key == "all") "Toutes les catégories" else cat.label) },
+                                                onClick = {
+                                                    vm.setCategory(cat.key)
+                                                    showFilterMenu = false
+                                                },
+                                                trailingIcon = if (ui.selectedCategory == cat.key) {
+                                                    { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
+                                                } else null
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         if (totalCounts.expired > 0 && ui.statusFilter == StatusFilter.ALL) {
                             item(key = "alert_banner", contentType = "alert_banner") {
                                 AlertBanner(
@@ -615,13 +624,13 @@ private fun HeaderIconButton(
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             shadowElevation = 1.dp
         ) {
-            Box(Modifier.size(46.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(42.dp), contentAlignment = Alignment.Center) {
                 Icon(
                     icon,
                     contentDescription = contentDescription,
                     tint = if (isActive) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(19.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
@@ -719,17 +728,17 @@ private fun AlertBanner(expiredCount: Int, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .padding(horizontal = 20.dp, vertical = 10.dp)
             .clip(MaterialTheme.shapes.medium)
             .background(ColorExpired.copy(alpha = 0.09f))
-            .padding(horizontal = 14.dp, vertical = 11.dp),
+            .padding(horizontal = 16.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(Icons.Default.Warning, null, tint = ColorExpired, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(8.dp))
         Text(
             "$expiredCount produit${if (plural) "s" else ""} ${if (plural) "sont" else "est"} périmé${if (plural) "s" else ""}",
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall,
             color = ColorExpired,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.weight(1f)
@@ -742,9 +751,9 @@ private fun AlertBanner(expiredCount: Int, onClick: () -> Unit) {
             Text(
                 "Voir",
                 color = ColorExpired,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
             )
         }
     }

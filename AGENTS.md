@@ -6,7 +6,20 @@ Exprime-toi toujours en français
 
 ## Démarrage
 
-Lorsque je demande de démarrer ou redémarrer le serveur, Kill d'abord les précédentes instances
+Lorsque je demande de démarrer ou redémarrer la PWA, kill d'abord les précédentes instances sur les ports `3000` et `3001`.
+
+Procédure nominale :
+1. Libérer le port `3000`.
+2. Lancer `bun run dev -- --port 3000 --host`.
+3. Vérifier que Vite sert bien `https://localhost:3000/` et `https://192.168.1.50:3000/`.
+
+Fallback Windows observé : si Bun échoue avec `spawn EPERM`, `could not create process`, ou une erreur de remap/corruption `node_modules`, récupérer le runtime Node Codex via `load_workspace_dependencies`, puis lancer Vite directement avec :
+
+```powershell
+Start-Process -FilePath "<NODE_CODEX>\node.exe" -ArgumentList @("node_modules\vite\bin\vite.js", "--port", "3000", "--host") -WorkingDirectory "<REPO>" -WindowStyle Hidden -RedirectStandardOutput "<REPO>\dev-server.log" -RedirectStandardError "<REPO>\dev-server.err.log"
+```
+
+Si Vite démarre sur `3001`, tuer les processus qui écoutent sur `3000` et `3001`, puis relancer pour revenir sur `3000`.
 
 ## Commands
 
@@ -147,6 +160,19 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 | 4 | ProductDetail : sticky header au scroll, grille 3 boutons côte à côte, auto-save notes | `ProductDetailScreen.kt` | ✅ |
 | 5 | History : 3 sections colorées (Ouverts/Consommés/Jetés). Notifications : carte "permission refusée" + lien paramètres Android | `HistoryScreen.kt`, `NotificationsScreen.kt` | ✅ |
 | 6 | Sélection image OFF (5 choix), email dans profil, bannière hors ligne, retry OCR avec backoff | `AddProductScreen.kt`, `AddProductViewModel.kt`, `SettingsScreen.kt`, `OfflineBanner.kt`, `DateScannerViewModel.kt` | ✅ |
+
+### Installation Android sur device
+
+Méthode nominale depuis le dossier `android/` :
+
+```powershell
+./gradlew.bat :app:assembleDebug    # compiler si nécessaire
+./gradlew.bat :app:installDebug     # installer sur le mobile connecté
+```
+
+Dans l'environnement Codex, `adb` peut ne pas être disponible dans le PATH. Dans ce cas, privilégier `./gradlew.bat :app:installDebug` : Gradle détecte le device via le SDK configuré dans `android/local.properties`.
+
+Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : `moto g54 5G - 15`.
 
 ### Journal de développement Android
 
@@ -374,6 +400,19 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - `IndexScreen` rapproche le header Frigo de la PWA : fond d'alerte plus subtil, logo agrandi, titre plus posé et bouton haut droit en menu avec pastille rouge.
 - Les stat-cards Périmés / Bientôt / Frais gagnent des espacements et icônes plus proches de la référence PWA.
 - Commit prévu : `android: rapprocher le header frigo de la PWA`.
+
+**2026-05-09 — Alignement visuel frigo étape 2 : recherche et alerte**
+- La recherche, le tri et le filtre sortent du header et deviennent le premier bloc de contenu, comme sur la PWA.
+- Les boutons tri/filtre sont ramenés à 42dp, et la carte d'alerte périmés adopte un rendu plus compact avec bouton `Voir` arrondi.
+- Commit prévu : `android: aligner la recherche et les alertes frigo`.
+
+**2026-05-09 — Hamburger menu Android (style PWA)**
+- `HamburgerMenuViewModel` (`ui/screens/HamburgerMenuViewModel.kt`) : observe authState + produits pour exposer nom, avatar, foyer, nb membres, nb produits actifs, alertCount (périmés+bientôt) et historyCount (consommés+jetés).
+- `HamburgerMenuDrawer` (`ui/components/HamburgerMenuDrawer.kt`) : tiroir latéral droit (85 % de la largeur écran, coins arrondis côté gauche), avec header profil, 3 stat-cards, liens de navigation avec badges, carte foyer, bouton thème sombre/clair, bouton inviter et bouton déconnexion.
+- `AppNavigation.kt` / `MainScreen` : tiroir géré par `showMenu` + `AnimatedVisibility` (slideInHorizontally depuis la droite) ; `HamburgerMenuViewModel` et `AppearanceViewModel` injectés au niveau MainScreen ; clic hamburger de `IndexScreen` ouvre le tiroir.
+- `IndexScreen.kt` : ajout du paramètre `onMenuOpen: () -> Unit = {}` ; `onClick` du bouton hamburger pointe désormais vers `onMenuOpen` au lieu de `onSettingsClick`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK ; APK installé sur `moto g54 5G - 15`.
+- À vérifier sur appareil : rendu de l'avatar, badges corrects, toggle thème, navigation via les liens, déconnexion.
 
 ---
 

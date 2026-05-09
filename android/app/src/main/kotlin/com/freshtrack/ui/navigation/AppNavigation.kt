@@ -1,6 +1,12 @@
 package com.freshtrack.ui.navigation
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +31,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -36,7 +45,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.freshtrack.data.auth.AuthState
+import com.freshtrack.ui.components.HamburgerMenuDrawer
 import com.freshtrack.ui.components.OfflineBanner
+import com.freshtrack.ui.screens.HamburgerMenuViewModel
 import com.freshtrack.ui.screens.auth.AuthScreen
 import com.freshtrack.ui.screens.auth.AuthViewModel
 import com.freshtrack.ui.screens.credits.CreditsScreen
@@ -51,6 +62,8 @@ import com.freshtrack.ui.screens.scanner.DateScannerScreen
 import com.freshtrack.ui.screens.settings.SettingsScreen
 import com.freshtrack.ui.screens.add.AddProductScreen
 import com.freshtrack.ui.screens.stats.StatsScreen
+import com.freshtrack.ui.theme.AppearanceViewModel
+import com.freshtrack.ui.theme.ThemeMode
 
 object Routes {
     const val LOADING = "loading"
@@ -212,69 +225,129 @@ private fun MainScreen(rootNavController: androidx.navigation.NavController) {
     val backStackEntry by tabNavController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
-    Scaffold(
-        bottomBar = {
-            Surface(
-                modifier = Modifier.fillMaxWidth().navigationBarsPadding(),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                shadowElevation = 6.dp
-            ) {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
-                    tonalElevation = 0.dp
+    val menuVm: HamburgerMenuViewModel = hiltViewModel()
+    val menuState by menuVm.uiState.collectAsState()
+    val appearanceVm: AppearanceViewModel = hiltViewModel()
+    val appearance by appearanceVm.appearance.collectAsState()
+    val systemDark = isSystemInDarkTheme()
+    val isDarkMode = when (appearance.themeMode) {
+        ThemeMode.DARK -> true
+        ThemeMode.LIGHT -> false
+        ThemeMode.SYSTEM -> systemDark
+    }
+
+    var showMenu by rememberSaveable { mutableStateOf(false) }
+
+    Box(Modifier.fillMaxSize()) {
+        Scaffold(
+            bottomBar = {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().navigationBarsPadding(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    shadowElevation = 6.dp
                 ) {
-                    bottomTabs.forEach { tab ->
-                        NavigationBarItem(
-                            selected = currentRoute == tab.route,
-                            onClick = {
-                                tabNavController.navigate(tab.route) {
-                                    popUpTo(tabNavController.graph.findStartDestination().id) {
-                                        saveState = true
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+                        tonalElevation = 0.dp
+                    ) {
+                        bottomTabs.forEach { tab ->
+                            NavigationBarItem(
+                                selected = currentRoute == tab.route,
+                                onClick = {
+                                    tabNavController.navigate(tab.route) {
+                                        popUpTo(tabNavController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = tab.icon,
-                            label = { Text(tab.label, fontWeight = FontWeight.Bold) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                icon = tab.icon,
+                                label = { Text(tab.label, fontWeight = FontWeight.Bold) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             )
+                        }
+                    }
+                }
+            }
+        ) { innerPadding ->
+            Column(Modifier.fillMaxSize().padding(innerPadding)) {
+                OfflineBanner()
+                NavHost(
+                    navController = tabNavController,
+                    startDestination = Routes.INDEX,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    composable(Routes.INDEX) {
+                        IndexScreen(
+                            onProductClick = { id -> rootNavController.navigate(Routes.productDetail(id)) },
+                            onScanClick = { rootNavController.navigate(Routes.BARCODE_SCANNER) },
+                            onMultiScanClick = { rootNavController.navigate(Routes.BARCODE_SCANNER_MULTI) },
+                            onSettingsClick = { rootNavController.navigate(Routes.SETTINGS) },
+                            onEditProduct = { id -> rootNavController.navigate(Routes.editProduct(id)) },
+                            onMenuOpen = { showMenu = true }
                         )
+                    }
+                    composable(Routes.STATS) { StatsScreen() }
+                    composable(Routes.HISTORY) {
+                        HistoryScreen(onProductClick = { id -> rootNavController.navigate(Routes.productDetail(id)) })
+                    }
+                    composable(Routes.NOTIFICATIONS) {
+                        NotificationsScreen(onProductClick = { id -> rootNavController.navigate(Routes.productDetail(id)) })
                     }
                 }
             }
         }
-    ) { innerPadding ->
-        Column(Modifier.fillMaxSize().padding(innerPadding)) {
-            OfflineBanner()
-            NavHost(
-                navController = tabNavController,
-                startDestination = Routes.INDEX,
-                modifier = Modifier.weight(1f)
-            ) {
-                composable(Routes.INDEX) {
-                    IndexScreen(
-                        onProductClick = { id -> rootNavController.navigate(Routes.productDetail(id)) },
-                        onScanClick = { rootNavController.navigate(Routes.BARCODE_SCANNER) },
-                        onMultiScanClick = { rootNavController.navigate(Routes.BARCODE_SCANNER_MULTI) },
-                        onSettingsClick = { rootNavController.navigate(Routes.SETTINGS) },
-                        onEditProduct = { id -> rootNavController.navigate(Routes.editProduct(id)) }
-                    )
+
+        // Hamburger menu drawer (slide depuis la droite)
+        AnimatedVisibility(
+            visible = showMenu,
+            enter = fadeIn() + slideInHorizontally(initialOffsetX = { it }),
+            exit = fadeOut() + slideOutHorizontally(targetOffsetX = { it })
+        ) {
+            HamburgerMenuDrawer(
+                state = menuState,
+                currentRoute = currentRoute,
+                isDarkMode = isDarkMode,
+                onClose = { showMenu = false },
+                onNavigate = { route ->
+                    when (route) {
+                        Routes.INDEX, Routes.STATS, Routes.HISTORY, Routes.NOTIFICATIONS -> {
+                            tabNavController.navigate(route) {
+                                popUpTo(tabNavController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                        else -> rootNavController.navigate(route)
+                    }
+                },
+                onThemeToggle = {
+                    val next = when (appearance.themeMode) {
+                        ThemeMode.LIGHT -> ThemeMode.DARK
+                        ThemeMode.DARK -> ThemeMode.LIGHT
+                        ThemeMode.SYSTEM -> ThemeMode.DARK
+                    }
+                    appearanceVm.setThemeMode(next)
+                },
+                onInvite = {
+                    showMenu = false
+                    rootNavController.navigate(Routes.SETTINGS)
+                },
+                onSignOut = {
+                    showMenu = false
+                    menuVm.signOut()
                 }
-                composable(Routes.STATS) { StatsScreen() }
-                composable(Routes.HISTORY) {
-                    HistoryScreen(onProductClick = { id -> rootNavController.navigate(Routes.productDetail(id)) })
-                }
-                composable(Routes.NOTIFICATIONS) {
-                    NotificationsScreen(onProductClick = { id -> rootNavController.navigate(Routes.productDetail(id)) })
-                }
-            }
+            )
         }
     }
 }
