@@ -44,11 +44,11 @@ fun ProductSectionHeader(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
             .then(clickableModifier)
-            .padding(horizontal = 18.dp, vertical = 8.dp),
+            .padding(horizontal = 20.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(15.dp))
         Text(
             title.uppercase(),
             style = FreshTextStyles.SectionHeader,
@@ -58,7 +58,7 @@ fun ProductSectionHeader(
         Text(
             "($count)",
             style = FreshTextStyles.SectionCount,
-            color = color.copy(alpha = 0.56f)
+            color = color.copy(alpha = 0.50f)
         )
         Spacer(Modifier.weight(1f))
         if (isCollapsed != null && onToggle != null) {

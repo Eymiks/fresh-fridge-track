@@ -49,7 +49,7 @@ private fun freshTextStyle(
 )
 
 object FreshTextStyles {
-    val ProductTitle = freshTextStyle(14, 17, FontWeight.Bold)
+    val ProductTitle = freshTextStyle(14, 17, FontWeight.SemiBold)
     val ProductSubtitle = freshTextStyle(12, 15)
     val ProductMeta = freshTextStyle(10, 12, FontWeight.SemiBold)
     val ProductBadge = freshTextStyle(10, 12, FontWeight.ExtraBold)

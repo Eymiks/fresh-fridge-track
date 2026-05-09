@@ -433,6 +433,11 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - Les boutons tri/filtre sont ramenés à 42dp, et la carte d'alerte périmés adopte un rendu plus compact avec bouton `Voir` arrondi.
 - Commit prévu : `android: aligner la recherche et les alertes frigo`.
 
+**2026-05-09 — Alignement visuel frigo étape 3 : sections et cartes produits**
+- `ProductSectionHeader` affine les espacements, icônes et compteurs pour mieux coller aux sections PWA.
+- `ProductCards` compacte les cartes : image 44dp, padding réduit, menu aligné avec les badges et titre moins massif.
+- Commit prévu : `android: compacter les cartes frigo façon PWA`.
+
 **2026-05-09 — Hamburger menu Android (style PWA)**
 - `HamburgerMenuViewModel` (`ui/screens/HamburgerMenuViewModel.kt`) : observe authState + produits pour exposer nom, avatar, foyer, nb membres, nb produits actifs, alertCount (périmés+bientôt) et historyCount (consommés+jetés).
 - `HamburgerMenuDrawer` (`ui/components/HamburgerMenuDrawer.kt`) : tiroir latéral droit (85 % de la largeur écran, coins arrondis côté gauche), avec header profil, 3 stat-cards, liens de navigation avec badges, carte foyer, bouton thème sombre/clair, bouton inviter et bouton déconnexion.

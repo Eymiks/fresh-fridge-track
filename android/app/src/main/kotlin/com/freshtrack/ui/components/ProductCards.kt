@@ -112,8 +112,8 @@ fun ProductCard(
 
     val verticalPadding = when (LocalAppearance.current.density) {
         Density.COMPACT -> 2.dp
-        Density.NORMAL -> 4.dp
-        Density.SPACIOUS -> 8.dp
+        Density.NORMAL -> 5.dp
+        Density.SPACIOUS -> 7.dp
     }
 
     var showMenu by remember { mutableStateOf(false) }
@@ -130,7 +130,7 @@ fun ProductCard(
 
     SwipeToDismissBox(
         state = dismissState,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = verticalPadding),
+        modifier = Modifier.padding(horizontal = 20.dp, vertical = verticalPadding),
         enableDismissFromStartToEnd = !isSelectionMode && onConsume != null,
         enableDismissFromEndToStart = !isSelectionMode && onThrow != null,
         backgroundContent = {
@@ -154,7 +154,7 @@ fun ProductCard(
                     .fillMaxWidth()
                     .statusStripe(statusColor)
                     .padding(start = 4.dp)
-                    .padding(horizontal = 12.dp, vertical = 11.dp),
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (isSelectionMode) {
@@ -167,23 +167,21 @@ fun ProductCard(
 
                 ProductMainText(product = product, showOpenedPill = true)
 
-                Column(horizontalAlignment = Alignment.End) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Pill(daysLabel, statusColor, filled = true)
-                        if (!product.nutriScore.isNullOrBlank()) {
-                            NutriScoreBadge(product.nutriScore)
-                        }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Pill(daysLabel, statusColor, filled = true)
+                    if (!product.nutriScore.isNullOrBlank()) {
+                        NutriScoreBadge(product.nutriScore)
                     }
                     if (!isSelectionMode) {
                         Box {
                             IconButton(
                                 onClick = { showMenu = true },
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(28.dp)
                             ) {
-                                Icon(Icons.Default.MoreVert, "Plus d'options", Modifier.size(16.dp))
+                                Icon(Icons.Default.MoreVert, "Plus d'options", Modifier.size(18.dp))
                             }
                             DropdownMenu(
                                 expanded = showMenu,
@@ -244,7 +242,7 @@ fun ArchivedProductCard(
                 .fillMaxWidth()
                 .statusStripe(status.color)
                 .padding(start = 4.dp)
-                .padding(horizontal = 12.dp, vertical = 11.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             ProductImage(product = product, imageRequest = imageRequest, tint = status.color)
@@ -309,29 +307,29 @@ private fun ProductImage(product: Product, imageRequest: ImageRequest?, tint: Co
             AsyncImage(
                 model = imageRequest,
                 contentDescription = product.name,
-                modifier = Modifier.size(52.dp).clip(MaterialTheme.shapes.small),
+                modifier = Modifier.size(44.dp).clip(MaterialTheme.shapes.small),
                 contentScale = ContentScale.Crop
             )
         } else {
             Box(
                 Modifier
-                    .size(52.dp)
+                    .size(44.dp)
                     .clip(MaterialTheme.shapes.small)
                     .background(tint.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.AcUnit, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
+                Icon(Icons.Default.AcUnit, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
             }
         }
         if (product.frozenUntil != null) {
             Box(
                 Modifier
-                    .size(18.dp)
+                    .size(16.dp)
                     .clip(MaterialTheme.shapes.extraSmall)
                     .background(Color(0xFF0288D1)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.AcUnit, contentDescription = "Congelé", tint = Color.White, modifier = Modifier.size(12.dp))
+                Icon(Icons.Default.AcUnit, contentDescription = "Congelé", tint = Color.White, modifier = Modifier.size(10.dp))
             }
         }
     }
@@ -347,7 +345,7 @@ private fun RowScope.ProductMainText(
         Text(
             product.name,
             style = FreshTextStyles.ProductTitle,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.SemiBold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
