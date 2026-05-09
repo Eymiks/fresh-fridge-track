@@ -339,6 +339,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Commit prévu : `android: clarifier les erreurs de connexion`.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-09 — Étape 4 : scanner de dates**
+- Le parseur OCR de dates est extrait dans `domain/ocr/ExpirationDateParser.kt` pour être testé hors Compose.
+- Les formats `JJ/MM`, `JJ/MM/AA`, `BB 14 08 26`, `140826`, mois seul et mots de mois sont couverts ; `JJ/MM` utilise la prochaine occurrence calendaire.
+- Commit prévu : `android: renforcer la lecture des dates OCR`.
+- Vérifications : `./gradlew.bat :app:testDebugUnitTest` OK ; `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
