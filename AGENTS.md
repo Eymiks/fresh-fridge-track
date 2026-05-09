@@ -357,6 +357,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Commit prévu : `android: harmoniser les cartes produits`.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-09 — Étape 7 : police Nunito**
+- Les fichiers Nunito 400, 600, 700 et 800 sont ajoutés localement dans `res/font` depuis Google Fonts.
+- `FreshTrackTypography` utilise `NunitoFontFamily` comme famille par défaut afin d'aligner Android sur la PWA.
+- Commit prévu : `android: appliquer la police Nunito`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

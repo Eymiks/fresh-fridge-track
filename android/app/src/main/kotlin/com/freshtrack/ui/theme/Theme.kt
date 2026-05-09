@@ -13,9 +13,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.freshtrack.R
 
 private val FreshTrackShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
@@ -25,16 +29,33 @@ private val FreshTrackShapes = Shapes(
     extraLarge = RoundedCornerShape(28.dp)
 )
 
+private val NunitoFontFamily = FontFamily(
+    Font(R.font.nunito_regular, FontWeight.Normal),
+    Font(R.font.nunito_semibold, FontWeight.SemiBold),
+    Font(R.font.nunito_bold, FontWeight.Bold),
+    Font(R.font.nunito_extrabold, FontWeight.ExtraBold)
+)
+
+private fun TextStyle.withNunito(weight: FontWeight? = null): TextStyle =
+    copy(fontFamily = NunitoFontFamily, fontWeight = weight ?: fontWeight)
+
 private val FreshTrackTypography = Typography().let { base ->
     base.copy(
-        displaySmall = base.displaySmall.copy(fontWeight = FontWeight.ExtraBold),
-        headlineMedium = base.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
-        titleLarge = base.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-        titleMedium = base.titleMedium.copy(fontWeight = FontWeight.Bold),
-        titleSmall = base.titleSmall.copy(fontWeight = FontWeight.Bold),
-        labelLarge = base.labelLarge.copy(fontWeight = FontWeight.Bold),
-        labelMedium = base.labelMedium.copy(fontWeight = FontWeight.Bold),
-        labelSmall = base.labelSmall.copy(fontWeight = FontWeight.Bold)
+        displayLarge = base.displayLarge.withNunito(),
+        displayMedium = base.displayMedium.withNunito(),
+        displaySmall = base.displaySmall.withNunito(FontWeight.ExtraBold),
+        headlineLarge = base.headlineLarge.withNunito(),
+        headlineMedium = base.headlineMedium.withNunito(FontWeight.ExtraBold),
+        headlineSmall = base.headlineSmall.withNunito(),
+        titleLarge = base.titleLarge.withNunito(FontWeight.ExtraBold),
+        titleMedium = base.titleMedium.withNunito(FontWeight.Bold),
+        titleSmall = base.titleSmall.withNunito(FontWeight.Bold),
+        bodyLarge = base.bodyLarge.withNunito(),
+        bodyMedium = base.bodyMedium.withNunito(),
+        bodySmall = base.bodySmall.withNunito(),
+        labelLarge = base.labelLarge.withNunito(FontWeight.Bold),
+        labelMedium = base.labelMedium.withNunito(FontWeight.Bold),
+        labelSmall = base.labelSmall.withNunito(FontWeight.Bold)
     )
 }
 
