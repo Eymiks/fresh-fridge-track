@@ -502,6 +502,13 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - Commit prévu : `android: renforcer la typographie`.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-09 — Mission Paramètres Android façon PWA**
+- `SettingsScreen` reprend la capture PWA : header custom avec avatar, cartes bordées `Profil`, `Apparence`, `Notifications`, `Foyer` et `Application`, segmented controls, swatches d'accent, rows grisées, code invitation et membres harmonisés.
+- Les fonctionnalités existantes restent branchées : upload avatar, édition pseudo/foyer inline, notifications, choix de délai, copie/partage invitation, retrait membre, crédits et déconnexion.
+- À vérifier sur appareil : fidélité visuelle finale du header et du bouton menu placeholder (`Menu disponible depuis l'accueil`) par rapport à la capture.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK ; `./gradlew.bat :app:installDebug` impossible dans Codex car aucun appareil connecté.
+- Commit créé : `android: reproduire les paramètres PWA`.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
