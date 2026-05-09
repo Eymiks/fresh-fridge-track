@@ -9,7 +9,11 @@
       "PowerShell(netstat -ano | Select-String \":3000\" | ForEach-Object { ($_ -split '\\s+')[-1] } | Sort-Object -Unique | ForEach-Object { if ($_ -match '^\\d+$') { taskkill /PID $_ /F 2>$null } })",
       "Bash(git add *)",
       "Bash(./gradlew.bat :app:installDebug)",
-      "Bash(./gradlew.bat :app:assembleDebug)"
+      "Bash(./gradlew.bat :app:assembleDebug)",
+      "Bash(./gradlew.bat :app:assembleDebug --console=plain -q)",
+      "Bash(./gradlew.bat :app:compileDebugKotlin)",
+      "Bash(git commit *)",
+      "Bash(./gradlew.bat :app:assembleDebug :app:testDebugUnitTest)"
     ]
   },
   "hooks": {
