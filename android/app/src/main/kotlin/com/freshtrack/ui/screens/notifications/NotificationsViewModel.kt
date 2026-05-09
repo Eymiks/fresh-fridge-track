@@ -1,5 +1,6 @@
 package com.freshtrack.ui.screens.notifications
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.freshtrack.data.auth.AuthRepository
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@Immutable
 data class NotificationSettings(
     val enabled: Boolean = true,
     val days: Int = 3

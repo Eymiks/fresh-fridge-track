@@ -448,6 +448,11 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - Impact : réduction des recompositions parasites dans toute l'application (IndexScreen, HistoryScreen, NotificationsScreen, ProductDetailScreen…).
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-09 — Mission optimisation v2 — Étape 1 : @Immutable sur les états UI**
+- Les états UI exposés à Compose passent désormais en `@Immutable` : `IndexUiState`, `ProductGroups`, `TotalCounts` (`IndexViewModel`), `NotificationSettings` (`NotificationsViewModel`), `HamburgerMenuUiState` (`HamburgerMenuViewModel`), `StatsResult` et `MonthlyData` (`StatsUseCase`).
+- Conséquence : Compose peut prouver leur stabilité et skipper plus largement les composables consommateurs lorsque l'objet réémis est égal au précédent.
+- Vérification : `./gradlew.bat :app:compileDebugKotlin --rerun-tasks` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

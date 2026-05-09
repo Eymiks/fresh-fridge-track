@@ -1,5 +1,6 @@
 package com.freshtrack.domain.usecase
 
+import androidx.compose.runtime.Immutable
 import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.model.ProductStatus
 import kotlinx.datetime.Clock
@@ -14,6 +15,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
 
+@Immutable
 data class MonthlyData(
     val label: String,      // "Jan 25"
     val added: Int,
@@ -22,6 +24,7 @@ data class MonthlyData(
     val score: Float        // 0-100
 )
 
+@Immutable
 data class StatsResult(
     val monthlyScore: Float,
     val prevMonthScore: Float,

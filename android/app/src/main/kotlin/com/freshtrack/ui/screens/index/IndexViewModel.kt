@@ -1,5 +1,6 @@
 package com.freshtrack.ui.screens.index
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.freshtrack.data.auth.AuthRepository
@@ -34,6 +35,7 @@ import javax.inject.Inject
 enum class SortOrder { EXPIRATION, NAME, ADDED_DATE }
 enum class StatusFilter { ALL, EXPIRED, SOON, FRESH }
 
+@Immutable
 data class IndexUiState(
     val isLoading: Boolean = true,
     val searchQuery: String = "",
@@ -45,12 +47,14 @@ data class IndexUiState(
     val error: String? = null
 )
 
+@Immutable
 data class ProductGroups(
     val expired: List<Product> = emptyList(),
     val soon: List<Product> = emptyList(),
     val fresh: List<Product> = emptyList()
 )
 
+@Immutable
 data class TotalCounts(val expired: Int = 0, val soon: Int = 0, val fresh: Int = 0)
 
 @HiltViewModel

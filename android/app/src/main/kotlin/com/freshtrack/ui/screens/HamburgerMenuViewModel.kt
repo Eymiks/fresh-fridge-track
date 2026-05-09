@@ -2,6 +2,7 @@
 
 package com.freshtrack.ui.screens
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.freshtrack.data.auth.AuthRepository
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@Immutable
 data class HamburgerMenuUiState(
     val displayName: String? = null,
     val avatarUrl: String? = null,
