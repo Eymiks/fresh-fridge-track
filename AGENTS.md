@@ -333,6 +333,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Commit prévu : `android: fluidifier les listes produits`.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-09 — Étape 3 : messages d'authentification**
+- `AuthViewModel` valide le format email et la longueur minimale du mot de passe avant les appels Supabase.
+- Les erreurs Supabase sont converties en messages français lisibles : identifiants incorrects, email déjà utilisé, email invalide, mot de passe faible ou réseau indisponible.
+- Commit prévu : `android: clarifier les erreurs de connexion`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
