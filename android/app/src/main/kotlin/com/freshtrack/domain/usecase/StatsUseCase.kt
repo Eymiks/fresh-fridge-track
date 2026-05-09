@@ -5,7 +5,6 @@ import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.model.ProductStatus
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.daysUntil
 import kotlinx.datetime.minus
@@ -13,7 +12,6 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.roundToInt
 
 @Immutable
 data class MonthlyData(
@@ -48,25 +46,45 @@ class StatsUseCase @Inject constructor() {
         val consumed = allProducts.filter { it.status == ProductStatus.CONSUMED }
         val thrown = allProducts.filter { it.status == ProductStatus.THROWN }
 
+        // Pré-calcul des buckets mensuels en un seul pass par liste source.
+        // Clé = (year, monthNumber) ; valeur = compteur cumulé pour le mois.
+        val addedByMonth = HashMap<Long, Int>()
+        for (p in allProducts) {
+            val date = p.addedAt?.toLocalDateTime(tz)?.date ?: continue
+            val key = monthKey(date.year, date.monthNumber)
+            addedByMonth[key] = (addedByMonth[key] ?: 0) + 1
+        }
+        val consumedByMonth = HashMap<Long, Int>()
+        for (p in consumed) {
+            val date = p.statusChangedAt?.toLocalDateTime(tz)?.date ?: continue
+            val key = monthKey(date.year, date.monthNumber)
+            consumedByMonth[key] = (consumedByMonth[key] ?: 0) + 1
+        }
+        val thrownByMonth = HashMap<Long, Int>()
+        for (p in thrown) {
+            val date = p.statusChangedAt?.toLocalDateTime(tz)?.date ?: continue
+            val key = monthKey(date.year, date.monthNumber)
+            thrownByMonth[key] = (thrownByMonth[key] ?: 0) + 1
+        }
+
         fun scoreForProducts(c: List<Product>, t: List<Product>): Float {
             val total = c.size + t.size
             return if (total == 0) 0f else (c.size.toFloat() / total * 100)
         }
 
-        // Build monthly buckets (6 months)
+        // Build monthly buckets (6 months) à partir des index pré-calculés.
         val monthly = (5 downTo 0).map { monthsBack ->
             val targetDate = today.minus(monthsBack.toLong(), DateTimeUnit.MONTH)
             val yr = targetDate.year; val mo = targetDate.monthNumber
+            val key = monthKey(yr, mo)
             val label = targetDate.month.name.take(3).lowercase()
                 .replaceFirstChar { it.uppercase() } + " ${yr % 100}"
 
-            val monthAdded = allProducts.count { inMonth(it.addedAt?.toLocalDateTime(tz)?.date, yr, mo) }
-            val monthConsumed = consumed.count { inMonth(it.statusChangedAt?.toLocalDateTime(tz)?.date, yr, mo) }
-            val monthThrown = thrown.count { inMonth(it.statusChangedAt?.toLocalDateTime(tz)?.date, yr, mo) }
-            val monthScore = scoreForProducts(
-                consumed.filter { inMonth(it.statusChangedAt?.toLocalDateTime(tz)?.date, yr, mo) },
-                thrown.filter { inMonth(it.statusChangedAt?.toLocalDateTime(tz)?.date, yr, mo) }
-            )
+            val monthAdded = addedByMonth[key] ?: 0
+            val monthConsumed = consumedByMonth[key] ?: 0
+            val monthThrown = thrownByMonth[key] ?: 0
+            val total = monthConsumed + monthThrown
+            val monthScore = if (total == 0) 0f else monthConsumed.toFloat() / total * 100f
             MonthlyData(label, monthAdded, monthConsumed, monthThrown, monthScore)
         }
 
@@ -136,6 +154,5 @@ class StatsUseCase @Inject constructor() {
         )
     }
 
-    private fun inMonth(date: LocalDate?, year: Int, month: Int) =
-        date != null && date.year == year && date.monthNumber == month
+    private fun monthKey(year: Int, month: Int): Long = year * 12L + month
 }

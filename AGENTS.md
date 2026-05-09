@@ -470,6 +470,12 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - Gain : `baseFiltered`/`sorted` n'est exécuté qu'une fois par changement (au lieu de deux), ce qui réduit le coût CPU lors des frappes dans la barre de recherche et lors de chaque émission Realtime.
 - Vérification : `./gradlew.bat :app:compileDebugKotlin` OK.
 
+**2026-05-09 — Mission optimisation v2 — Étape 5 : StatsUseCase.compute() en un pass mensuel**
+- Les buckets mensuels (6 mois) sont désormais alimentés par trois `HashMap<monthKey, Int>` (`addedByMonth`, `consumedByMonth`, `thrownByMonth`) construites en un seul pass sur chaque liste source. La boucle des 6 derniers mois lit ensuite ces index en O(1), au lieu de relancer 5 traversées + parsing `toLocalDateTime` par mois sur les listes complètes.
+- Gain attendu (mesuré côté algorithme) : pour 500 produits, on passe d'environ 30 traversées de listes à 3, ce qui réduit fortement le coût CPU à chaque émission de produits dans `StatsViewModel`.
+- Le calcul sémantique reste identique : score mensuel = `consommés / (consommés + jetés) * 100`. La fonction `inMonth` (et l'import `LocalDate` associé) est supprimée car plus utilisée.
+- Vérification : `./gradlew.bat :app:compileDebugKotlin` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
