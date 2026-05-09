@@ -27,7 +27,6 @@ import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Card
-import androidx.compose.ui.graphics.vector.ImageVector
 import com.freshtrack.ui.theme.ColorFresh
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -58,6 +57,7 @@ import coil3.request.ImageRequest
 import com.freshtrack.domain.format.formatInstantDate
 import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.model.ProductStatus
+import com.freshtrack.ui.components.ProductSectionHeader
 
 @Composable
 fun HistoryScreen(
@@ -135,7 +135,7 @@ fun HistoryScreen(
 
                 if ((filter == HistoryFilter.ALL || filter == HistoryFilter.OPENED) && openedList.isNotEmpty()) {
                     item(key = "history_opened_header", contentType = "section_header") {
-                        SectionHeader("Ouverts", openedList.size, Icons.Default.Inventory2, MaterialTheme.colorScheme.primary)
+                        ProductSectionHeader("Ouverts", openedList.size, Icons.Default.Inventory2, MaterialTheme.colorScheme.primary)
                     }
                     items(openedList, key = { "o_${it.id}" }, contentType = { "history_product" }) { product ->
                         val productId = product.id
@@ -147,7 +147,7 @@ fun HistoryScreen(
 
                 if ((filter == HistoryFilter.ALL || filter == HistoryFilter.CONSUMED) && consumedList.isNotEmpty()) {
                     item(key = "history_consumed_header", contentType = "section_header") {
-                        SectionHeader("Consommés", consumedList.size, Icons.Default.Restaurant, ColorFresh)
+                        ProductSectionHeader("Consommés", consumedList.size, Icons.Default.Restaurant, ColorFresh)
                     }
                     items(consumedList, key = { "c_${it.id}" }, contentType = { "history_product" }) { product ->
                         val productId = product.id
@@ -159,7 +159,7 @@ fun HistoryScreen(
 
                 if ((filter == HistoryFilter.ALL || filter == HistoryFilter.THROWN) && thrownList.isNotEmpty()) {
                     item(key = "history_thrown_header", contentType = "section_header") {
-                        SectionHeader("Jetés", thrownList.size, Icons.Default.Delete, MaterialTheme.colorScheme.error)
+                        ProductSectionHeader("Jetés", thrownList.size, Icons.Default.Delete, MaterialTheme.colorScheme.error)
                     }
                     items(thrownList, key = { "t_${it.id}" }, contentType = { "history_product" }) { product ->
                         val productId = product.id
@@ -174,33 +174,6 @@ fun HistoryScreen(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
-    }
-}
-
-@Composable
-private fun SectionHeader(label: String, count: Int, icon: ImageVector, color: androidx.compose.ui.graphics.Color) {
-    Row(
-        Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Box(
-            Modifier
-                .size(34.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(color.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
-        }
-        Text(
-            label,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Black,
-            color = color,
-            modifier = Modifier.weight(1f)
-        )
-        StatusPill(count.toString(), color)
     }
 }
 

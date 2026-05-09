@@ -56,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.core.content.ContextCompat
+import com.freshtrack.ui.components.ProductSectionHeader
 import com.freshtrack.ui.screens.index.ProductCard
 
 @Composable
@@ -274,7 +275,7 @@ fun NotificationsScreen(
 
                 if ((filter == AlertFilter.ALL || filter == AlertFilter.EXPIRED) && expiredProducts.isNotEmpty()) {
                     item(key = "alerts_expired_header", contentType = "section_header") {
-                        AlertSectionHeader("Périmés", expiredProducts.size, Icons.Default.ErrorOutline, MaterialTheme.colorScheme.error)
+                        ProductSectionHeader("Périmés", expiredProducts.size, Icons.Default.ErrorOutline, MaterialTheme.colorScheme.error)
                     }
                     items(expiredProducts, key = { it.id }, contentType = { "alert_product" }) { product ->
                         val productId = product.id
@@ -291,7 +292,7 @@ fun NotificationsScreen(
 
                 if ((filter == AlertFilter.ALL || filter == AlertFilter.SOON) && soonProducts.isNotEmpty()) {
                     item(key = "alerts_soon_header", contentType = "section_header") {
-                        AlertSectionHeader("Bientôt périmés", soonProducts.size, Icons.Default.Notifications, MaterialTheme.colorScheme.tertiary)
+                        ProductSectionHeader("Bientôt périmés", soonProducts.size, Icons.Default.Notifications, MaterialTheme.colorScheme.tertiary)
                     }
                     items(soonProducts, key = { it.id }, contentType = { "alert_product" }) { product ->
                         val productId = product.id
@@ -332,45 +333,6 @@ private fun AlertFilterPill(
             fontWeight = FontWeight.Black,
             color = if (selected) color else MaterialTheme.colorScheme.onSurface
         )
-    }
-}
-
-@Composable
-private fun AlertSectionHeader(
-    title: String,
-    count: Int,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    color: androidx.compose.ui.graphics.Color
-) {
-    Row(
-        Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Box(
-            Modifier
-                .size(34.dp)
-                .background(color.copy(alpha = 0.12f), RoundedCornerShape(12.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
-        }
-        Text(
-            title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Black,
-            color = color,
-            modifier = Modifier.weight(1f)
-        )
-        Surface(shape = RoundedCornerShape(999.dp), color = color.copy(alpha = 0.12f)) {
-            Text(
-                count.toString(),
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Black,
-                color = color
-            )
-        }
     }
 }
 

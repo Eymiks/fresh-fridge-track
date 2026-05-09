@@ -13,7 +13,6 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
@@ -39,8 +38,6 @@ import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Schedule
@@ -91,7 +88,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -102,6 +98,7 @@ import com.freshtrack.domain.model.ProductStatus
 import com.freshtrack.domain.model.getDaysUntilExpiration
 import com.freshtrack.domain.model.getExpirationStatus
 import com.freshtrack.domain.model.isActive
+import com.freshtrack.ui.components.ProductSectionHeader
 import com.freshtrack.ui.theme.ColorExpired
 import com.freshtrack.ui.theme.ColorFresh
 import com.freshtrack.ui.theme.ColorSoon
@@ -413,8 +410,9 @@ fun IndexScreen(
 
                         if (groups.expired.isNotEmpty()) {
                             stickyHeader(key = "header_expired", contentType = "section_header") {
-                                CollapsibleSectionHeader(
-                                    title = "Périmés (${groups.expired.size})",
+                                ProductSectionHeader(
+                                    title = "Périmés",
+                                    count = groups.expired.size,
                                     color = ColorExpired,
                                     icon = Icons.Default.Warning,
                                     isCollapsed = expiredCollapsed,
@@ -454,8 +452,9 @@ fun IndexScreen(
 
                         if (groups.soon.isNotEmpty()) {
                             stickyHeader(key = "header_soon", contentType = "section_header") {
-                                CollapsibleSectionHeader(
-                                    title = "Bientôt périmés (${groups.soon.size})",
+                                ProductSectionHeader(
+                                    title = "Bientôt périmés",
+                                    count = groups.soon.size,
                                     color = ColorSoon,
                                     icon = Icons.Default.Schedule,
                                     isCollapsed = soonCollapsed,
@@ -495,8 +494,9 @@ fun IndexScreen(
 
                         if (groups.fresh.isNotEmpty()) {
                             stickyHeader(key = "header_fresh", contentType = "section_header") {
-                                CollapsibleSectionHeader(
-                                    title = "Frais (${groups.fresh.size})",
+                                ProductSectionHeader(
+                                    title = "Frais",
+                                    count = groups.fresh.size,
                                     color = ColorFresh,
                                     icon = Icons.Default.CheckCircle,
                                     isCollapsed = freshCollapsed,
@@ -764,43 +764,6 @@ private fun AlertBanner(expiredCount: Int, onClick: () -> Unit) {
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
             )
         }
-    }
-}
-
-// ── Collapsible section header (M3) ──────────────────────────────────────────
-
-@Composable
-private fun CollapsibleSectionHeader(
-    title: String,
-    color: Color,
-    icon: ImageVector,
-    isCollapsed: Boolean,
-    onToggle: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
-            .clickable { onToggle() }
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
-        Spacer(Modifier.width(6.dp))
-        Text(
-            title.uppercase(),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color = color,
-            letterSpacing = 0.8.sp,
-            modifier = Modifier.weight(1f)
-        )
-        Icon(
-            if (isCollapsed) Icons.Default.ExpandMore else Icons.Default.ExpandLess,
-            contentDescription = if (isCollapsed) "Déplier" else "Replier",
-            tint = color,
-            modifier = Modifier.size(18.dp)
-        )
     }
 }
 

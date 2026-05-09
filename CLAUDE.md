@@ -372,6 +372,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Commit prévu : `android: renforcer la lecture des dates OCR`.
 - Vérifications : `./gradlew.bat :app:testDebugUnitTest` OK ; `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-09 — Étape 5 : sections produits harmonisées**
+- Ajout du composant partagé `ProductSectionHeader` pour les sections de produits avec icône, couleur, compteur et variante repliable.
+- `IndexScreen`, `HistoryScreen` et `NotificationsScreen` utilisent désormais ce header commun pour `Périmés`, `Bientôt périmés`, `Frais`, `Ouverts`, `Consommés` et `Jetés`.
+- Commit prévu : `android: harmoniser les sections produits`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
