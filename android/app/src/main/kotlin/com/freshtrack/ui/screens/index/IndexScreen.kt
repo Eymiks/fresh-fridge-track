@@ -229,12 +229,16 @@ fun IndexScreen(
                     IconButton(onClick = { vm.exitSelectionMode() }) {
                         Icon(Icons.Default.Close, "Annuler")
                     }
-                    Text("${ui.selectedIds.size} sélectionné(s)", modifier = Modifier.weight(1f))
+                    Text(
+                        "${ui.selectedIds.size} sélectionné(s)",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.labelLarge
+                    )
                     TextButton(onClick = { vm.setStatusForSelected(ProductStatus.CONSUMED) }) {
-                        Text("Consommé")
+                        Text("Consommé", style = FreshTextStyles.ActionLabel)
                     }
                     TextButton(onClick = { vm.setStatusForSelected(ProductStatus.THROWN) }) {
-                        Text("Jeté")
+                        Text("Jeté", style = FreshTextStyles.ActionLabel)
                     }
                     IconButton(onClick = { vm.deleteSelected() }) {
                         Icon(Icons.Default.Delete, "Supprimer", tint = MaterialTheme.colorScheme.error)
@@ -315,21 +319,21 @@ fun IndexScreen(
                                         onDismissRequest = onDismissSortMenu
                                     ) {
                                         DropdownMenuItem(
-                                            text = { Text("Par expiration") },
+                                            text = { Text("Par expiration", style = FreshTextStyles.MenuItem) },
                                             onClick = { vm.setSortOrder(SortOrder.EXPIRATION); showSortMenu = false },
                                             trailingIcon = if (ui.sortOrder == SortOrder.EXPIRATION) {
                                                 { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
                                             } else null
                                         )
                                         DropdownMenuItem(
-                                            text = { Text("Par nom") },
+                                            text = { Text("Par nom", style = FreshTextStyles.MenuItem) },
                                             onClick = { vm.setSortOrder(SortOrder.NAME); showSortMenu = false },
                                             trailingIcon = if (ui.sortOrder == SortOrder.NAME) {
                                                 { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
                                             } else null
                                         )
                                         DropdownMenuItem(
-                                            text = { Text("Par date d'ajout") },
+                                            text = { Text("Par date d'ajout", style = FreshTextStyles.MenuItem) },
                                             onClick = { vm.setSortOrder(SortOrder.ADDED_DATE); showSortMenu = false },
                                             trailingIcon = if (ui.sortOrder == SortOrder.ADDED_DATE) {
                                                 { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
@@ -349,14 +353,14 @@ fun IndexScreen(
                                         onDismissRequest = onDismissFilterMenu
                                     ) {
                                         DropdownMenuItem(
-                                            text = { Text("Tous les statuts") },
+                                            text = { Text("Tous les statuts", style = FreshTextStyles.MenuItem) },
                                             onClick = { vm.setStatusFilter(StatusFilter.ALL); showFilterMenu = false },
                                             trailingIcon = if (ui.statusFilter == StatusFilter.ALL) {
                                                 { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
                                             } else null
                                         )
                                         DropdownMenuItem(
-                                            text = { Text("Périmés") },
+                                            text = { Text("Périmés", style = FreshTextStyles.MenuItem) },
                                             onClick = { vm.setStatusFilter(StatusFilter.EXPIRED); showFilterMenu = false },
                                             leadingIcon = { Icon(Icons.Default.Warning, null, tint = ColorExpired) },
                                             trailingIcon = if (ui.statusFilter == StatusFilter.EXPIRED) {
@@ -364,7 +368,7 @@ fun IndexScreen(
                                             } else null
                                         )
                                         DropdownMenuItem(
-                                            text = { Text("Bientôt") },
+                                            text = { Text("Bientôt", style = FreshTextStyles.MenuItem) },
                                             onClick = { vm.setStatusFilter(StatusFilter.SOON); showFilterMenu = false },
                                             leadingIcon = { Icon(Icons.Default.Schedule, null, tint = ColorSoon) },
                                             trailingIcon = if (ui.statusFilter == StatusFilter.SOON) {
@@ -372,7 +376,7 @@ fun IndexScreen(
                                             } else null
                                         )
                                         DropdownMenuItem(
-                                            text = { Text("Frais") },
+                                            text = { Text("Frais", style = FreshTextStyles.MenuItem) },
                                             onClick = { vm.setStatusFilter(StatusFilter.FRESH); showFilterMenu = false },
                                             leadingIcon = { Icon(Icons.Default.CheckCircle, null, tint = ColorFresh) },
                                             trailingIcon = if (ui.statusFilter == StatusFilter.FRESH) {
@@ -382,7 +386,7 @@ fun IndexScreen(
                                         HorizontalDivider()
                                         PRODUCT_CATEGORIES.forEach { cat ->
                                             DropdownMenuItem(
-                                                text = { Text(if (cat.key == "all") "Toutes les catégories" else cat.label) },
+                                                text = { Text(if (cat.key == "all") "Toutes les catégories" else cat.label, style = FreshTextStyles.MenuItem) },
                                                 onClick = {
                                                     vm.setCategory(cat.key)
                                                     showFilterMenu = false
@@ -549,7 +553,7 @@ fun IndexScreen(
                                     Text(
                                         "Aucun produit trouvé",
                                         style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.SemiBold
+                                        fontWeight = FontWeight.ExtraBold
                                     )
                                     Text(
                                         "Changez de filtre ou revenez à Tous.",
@@ -712,7 +716,6 @@ private fun StatCard(
                 Text(
                     count.toString(),
                     style = FreshTextStyles.StatCount,
-                    fontWeight = FontWeight.ExtraBold,
                     color = if (isActive || count > 0) color else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
@@ -745,7 +748,7 @@ private fun AlertBanner(expiredCount: Int, onClick: () -> Unit) {
             "$expiredCount produit${if (plural) "s" else ""} ${if (plural) "sont" else "est"} périmé${if (plural) "s" else ""}",
             style = MaterialTheme.typography.bodySmall,
             color = ColorExpired,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.ExtraBold,
             modifier = Modifier.weight(1f)
         )
         Surface(
@@ -756,8 +759,7 @@ private fun AlertBanner(expiredCount: Int, onClick: () -> Unit) {
             Text(
                 "Voir",
                 color = ColorExpired,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
+                style = FreshTextStyles.ActionLabel,
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
             )
         }
@@ -907,8 +909,7 @@ private fun BubbleOption(
         Text(
             text = label,
             color = contentColor,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
+            style = FreshTextStyles.ButtonLabel,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
         )
     }

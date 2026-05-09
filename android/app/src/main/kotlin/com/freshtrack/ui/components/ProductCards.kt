@@ -56,7 +56,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -261,7 +260,7 @@ fun ArchivedProductCard(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(15.dp), tint = MaterialTheme.colorScheme.primary)
-                        Text("Réactiver", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                        Text("Réactiver", style = FreshTextStyles.ActionLabel, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -288,10 +287,10 @@ private fun SwipeBackground(direction: SwipeToDismissBoxValue) {
             SwipeToDismissBoxValue.StartToEnd -> Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Check, null, tint = ColorFresh)
                 Spacer(Modifier.width(4.dp))
-                Text("Consommé", color = ColorFresh, fontWeight = FontWeight.Medium)
+                Text("Consommé", color = ColorFresh, style = MaterialTheme.typography.labelMedium)
             }
             SwipeToDismissBoxValue.EndToStart -> Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Jeté", color = ColorExpired, fontWeight = FontWeight.Medium)
+                Text("Jeté", color = ColorExpired, style = MaterialTheme.typography.labelMedium)
                 Spacer(Modifier.width(4.dp))
                 Icon(Icons.Default.Delete, null, tint = ColorExpired)
             }
@@ -345,7 +344,6 @@ private fun RowScope.ProductMainText(
         Text(
             product.name,
             style = FreshTextStyles.ProductTitle,
-            fontWeight = FontWeight.SemiBold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -397,8 +395,7 @@ private fun Pill(label: String, color: Color, filled: Boolean = false) {
         Text(
             label,
             style = if (label.length > 4) FreshTextStyles.ProductTinyBadge else FreshTextStyles.ProductBadge,
-            color = fg,
-            fontWeight = FontWeight.Bold
+            color = fg
         )
     }
 }
@@ -417,7 +414,7 @@ private fun NutriScoreBadge(score: String) {
         Modifier.size(20.dp).clip(MaterialTheme.shapes.extraSmall).background(bg),
         contentAlignment = Alignment.Center
     ) {
-        Text(score.uppercase(), color = fg, style = FreshTextStyles.ProductBadge, fontWeight = FontWeight.Bold)
+        Text(score.uppercase(), color = fg, style = FreshTextStyles.ProductBadge)
     }
 }
 

@@ -44,7 +44,6 @@ import android.widget.Toast
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -71,6 +70,7 @@ import com.freshtrack.ui.screens.settings.SettingsScreen
 import com.freshtrack.ui.screens.add.AddProductScreen
 import com.freshtrack.ui.screens.stats.StatsScreen
 import com.freshtrack.ui.theme.AppearanceViewModel
+import com.freshtrack.ui.theme.FreshTextStyles
 import com.freshtrack.ui.theme.ThemeMode
 
 object Routes {
@@ -278,8 +278,8 @@ private fun MainScreen(rootNavController: androidx.navigation.NavController) {
                                 label = {
                                     Text(
                                         tab.label,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                                        style = if (selected) FreshTextStyles.NavigationLabelSelected
+                                        else FreshTextStyles.NavigationLabel
                                     )
                                 },
                                 colors = NavigationBarItemDefaults.colors(

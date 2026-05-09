@@ -68,6 +68,7 @@ import com.freshtrack.ui.navigation.Routes
 import com.freshtrack.ui.screens.HamburgerMenuUiState
 import com.freshtrack.ui.theme.ColorExpired
 import com.freshtrack.ui.theme.ColorFresh
+import com.freshtrack.ui.theme.FreshTextStyles
 import kotlinx.coroutines.delay
 
 @Composable
@@ -533,8 +534,7 @@ private fun MenuNavItem(
             Spacer(Modifier.width(14.dp))
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
+                style = if (isActive) FreshTextStyles.NavigationLabelSelected else FreshTextStyles.NavigationLabel,
                 color = if (isActive) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)

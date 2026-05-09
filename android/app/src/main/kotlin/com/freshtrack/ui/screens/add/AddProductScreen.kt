@@ -85,6 +85,7 @@ import com.freshtrack.domain.catalog.matchCategory
 import com.freshtrack.domain.format.formatDate
 import com.freshtrack.domain.format.parseUserDate
 import com.freshtrack.ui.navigation.Routes
+import com.freshtrack.ui.theme.FreshTextStyles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -203,7 +204,7 @@ fun AddProductScreen(
                             if (ui.isEditing) "Corrigez les informations utiles"
                             else if (isMultiMode) "Vérifiez puis scannez le suivant"
                             else "Renseignez l'essentiel, le reste peut attendre",
-                            style = MaterialTheme.typography.bodySmall,
+                            style = FreshTextStyles.FormHelper,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -322,7 +323,7 @@ fun AddProductScreen(
                             onDismissRequest = { categoryExpanded = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Automatique") },
+                                text = { Text("Automatique", style = FreshTextStyles.MenuItem) },
                                 onClick = {
                                     vm.setCategory("")
                                     categoryExpanded = false
@@ -330,7 +331,7 @@ fun AddProductScreen(
                             )
                             categories.forEach { cat ->
                                 DropdownMenuItem(
-                                    text = { Text(cat.label) },
+                                    text = { Text(cat.label, style = FreshTextStyles.MenuItem) },
                                     onClick = {
                                         vm.setCategory(cat.key)
                                         categoryExpanded = false
@@ -360,7 +361,7 @@ fun AddProductScreen(
                             onDismissRequest = { subcategoryExpanded = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Automatique") },
+                                text = { Text("Automatique", style = FreshTextStyles.MenuItem) },
                                 onClick = {
                                     vm.setSubcategory("")
                                     subcategoryExpanded = false
@@ -368,7 +369,7 @@ fun AddProductScreen(
                             )
                             subcategoryOptions.forEach { sub ->
                                 DropdownMenuItem(
-                                    text = { Text(sub.label) },
+                                    text = { Text(sub.label, style = FreshTextStyles.MenuItem) },
                                     onClick = {
                                         vm.setSubcategory(sub.label)
                                         subcategoryExpanded = false
@@ -417,7 +418,7 @@ fun AddProductScreen(
                         enabled = ui.barcode.isNotBlank(),
                         shape = MaterialTheme.shapes.medium
                     ) {
-                        Text("OK")
+                        Text("OK", style = FreshTextStyles.ActionLabel)
                     }
                 }
             }
@@ -465,7 +466,10 @@ fun AddProductScreen(
                         shape = MaterialTheme.shapes.medium
                     ) {
                         Icon(Icons.Default.Image, contentDescription = null)
-                        Text(if (ui.isUploadingImage) "Envoi…" else "Choisir une image")
+                        Text(
+                            if (ui.isUploadingImage) "Envoi…" else "Choisir une image",
+                            style = FreshTextStyles.ActionLabel
+                        )
                     }
                     if (ui.isUploadingImage) {
                         CircularProgressIndicator(strokeWidth = 2.dp)
@@ -504,7 +508,11 @@ fun AddProductScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("Produit ouvert", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "Produit ouvert",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
+                        )
                         Text(
                             "Utilise une durée après ouverture pour la date effective",
                             style = MaterialTheme.typography.bodySmall,
@@ -697,8 +705,7 @@ private fun CompactFormSection(
                 }
                 Text(
                     title,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.ExtraBold,
+                    style = FreshTextStyles.FormSectionTitle,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
@@ -738,12 +745,12 @@ private fun ProductDatePickerDialog(
                     onDismiss()
                 }
             ) {
-                Text("OK")
+                Text("OK", style = FreshTextStyles.ActionLabel)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Annuler")
+                Text("Annuler", style = FreshTextStyles.ActionLabel)
             }
         }
     ) {
@@ -789,7 +796,7 @@ private fun AddProductBottomBar(
                     onClick = onFinishMultiScan,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Terminer")
+                    Text("Terminer", style = FreshTextStyles.ActionLabel)
                 }
             } else {
                 Button(
@@ -822,7 +829,7 @@ private fun SaveProgressLabel(
             strokeWidth = 2.dp
         )
     }
-    Text(if (isSaving) savingLabel else idleLabel)
+    Text(if (isSaving) savingLabel else idleLabel, style = FreshTextStyles.ButtonLabel)
 }
 
 @Composable
@@ -842,7 +849,7 @@ private fun OffImageSelectionDialog(
                 Text(
                     "Choisir une image",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Black
+                    fontWeight = FontWeight.ExtraBold
                 )
                 Text(
                     "Sélectionnez l'image produit à utiliser.",
@@ -875,7 +882,7 @@ private fun OffImageSelectionDialog(
                     onClick = onDismiss,
                     modifier = Modifier.align(Alignment.End)
                 ) {
-                    Text("Ignorer", fontWeight = FontWeight.Bold)
+                    Text("Ignorer", style = FreshTextStyles.ActionLabel)
                 }
             }
         }

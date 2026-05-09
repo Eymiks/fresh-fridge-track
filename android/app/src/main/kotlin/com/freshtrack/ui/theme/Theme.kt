@@ -49,15 +49,22 @@ private fun freshTextStyle(
 )
 
 object FreshTextStyles {
-    val ProductTitle = freshTextStyle(14, 17, FontWeight.SemiBold)
-    val ProductSubtitle = freshTextStyle(12, 15)
-    val ProductMeta = freshTextStyle(10, 12, FontWeight.SemiBold)
+    val ProductTitle = freshTextStyle(14, 17, FontWeight.Bold)
+    val ProductSubtitle = freshTextStyle(12, 15, FontWeight.Medium)
+    val ProductMeta = freshTextStyle(10, 12, FontWeight.Bold)
     val ProductBadge = freshTextStyle(10, 12, FontWeight.ExtraBold)
     val ProductTinyBadge = freshTextStyle(9, 11, FontWeight.ExtraBold)
     val SectionHeader = freshTextStyle(12, 14, FontWeight.ExtraBold)
-    val SectionCount = freshTextStyle(12, 14, FontWeight.SemiBold)
+    val SectionCount = freshTextStyle(12, 14, FontWeight.Bold)
     val StatCount = freshTextStyle(16, 18, FontWeight.ExtraBold)
-    val StatLabel = freshTextStyle(10, 12, FontWeight.SemiBold)
+    val StatLabel = freshTextStyle(10, 12, FontWeight.Bold)
+    val NavigationLabel = freshTextStyle(11, 13, FontWeight.Bold)
+    val NavigationLabelSelected = freshTextStyle(11, 13, FontWeight.ExtraBold)
+    val ButtonLabel = freshTextStyle(14, 18, FontWeight.ExtraBold)
+    val FormSectionTitle = freshTextStyle(14, 18, FontWeight.ExtraBold)
+    val FormHelper = freshTextStyle(12, 16, FontWeight.Medium)
+    val MenuItem = freshTextStyle(13, 17, FontWeight.Bold)
+    val ActionLabel = freshTextStyle(12, 15, FontWeight.ExtraBold)
 }
 
 private val FreshTrackTypography = Typography(
@@ -70,10 +77,10 @@ private val FreshTrackTypography = Typography(
     titleLarge = freshTextStyle(20, 24, FontWeight.ExtraBold),
     titleMedium = freshTextStyle(18, 22, FontWeight.Bold),
     titleSmall = freshTextStyle(14, 18, FontWeight.Bold),
-    bodyLarge = freshTextStyle(16, 22),
-    bodyMedium = freshTextStyle(14, 20),
-    bodySmall = freshTextStyle(12, 16),
-    labelLarge = freshTextStyle(14, 18, FontWeight.Bold),
+    bodyLarge = freshTextStyle(16, 22, FontWeight.Medium),
+    bodyMedium = freshTextStyle(14, 20, FontWeight.Medium),
+    bodySmall = freshTextStyle(12, 16, FontWeight.Medium),
+    labelLarge = freshTextStyle(14, 18, FontWeight.ExtraBold),
     labelMedium = freshTextStyle(12, 16, FontWeight.Bold),
     labelSmall = freshTextStyle(10, 12, FontWeight.Bold)
 )

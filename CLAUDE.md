@@ -523,6 +523,12 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - Tous les `AsyncImage` du projet (cartes accueil, historique, fiche produit, dialog OFF, avatar) tirent automatiquement sur ce singleton.
 - Vérification : `./gradlew.bat :app:compileDebugKotlin` OK.
 
+**2026-05-09 — Mission typographie Android**
+- `FreshTrackTypography` renforce les textes courants Nunito (`body*`) avec un poids medium, et `FreshTextStyles` centralise les styles produit, navigation, boutons, formulaires, menus et actions.
+- `IndexScreen`, `ProductCards`, `AddProductScreen`, la navigation basse et le tiroir hamburger utilisent davantage les styles partagés pour se rapprocher du rendu PWA sans changer la logique métier.
+- Commit prévu : `android: renforcer la typographie`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
