@@ -397,6 +397,11 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Commit prévu : `android: aligner la typographie avec la PWA`.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-09 — Alignement visuel frigo étape 1 : header et stat-cards**
+- `IndexScreen` rapproche le header Frigo de la PWA : fond d'alerte plus subtil, logo agrandi, titre plus posé et bouton haut droit en menu avec pastille rouge.
+- Les stat-cards Périmés / Bientôt / Frais gagnent des espacements et icônes plus proches de la référence PWA.
+- Commit prévu : `android: rapprocher le header frigo de la PWA`.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

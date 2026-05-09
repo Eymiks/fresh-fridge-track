@@ -36,9 +36,9 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Warning
@@ -113,8 +113,8 @@ fun IndexScreen(
     var freshCollapsed by rememberSaveable { mutableStateOf(false) }
 
     val headerBg = when {
-        totalCounts.expired > 0 -> ColorExpired.copy(alpha = 0.08f)
-        totalCounts.soon > 0 -> ColorSoon.copy(alpha = 0.08f)
+        totalCounts.expired > 0 -> ColorExpired.copy(alpha = 0.055f)
+        totalCounts.soon > 0 -> ColorSoon.copy(alpha = 0.055f)
         else -> MaterialTheme.colorScheme.surface
     }
 
@@ -131,17 +131,17 @@ fun IndexScreen(
             Column(
                 Modifier
                     .background(headerBg)
-                    .padding(top = 8.dp, bottom = 14.dp)
+                    .padding(top = 22.dp, bottom = 16.dp)
             ) {
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(42.dp)
                             .clip(MaterialTheme.shapes.small)
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)),
                         contentAlignment = Alignment.Center
@@ -150,10 +150,10 @@ fun IndexScreen(
                             Icons.Default.Eco,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     }
-                    Spacer(Modifier.width(10.dp))
+                    Spacer(Modifier.width(12.dp))
                     Text(
                         "FreshTrack",
                         style = MaterialTheme.typography.titleLarge,
@@ -169,9 +169,9 @@ fun IndexScreen(
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                             shadowElevation = 1.dp
                         ) {
-                            Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+                            Box(Modifier.size(42.dp), contentAlignment = Alignment.Center) {
                                 Icon(
-                                    Icons.Default.Settings,
+                                    Icons.Default.Menu,
                                     contentDescription = "Paramètres",
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(20.dp)
@@ -182,7 +182,7 @@ fun IndexScreen(
                             Box(
                                 Modifier
                                     .align(Alignment.TopEnd)
-                                    .size(9.dp)
+                                    .size(10.dp)
                                     .clip(CircleShape)
                                     .background(ColorExpired)
                             )
@@ -197,14 +197,14 @@ fun IndexScreen(
                         freshCount = totalCounts.fresh,
                         activeFilter = ui.statusFilter,
                         onFilterChange = { vm.setStatusFilter(it) },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp)
                     )
                 }
 
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                        .padding(horizontal = 20.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -648,7 +648,7 @@ private fun StatCardsRow(
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         StatCard(expiredCount, "Périmés", ColorExpired,
             activeFilter == StatusFilter.EXPIRED, Icons.Default.Warning, Modifier.weight(1f)) {
@@ -683,16 +683,16 @@ private fun StatCard(
         shape = MaterialTheme.shapes.medium
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp).fillMaxWidth(),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 13.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(
-                modifier = Modifier.size(34.dp).clip(MaterialTheme.shapes.small)
+                modifier = Modifier.size(38.dp).clip(MaterialTheme.shapes.small)
                     .background(color.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
             }
             Column {
                 Text(
