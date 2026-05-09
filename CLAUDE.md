@@ -348,6 +348,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 - À vérifier sur appareil : confort du bas de formulaire avec clavier, contraste de la carte d'erreur, et rendu du dialog image en mode sombre.
 
+**2026-05-09 — Étape 1 : notifications ouvrables**
+- `ExpirationCheckWorker` ajoute un `PendingIntent` immutable vers `MainActivity` sur les notifications produit et le résumé de groupe.
+- Le clic sur une notification d'expiration ramène désormais FreshTrack au premier plan sans deep-link produit.
+- Commit prévu : `android: ouvrir l'application depuis les notifications`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

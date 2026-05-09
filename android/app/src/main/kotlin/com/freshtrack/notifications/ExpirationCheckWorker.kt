@@ -1,7 +1,9 @@
 package com.freshtrack.notifications
 
+import android.app.PendingIntent
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -18,6 +20,7 @@ import com.freshtrack.data.prefs.AppPreferences
 import com.freshtrack.data.products.ProductRepository
 import com.freshtrack.domain.model.ProductStatus
 import com.freshtrack.domain.model.getEffectiveExpirationDate
+import com.freshtrack.MainActivity
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
@@ -78,6 +81,7 @@ class ExpirationCheckWorker @AssistedInject constructor(
 
         val manager = applicationContext.getSystemService(NotificationManager::class.java)
         val newDoneIds = doneIds.toMutableSet()
+        val contentIntent = createContentIntent()
 
         toNotify.forEach { product ->
             val effectiveDate = product.getEffectiveExpirationDate()
@@ -96,6 +100,7 @@ class ExpirationCheckWorker @AssistedInject constructor(
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setGroup(GROUP_KEY)
                 .setAutoCancel(true)
+                .setContentIntent(contentIntent)
                 .build()
 
             manager.notify(product.id.hashCode(), notification)
@@ -110,6 +115,7 @@ class ExpirationCheckWorker @AssistedInject constructor(
                 .setGroup(GROUP_KEY)
                 .setGroupSummary(true)
                 .setAutoCancel(true)
+                .setContentIntent(contentIntent)
                 .build()
             manager.notify(SUMMARY_ID, summary)
         }
@@ -119,9 +125,22 @@ class ExpirationCheckWorker @AssistedInject constructor(
         return Result.success()
     }
 
+    private fun createContentIntent(): PendingIntent {
+        val intent = Intent(applicationContext, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        return PendingIntent.getActivity(
+            applicationContext,
+            NOTIFICATION_REQUEST_CODE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
     companion object {
         private const val GROUP_KEY = "com.freshtrack.EXPIRATION"
         private const val SUMMARY_ID = 0
+        private const val NOTIFICATION_REQUEST_CODE = 1001
         private const val WORK_NAME = "expiration_check"
 
         fun schedule(context: Context) {
