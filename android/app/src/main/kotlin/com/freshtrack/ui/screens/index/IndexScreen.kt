@@ -49,6 +49,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -826,11 +827,24 @@ private fun FabBubbleMenu(
             }
         }
 
-        FloatingActionButton(onClick = onToggle) {
+        FloatingActionButton(
+            onClick = onToggle,
+            modifier = Modifier.size(64.dp),
+            shape = CircleShape,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            elevation = FloatingActionButtonDefaults.elevation(
+                defaultElevation = 10.dp,
+                pressedElevation = 6.dp,
+                focusedElevation = 10.dp,
+                hoveredElevation = 10.dp
+            )
+        ) {
             if (reduceMotion) {
                 Icon(
                     if (expanded) Icons.Default.Close else Icons.Default.Add,
-                    if (expanded) "Fermer" else "Ajouter un produit"
+                    if (expanded) "Fermer" else "Ajouter un produit",
+                    modifier = Modifier.size(32.dp)
                 )
             } else {
                 AnimatedVisibility(
@@ -838,14 +852,14 @@ private fun FabBubbleMenu(
                     enter = fadeIn(tween(100)) + scaleIn(tween(100)),
                     exit = fadeOut(tween(100)) + scaleOut(tween(100))
                 ) {
-                    Icon(Icons.Default.Close, "Fermer")
+                    Icon(Icons.Default.Close, "Fermer", modifier = Modifier.size(32.dp))
                 }
                 AnimatedVisibility(
                     visible = !expanded,
                     enter = fadeIn(tween(100)) + scaleIn(tween(100)),
                     exit = fadeOut(tween(100)) + scaleOut(tween(100))
                 ) {
-                    Icon(Icons.Default.Add, "Ajouter un produit")
+                    Icon(Icons.Default.Add, "Ajouter un produit", modifier = Modifier.size(32.dp))
                 }
             }
         }

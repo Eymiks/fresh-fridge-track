@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.History
@@ -113,10 +115,10 @@ object Routes {
 data class BottomTab(val route: String, val label: String, val icon: @Composable () -> Unit)
 
 val bottomTabs = listOf(
-    BottomTab(Routes.INDEX, "Frigo") { Icon(Icons.Default.Home, null) },
-    BottomTab(Routes.STATS, "Stats") { Icon(Icons.Default.BarChart, null) },
-    BottomTab(Routes.HISTORY, "Historique") { Icon(Icons.Default.History, null) },
-    BottomTab(Routes.NOTIFICATIONS, "Alertes") { Icon(Icons.Default.Notifications, null) }
+    BottomTab(Routes.INDEX, "Frigo") { Icon(Icons.Default.Home, null, modifier = Modifier.size(26.dp)) },
+    BottomTab(Routes.STATS, "Stats") { Icon(Icons.Default.BarChart, null, modifier = Modifier.size(24.dp)) },
+    BottomTab(Routes.HISTORY, "Historique") { Icon(Icons.Default.History, null, modifier = Modifier.size(24.dp)) },
+    BottomTab(Routes.NOTIFICATIONS, "Alertes") { Icon(Icons.Default.Notifications, null, modifier = Modifier.size(24.dp)) }
 )
 
 @Composable
@@ -250,17 +252,19 @@ private fun MainScreen(rootNavController: androidx.navigation.NavController) {
             bottomBar = {
                 Surface(
                     modifier = Modifier.fillMaxWidth().navigationBarsPadding(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+                    color = MaterialTheme.colorScheme.surface,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    shadowElevation = 6.dp
+                    shadowElevation = 0.dp
                 ) {
                     NavigationBar(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+                        modifier = Modifier.height(84.dp),
+                        containerColor = MaterialTheme.colorScheme.surface,
                         tonalElevation = 0.dp
                     ) {
                         bottomTabs.forEach { tab ->
+                            val selected = currentRoute == tab.route
                             NavigationBarItem(
-                                selected = currentRoute == tab.route,
+                                selected = selected,
                                 onClick = {
                                     tabNavController.navigate(tab.route) {
                                         popUpTo(tabNavController.graph.findStartDestination().id) {
@@ -271,11 +275,17 @@ private fun MainScreen(rootNavController: androidx.navigation.NavController) {
                                     }
                                 },
                                 icon = tab.icon,
-                                label = { Text(tab.label, fontWeight = FontWeight.Bold) },
+                                label = {
+                                    Text(
+                                        tab.label,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                                    )
+                                },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = MaterialTheme.colorScheme.primary,
                                     selectedTextColor = MaterialTheme.colorScheme.primary,
-                                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+                                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                                     unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

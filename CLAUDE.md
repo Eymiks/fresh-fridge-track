@@ -438,6 +438,11 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - `ProductCards` compacte les cartes : image 44dp, padding réduit, menu aligné avec les badges et titre moins massif.
 - Commit prévu : `android: compacter les cartes frigo façon PWA`.
 
+**2026-05-09 — Alignement visuel frigo étape 4 : FAB et navigation basse**
+- `IndexScreen` rapproche le FAB de la PWA : 64dp, forme circulaire, icône plus large et ombre plus visible.
+- `AppNavigation` polit la bottom nav : surface claire bordée, hauteur maîtrisée, icônes et labels plus proches de la référence PWA.
+- Commit prévu : `android: harmoniser le FAB et la navigation basse`.
+
 **2026-05-09 — Hamburger menu Android (style PWA)**
 - `HamburgerMenuViewModel` (`ui/screens/HamburgerMenuViewModel.kt`) : observe authState + produits pour exposer nom, avatar, foyer, nb membres, nb produits actifs, alertCount (périmés+bientôt) et historyCount (consommés+jetés).
 - `HamburgerMenuDrawer` (`ui/components/HamburgerMenuDrawer.kt`) : tiroir latéral droit (85 % de la largeur écran, coins arrondis côté gauche), avec header profil, 3 stat-cards, liens de navigation avec badges, carte foyer, bouton thème sombre/clair, bouton inviter et bouton déconnexion.
