@@ -351,6 +351,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Commit prévu : `android: harmoniser les sections produits`.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-09 — Étape 6 : cartes produits harmonisées**
+- Les cartes produit actives/alertes et les cartes d'historique sont centralisées dans `ui/components/ProductCards.kt`.
+- `IndexScreen`, `NotificationsScreen` et `HistoryScreen` partagent désormais les mêmes tailles d'image, bordures, badge de statut/date, Nutri-Score et densité, avec l'action `Réactiver` conservée dans l'historique.
+- Commit prévu : `android: harmoniser les cartes produits`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

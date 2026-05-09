@@ -2,7 +2,6 @@ package com.freshtrack.ui.screens.history
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,11 +19,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Card
 import com.freshtrack.ui.theme.ColorFresh
@@ -46,17 +43,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import com.freshtrack.domain.format.formatInstantDate
 import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.model.ProductStatus
+import com.freshtrack.ui.components.ArchivedProductCard
 import com.freshtrack.ui.components.ProductSectionHeader
 
 @Composable
@@ -141,7 +133,7 @@ fun HistoryScreen(
                         val productId = product.id
                         val productClick = remember(productId) { { onProductClick(productId) } }
                         val restoreClick = remember(product) { { vm.restoreProduct(product); Unit } }
-                        HistoryItem(product = product, onClick = productClick, onRestore = restoreClick)
+                        ArchivedProductCard(product = product, onClick = productClick, onRestore = restoreClick)
                     }
                 }
 
@@ -153,7 +145,7 @@ fun HistoryScreen(
                         val productId = product.id
                         val productClick = remember(productId) { { onProductClick(productId) } }
                         val restoreClick = remember(product) { { vm.restoreProduct(product); Unit } }
-                        HistoryItem(product = product, onClick = productClick, onRestore = restoreClick)
+                        ArchivedProductCard(product = product, onClick = productClick, onRestore = restoreClick)
                     }
                 }
 
@@ -165,7 +157,7 @@ fun HistoryScreen(
                         val productId = product.id
                         val productClick = remember(productId) { { onProductClick(productId) } }
                         val restoreClick = remember(product) { { vm.restoreProduct(product); Unit } }
-                        HistoryItem(product = product, onClick = productClick, onRestore = restoreClick)
+                        ArchivedProductCard(product = product, onClick = productClick, onRestore = restoreClick)
                     }
                 }
             }
@@ -219,92 +211,6 @@ private fun HistoryFilterChip(
 }
 
 @Composable
-private fun HistoryItem(product: Product, onClick: () -> Unit, onRestore: () -> Unit) {
-    val status = statusMeta(product.status)
-    val context = LocalContext.current
-    val imageRequest = remember(product.imageUrl) {
-        product.imageUrl?.let { url ->
-            ImageRequest.Builder(context)
-                .data(url)
-                .build()
-        }
-    }
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shape = MaterialTheme.shapes.large,
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (imageRequest != null) {
-                AsyncImage(
-                    model = imageRequest,
-                    contentDescription = product.name,
-                    modifier = Modifier.size(58.dp).clip(RoundedCornerShape(16.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Box(
-                    Modifier.size(58.dp).clip(RoundedCornerShape(16.dp)).background(status.color.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(status.icon, contentDescription = null, tint = status.color)
-                }
-            }
-            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                Text(product.name, fontWeight = FontWeight.Black, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(
-                    listOfNotNull(product.brand, product.quantity).joinToString(" · ").ifBlank { "Produit du foyer" },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    statusDate(product),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                StatusPill(status.label, status.color)
-                Surface(
-                    onClick = onRestore,
-                    shape = RoundedCornerShape(999.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-                ) {
-                    Row(
-                        Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(15.dp), tint = MaterialTheme.colorScheme.primary)
-                        Text("Réactiver", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatusPill(label: String, color: androidx.compose.ui.graphics.Color) {
-    Surface(shape = RoundedCornerShape(999.dp), color = color.copy(alpha = 0.12f)) {
-        Text(
-            label,
-            modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
-            color = color,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
 private fun EmptyHistoryState(title: String, subtitle: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -334,31 +240,6 @@ private fun EmptyHistoryState(title: String, subtitle: String) {
 }
 
 private enum class HistoryFilter { ALL, OPENED, CONSUMED, THROWN }
-
-private data class StatusMeta(
-    val label: String,
-    val color: androidx.compose.ui.graphics.Color,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector
-)
-
-@Composable
-private fun statusMeta(status: ProductStatus): StatusMeta = when (status) {
-    ProductStatus.OPENED -> StatusMeta("Ouvert", MaterialTheme.colorScheme.primary, Icons.Default.Inventory2)
-    ProductStatus.CONSUMED -> StatusMeta("Consommé", ColorFresh, Icons.Default.Restaurant)
-    ProductStatus.THROWN -> StatusMeta("Jeté", MaterialTheme.colorScheme.error, Icons.Default.Delete)
-    ProductStatus.ACTIVE -> StatusMeta("Actif", MaterialTheme.colorScheme.onSurfaceVariant, Icons.Default.Check)
-}
-
-private fun statusDate(product: Product): String {
-    val instant = product.statusChangedAt ?: product.addedAt
-    val date = formatInstantDate(instant).orEmpty()
-    return when (product.status) {
-        ProductStatus.OPENED -> "Ouvert le $date"
-        ProductStatus.CONSUMED -> "Consommé le $date"
-        ProductStatus.THROWN -> "Jeté le $date"
-        ProductStatus.ACTIVE -> "Actif depuis le $date"
-    }
-}
 
 private fun formatHistorySubtitle(products: List<Product>): String {
     if (products.isEmpty()) return "Aucun mouvement pour le moment"

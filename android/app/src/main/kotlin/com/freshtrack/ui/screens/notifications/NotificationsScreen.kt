@@ -56,8 +56,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.core.content.ContextCompat
+import com.freshtrack.ui.components.ProductCard
 import com.freshtrack.ui.components.ProductSectionHeader
-import com.freshtrack.ui.screens.index.ProductCard
 
 @Composable
 fun NotificationsScreen(
