@@ -424,8 +424,11 @@ fun AddProductScreen(
 
             CompactFormSection(title = "Image") {
                 if (ui.imageUrl.isNotBlank()) {
+                    val previewRequest = remember(ui.imageUrl, context) {
+                        ImageRequest.Builder(context).data(ui.imageUrl).build()
+                    }
                     AsyncImage(
-                        model = ui.imageUrl,
+                        model = previewRequest,
                         contentDescription = null,
                         modifier = Modifier
                             .fillMaxWidth()

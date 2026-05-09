@@ -109,6 +109,10 @@ fun IndexScreen(
     var showFilterMenu by remember { mutableStateOf(false) }
     var fabExpanded by remember { mutableStateOf(false) }
 
+    val onDismissSortMenu = remember { { showSortMenu = false } }
+    val onDismissFilterMenu = remember { { showFilterMenu = false } }
+    val onStatusFilterChange = remember(vm) { { f: StatusFilter -> vm.setStatusFilter(f) } }
+
     var expiredCollapsed by rememberSaveable { mutableStateOf(false) }
     var soonCollapsed by rememberSaveable { mutableStateOf(false) }
     var freshCollapsed by rememberSaveable { mutableStateOf(false) }
@@ -197,7 +201,7 @@ fun IndexScreen(
                         soonCount = totalCounts.soon,
                         freshCount = totalCounts.fresh,
                         activeFilter = ui.statusFilter,
-                        onFilterChange = { vm.setStatusFilter(it) },
+                        onFilterChange = onStatusFilterChange,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp)
                     )
                 }
@@ -307,7 +311,7 @@ fun IndexScreen(
                                     )
                                     DropdownMenu(
                                         expanded = showSortMenu,
-                                        onDismissRequest = { showSortMenu = false }
+                                        onDismissRequest = onDismissSortMenu
                                     ) {
                                         DropdownMenuItem(
                                             text = { Text("Par expiration") },
@@ -341,7 +345,7 @@ fun IndexScreen(
                                     )
                                     DropdownMenu(
                                         expanded = showFilterMenu,
-                                        onDismissRequest = { showFilterMenu = false }
+                                        onDismissRequest = onDismissFilterMenu
                                     ) {
                                         DropdownMenuItem(
                                             text = { Text("Tous les statuts") },

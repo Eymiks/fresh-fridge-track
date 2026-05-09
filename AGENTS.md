@@ -476,6 +476,11 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - Le calcul sémantique reste identique : score mensuel = `consommés / (consommés + jetés) * 100`. La fonction `inMonth` (et l'import `LocalDate` associé) est supprimée car plus utilisée.
 - Vérification : `./gradlew.bat :app:compileDebugKotlin` OK.
 
+**2026-05-09 — Mission optimisation v2 — Étape 6 : stabiliser les allocations Compose chaudes**
+- `IndexScreen` mémorise désormais les callbacks chauds : `onDismissSortMenu`, `onDismissFilterMenu` et `onStatusFilterChange` (`StatCardsRow.onFilterChange`). Cela évite la création d'une nouvelle lambda à chaque recomposition du parent, condition nécessaire pour que les composables enfants (`StatCardsRow`, `DropdownMenu`) restent skippables.
+- `AddProductScreen` utilise désormais un `ImageRequest` Coil mémorisé sur `(ui.imageUrl, context)` pour la miniature image principale, comme déjà fait pour la grille OFF et l'historique. Coil ne reconstruit plus la requête à chaque frappe dans le formulaire.
+- Vérification : `./gradlew.bat :app:compileDebugKotlin` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
