@@ -1,0 +1,180 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "01f63f2e8531493716bbb77c00376eb2",
+    "entities": [
+      {
+        "tableName": "products",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `household_id` TEXT NOT NULL, `name` TEXT NOT NULL, `barcode` TEXT, `expiration_date` TEXT NOT NULL, `added_at` TEXT NOT NULL, `image_url` TEXT, `brand` TEXT, `nutri_score` TEXT, `category` TEXT, `subcategory` TEXT, `status` TEXT NOT NULL, `status_changed_at` TEXT, `quantity` TEXT, `nova_group` INTEGER, `eco_score` TEXT, `allergens` TEXT, `ingredients` TEXT, `opened_at` TEXT, `days_after_opening` INTEGER, `added_by` TEXT, `notes` TEXT, `frozen_until` TEXT, `nutrition_data` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "householdId",
+            "columnName": "household_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "barcode",
+            "columnName": "barcode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "expirationDate",
+            "columnName": "expiration_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "addedAt",
+            "columnName": "added_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "imageUrl",
+            "columnName": "image_url",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "brand",
+            "columnName": "brand",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nutriScore",
+            "columnName": "nutri_score",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "subcategory",
+            "columnName": "subcategory",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "statusChangedAt",
+            "columnName": "status_changed_at",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "novaGroup",
+            "columnName": "nova_group",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "ecoScore",
+            "columnName": "eco_score",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "allergens",
+            "columnName": "allergens",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ingredients",
+            "columnName": "ingredients",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "openedAt",
+            "columnName": "opened_at",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "daysAfterOpening",
+            "columnName": "days_after_opening",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "addedBy",
+            "columnName": "added_by",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "frozenUntil",
+            "columnName": "frozen_until",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nutritionData",
+            "columnName": "nutrition_data",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_products_household_id",
+            "unique": false,
+            "columnNames": [
+              "household_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_products_household_id` ON `${TABLE_NAME}` (`household_id`)"
+          },
+          {
+            "name": "index_products_status",
+            "unique": false,
+            "columnNames": [
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_products_status` ON `${TABLE_NAME}` (`status`)"
+          },
+          {
+            "name": "index_products_expiration_date",
+            "unique": false,
+            "columnNames": [
+              "expiration_date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_products_expiration_date` ON `${TABLE_NAME}` (`expiration_date`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '01f63f2e8531493716bbb77c00376eb2')"
+    ]
+  }
+}

@@ -486,6 +486,12 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - L'`instanceId` reste utilisé pour le nom du canal Supabase afin de garder l'unicité des callbacks ; seule la création du flow est mutualisée.
 - Vérification : `./gradlew.bat :app:compileDebugKotlin` OK.
 
+**2026-05-09 — Mission optimisation v2 — Étape 3 : index Room sur products**
+- `ProductEntity` déclare désormais trois `Index` Room sur `household_id`, `status` et `expiration_date` — colonnes utilisées dans la quasi-totalité des `@Query` du `ProductDao` (filtre par foyer, statut, ordre par date d'expiration).
+- `FreshTrackDatabase` passe en version 2 et expose `MIGRATION_1_2` qui crée les trois index via `CREATE INDEX IF NOT EXISTS`. `DatabaseModule` enregistre la migration sans `fallbackToDestructiveMigration()`, donc les produits existants sont conservés à la mise à jour de l'APK.
+- Le schéma v2 est exporté dans `android/app/schemas/com.freshtrack.data.db.FreshTrackDatabase/2.json`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

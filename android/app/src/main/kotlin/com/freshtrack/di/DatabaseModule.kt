@@ -19,6 +19,7 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): FreshTrackDatabase =
         Room.databaseBuilder(context, FreshTrackDatabase::class.java, "freshtrack.db")
+            .addMigrations(FreshTrackDatabase.MIGRATION_1_2)
             .build()
 
     @Provides
