@@ -3,6 +3,7 @@ package com.freshtrack.data.products
 import android.util.Log
 import com.freshtrack.data.db.ProductDao
 import com.freshtrack.data.supabase.ProductRow
+import com.freshtrack.di.ApplicationScope
 import com.freshtrack.domain.model.Member
 import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.model.ProductStatus
@@ -14,10 +15,13 @@ import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.realtime
 import io.github.jan.supabase.storage.storage
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
@@ -25,13 +29,15 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class ProductRepository @Inject constructor(
     private val supabase: SupabaseClient,
-    private val productDao: ProductDao
+    private val productDao: ProductDao,
+    @ApplicationScope private val appScope: CoroutineScope
 ) {
     companion object {
         private const val GUEST_HOUSEHOLD_ID = "guest-local"
@@ -40,6 +46,8 @@ class ProductRepository @Inject constructor(
     }
 
     private val json = Json { ignoreUnknownKeys = true }
+
+    private val realtimeFlows = ConcurrentHashMap<String, Flow<Unit>>()
 
     fun observeProducts(householdId: String, members: List<Member> = emptyList()): Flow<List<Product>> =
         productDao.observeByHousehold(householdId).map { entities ->
@@ -180,7 +188,16 @@ class ProductRepository @Inject constructor(
         return supabase.storage.from("product-images").publicUrl(path)
     }
 
-    fun subscribeToRealtime(householdId: String): Flow<Unit> = callbackFlow {
+    fun subscribeToRealtime(householdId: String): Flow<Unit> =
+        realtimeFlows.getOrPut(householdId) {
+            buildRealtimeFlow(householdId).shareIn(
+                scope = appScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                replay = 0
+            )
+        }
+
+    private fun buildRealtimeFlow(householdId: String): Flow<Unit> = callbackFlow {
         val instanceId = UUID.randomUUID().toString()
         val channel = supabase.channel("products:$householdId:$instanceId")
 

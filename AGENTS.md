@@ -453,6 +453,12 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - Conséquence : Compose peut prouver leur stabilité et skipper plus largement les composables consommateurs lorsque l'objet réémis est égal au précédent.
 - Vérification : `./gradlew.bat :app:compileDebugKotlin --rerun-tasks` OK.
 
+**2026-05-09 — Mission optimisation v2 — Étape 2 : flow Realtime Supabase partagé**
+- `ProductRepository.subscribeToRealtime(householdId)` cache désormais un `Flow<Unit>` partagé via `shareIn(appScope, WhileSubscribed(5_000), replay = 0)` par foyer (`ConcurrentHashMap<householdId, Flow<Unit>>`). Plusieurs ViewModels (Index, Stats, Detail, Notifications…) qui s'abonnent au même foyer partagent la même connexion WebSocket.
+- `AppModule` fournit un nouveau `@ApplicationScope CoroutineScope` (`SupervisorJob() + Dispatchers.IO`) injecté dans `ProductRepository`.
+- L'`instanceId` reste utilisé pour le nom du canal Supabase afin de garder l'unicité des callbacks ; seule la création du flow est mutualisée.
+- Vérification : `./gradlew.bat :app:compileDebugKotlin` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
