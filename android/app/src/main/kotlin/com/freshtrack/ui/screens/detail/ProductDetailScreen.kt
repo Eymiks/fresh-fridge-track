@@ -89,7 +89,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.compose.ui.platform.LocalContext
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import com.freshtrack.domain.catalog.PRODUCT_CATEGORIES
 import com.freshtrack.domain.catalog.getFreezeDuration
 import com.freshtrack.domain.catalog.getPostExpiryNote
@@ -345,10 +347,14 @@ fun ProductDetailScreen(
 
 @Composable
 private fun ProductHeroBackdrop(product: Product, statusColor: Color) {
+    val context = LocalContext.current
+    val imageRequest: ImageRequest? = remember(product.imageUrl) {
+        product.imageUrl?.let { url -> ImageRequest.Builder(context).data(url).build() }
+    }
     Box(Modifier.fillMaxWidth().height(260.dp)) {
-        if (!product.imageUrl.isNullOrBlank()) {
+        if (imageRequest != null) {
             AsyncImage(
-                model = product.imageUrl,
+                model = imageRequest,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize().blur(18.dp),
                 contentScale = ContentScale.Crop
@@ -500,6 +506,10 @@ private fun ProductSummaryCard(
 
 @Composable
 private fun ProductThumbnail(product: Product, modifier: Modifier, onClick: () -> Unit) {
+    val context = LocalContext.current
+    val imageRequest: ImageRequest? = remember(product.imageUrl) {
+        product.imageUrl?.let { url -> ImageRequest.Builder(context).data(url).build() }
+    }
     Box(
         modifier
             .clip(RoundedCornerShape(22.dp))
@@ -507,9 +517,9 @@ private fun ProductThumbnail(product: Product, modifier: Modifier, onClick: () -
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        if (!product.imageUrl.isNullOrBlank()) {
+        if (imageRequest != null) {
             AsyncImage(
-                model = product.imageUrl,
+                model = imageRequest,
                 contentDescription = product.name,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop

@@ -132,7 +132,7 @@ fun HistoryScreen(
                     items(openedList, key = { "o_${it.id}" }, contentType = { "history_product" }) { product ->
                         val productId = product.id
                         val productClick = remember(productId) { { onProductClick(productId) } }
-                        val restoreClick = remember(product) { { vm.restoreProduct(product); Unit } }
+                        val restoreClick = remember(productId) { { vm.restoreProduct(product); Unit } }
                         ArchivedProductCard(product = product, onClick = productClick, onRestore = restoreClick)
                     }
                 }
@@ -144,7 +144,7 @@ fun HistoryScreen(
                     items(consumedList, key = { "c_${it.id}" }, contentType = { "history_product" }) { product ->
                         val productId = product.id
                         val productClick = remember(productId) { { onProductClick(productId) } }
-                        val restoreClick = remember(product) { { vm.restoreProduct(product); Unit } }
+                        val restoreClick = remember(productId) { { vm.restoreProduct(product); Unit } }
                         ArchivedProductCard(product = product, onClick = productClick, onRestore = restoreClick)
                     }
                 }
@@ -156,7 +156,7 @@ fun HistoryScreen(
                     items(thrownList, key = { "t_${it.id}" }, contentType = { "history_product" }) { product ->
                         val productId = product.id
                         val productClick = remember(productId) { { onProductClick(productId) } }
-                        val restoreClick = remember(product) { { vm.restoreProduct(product); Unit } }
+                        val restoreClick = remember(productId) { { vm.restoreProduct(product); Unit } }
                         ArchivedProductCard(product = product, onClick = productClick, onRestore = restoreClick)
                     }
                 }

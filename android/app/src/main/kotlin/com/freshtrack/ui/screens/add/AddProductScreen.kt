@@ -79,6 +79,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import com.freshtrack.domain.catalog.PRODUCT_CATEGORIES
 import com.freshtrack.domain.catalog.matchCategory
 import com.freshtrack.domain.format.formatDate
@@ -851,9 +852,13 @@ private fun OffImageSelectionDialog(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.heightIn(max = 320.dp)
                 ) {
-                    items(images) { url ->
+                    items(images, key = { it }, contentType = { "off_image" }) { url ->
+                        val context = LocalContext.current
+                        val request: ImageRequest = remember(url) {
+                            ImageRequest.Builder(context).data(url).build()
+                        }
                         AsyncImage(
-                            model = url,
+                            model = request,
                             contentDescription = null,
                             modifier = Modifier
                                 .aspectRatio(1f)

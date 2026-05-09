@@ -448,6 +448,14 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - Vérification : `./gradlew.bat :app:assembleDebug` OK (0 warning) ; APK installé sur `moto g54 5G - 15`.
 - À vérifier sur appareil : clic profil/foyer → Paramètres, share sheet code invitation, mode invité (boutons corrects), indicateur On/Off notifications.
 
+**2026-05-09 — Mission fluidité Android — Étape 4 : images stables dans les listes**
+- `ProductCards.kt` : `rememberProductImageRequest` construit un `ImageRequest` stable via `remember(imageUrl)` — Coil ne re-télécharge plus si l'URL n'a pas changé.
+- `HistoryScreen.kt` : `remember(product)` → `remember(product.id)` sur les 3 lambdas `restoreClick` — la capture de l'objet entier forçait une recréation inutile à chaque recomposition.
+- `AddProductScreen.kt` : `items(images)` → `items(images, key = { it }, contentType = { "off_image" })` avec `ImageRequest` stable — le grid OFF cesse de perdre sa position au scroll.
+- `ProductDetailScreen.kt` : `ImageRequest` stable avec type explicite pour le hero backdrop et la miniature du sticky header.
+- Note : `.crossfade()` n'est pas disponible sur `ImageRequest.Builder` en Coil 3.0.4 ; la transition est gérée par l'ImageLoader global.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 **2026-05-09 — Mission fluidité Android — Étape 3 : StatsViewModel calcul sur thread de fond**
 - `StatsUseCase.compute()` déplacé sur `Dispatchers.Default` via `.flowOn()` + `.distinctUntilChanged()` : la navigation vers l'onglet Stats ne bloque plus l'UI le temps du calcul (filtrages 6 mois, groupements, taux d'utilisation).
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
