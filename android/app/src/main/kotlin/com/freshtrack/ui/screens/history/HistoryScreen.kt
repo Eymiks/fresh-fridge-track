@@ -48,11 +48,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import com.freshtrack.domain.format.formatInstantDate
 import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.model.ProductStatus
@@ -82,7 +84,7 @@ fun HistoryScreen(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                item {
+                item(key = "history_header", contentType = "header") {
                     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text("Historique", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
                         Text(
@@ -93,7 +95,7 @@ fun HistoryScreen(
                     }
                 }
 
-                item {
+                item(key = "history_filters", contentType = "filters") {
                     Row(
                         Modifier.horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -126,35 +128,44 @@ fun HistoryScreen(
                 }
 
                 if (products.isEmpty()) {
-                    item {
+                    item(key = "history_empty", contentType = "empty_state") {
                         EmptyHistoryState("Aucun produit dans l'historique", "Les produits ouverts, consommés ou jetés apparaîtront ici.")
                     }
                 }
 
                 if ((filter == HistoryFilter.ALL || filter == HistoryFilter.OPENED) && openedList.isNotEmpty()) {
-                    item {
+                    item(key = "history_opened_header", contentType = "section_header") {
                         SectionHeader("Ouverts", openedList.size, Icons.Default.Inventory2, MaterialTheme.colorScheme.primary)
                     }
-                    items(openedList, key = { "o_${it.id}" }) { product ->
-                        HistoryItem(product = product, onClick = { onProductClick(product.id) }, onRestore = { vm.restoreProduct(product) })
+                    items(openedList, key = { "o_${it.id}" }, contentType = { "history_product" }) { product ->
+                        val productId = product.id
+                        val productClick = remember(productId) { { onProductClick(productId) } }
+                        val restoreClick = remember(product) { { vm.restoreProduct(product); Unit } }
+                        HistoryItem(product = product, onClick = productClick, onRestore = restoreClick)
                     }
                 }
 
                 if ((filter == HistoryFilter.ALL || filter == HistoryFilter.CONSUMED) && consumedList.isNotEmpty()) {
-                    item {
+                    item(key = "history_consumed_header", contentType = "section_header") {
                         SectionHeader("Consommés", consumedList.size, Icons.Default.Restaurant, ColorFresh)
                     }
-                    items(consumedList, key = { "c_${it.id}" }) { product ->
-                        HistoryItem(product = product, onClick = { onProductClick(product.id) }, onRestore = { vm.restoreProduct(product) })
+                    items(consumedList, key = { "c_${it.id}" }, contentType = { "history_product" }) { product ->
+                        val productId = product.id
+                        val productClick = remember(productId) { { onProductClick(productId) } }
+                        val restoreClick = remember(product) { { vm.restoreProduct(product); Unit } }
+                        HistoryItem(product = product, onClick = productClick, onRestore = restoreClick)
                     }
                 }
 
                 if ((filter == HistoryFilter.ALL || filter == HistoryFilter.THROWN) && thrownList.isNotEmpty()) {
-                    item {
+                    item(key = "history_thrown_header", contentType = "section_header") {
                         SectionHeader("Jetés", thrownList.size, Icons.Default.Delete, MaterialTheme.colorScheme.error)
                     }
-                    items(thrownList, key = { "t_${it.id}" }) { product ->
-                        HistoryItem(product = product, onClick = { onProductClick(product.id) }, onRestore = { vm.restoreProduct(product) })
+                    items(thrownList, key = { "t_${it.id}" }, contentType = { "history_product" }) { product ->
+                        val productId = product.id
+                        val productClick = remember(productId) { { onProductClick(productId) } }
+                        val restoreClick = remember(product) { { vm.restoreProduct(product); Unit } }
+                        HistoryItem(product = product, onClick = productClick, onRestore = restoreClick)
                     }
                 }
             }
@@ -237,6 +248,14 @@ private fun HistoryFilterChip(
 @Composable
 private fun HistoryItem(product: Product, onClick: () -> Unit, onRestore: () -> Unit) {
     val status = statusMeta(product.status)
+    val context = LocalContext.current
+    val imageRequest = remember(product.imageUrl) {
+        product.imageUrl?.let { url ->
+            ImageRequest.Builder(context)
+                .data(url)
+                .build()
+        }
+    }
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -245,9 +264,9 @@ private fun HistoryItem(product: Product, onClick: () -> Unit, onRestore: () -> 
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (!product.imageUrl.isNullOrBlank()) {
+            if (imageRequest != null) {
                 AsyncImage(
-                    model = product.imageUrl,
+                    model = imageRequest,
                     contentDescription = product.name,
                     modifier = Modifier.size(58.dp).clip(RoundedCornerShape(16.dp)),
                     contentScale = ContentScale.Crop

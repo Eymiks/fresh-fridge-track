@@ -354,6 +354,12 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Commit prévu : `android: ouvrir l'application depuis les notifications`.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-09 — Étape 2 : fluidité des listes**
+- `HistoryScreen` et `NotificationsScreen` déclarent des `key`/`contentType` stables pour les headers, filtres, états vides et cartes produit.
+- Les callbacks produit sont mémorisés dans les listes et les images de l'historique passent par un `ImageRequest` Coil stable.
+- Commit prévu : `android: fluidifier les listes produits`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

@@ -105,7 +105,7 @@ fun NotificationsScreen(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                item {
+                item(key = "alerts_header", contentType = "header") {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Box(
                             Modifier
@@ -127,7 +127,7 @@ fun NotificationsScreen(
                 }
 
                 if (permPermanentlyDenied) {
-                    item {
+                    item(key = "alerts_permission_denied", contentType = "permission_card") {
                         Card(
                             Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
@@ -170,7 +170,7 @@ fun NotificationsScreen(
                     }
                 }
 
-                item {
+                item(key = "alerts_settings", contentType = "settings_card") {
                     Surface(
                         shape = RoundedCornerShape(18.dp),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
@@ -239,7 +239,7 @@ fun NotificationsScreen(
                     }
                 }
 
-                item {
+                item(key = "alerts_filters", contentType = "filters") {
                     Row(
                         Modifier.horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -257,14 +257,14 @@ fun NotificationsScreen(
                 }
 
                 if (alertCount == 0) {
-                    item {
+                    item(key = "alerts_empty_all", contentType = "empty_state") {
                         EmptyAlertState(
                             title = "Tout est sous contrôle",
                             subtitle = "Aucun produit n'est périmé ou proche de sa date limite."
                         )
                     }
                 } else if (filteredCount == 0) {
-                    item {
+                    item(key = "alerts_empty_filter", contentType = "empty_state") {
                         EmptyAlertState(
                             title = "Aucun produit pour ce filtre",
                             subtitle = "Changez de filtre ou revenez à Tout."
@@ -273,30 +273,34 @@ fun NotificationsScreen(
                 }
 
                 if ((filter == AlertFilter.ALL || filter == AlertFilter.EXPIRED) && expiredProducts.isNotEmpty()) {
-                    item {
+                    item(key = "alerts_expired_header", contentType = "section_header") {
                         AlertSectionHeader("Périmés", expiredProducts.size, Icons.Default.ErrorOutline, MaterialTheme.colorScheme.error)
                     }
-                    items(expiredProducts, key = { it.id }) { product ->
+                    items(expiredProducts, key = { it.id }, contentType = { "alert_product" }) { product ->
+                        val productId = product.id
+                        val productClick = remember(productId) { { onProductClick(productId) } }
                         ProductCard(
                             product = product,
                             isSelected = false,
                             isSelectionMode = false,
-                            onClick = { onProductClick(product.id) },
+                            onClick = productClick,
                             onLongClick = {}
                         )
                     }
                 }
 
                 if ((filter == AlertFilter.ALL || filter == AlertFilter.SOON) && soonProducts.isNotEmpty()) {
-                    item {
+                    item(key = "alerts_soon_header", contentType = "section_header") {
                         AlertSectionHeader("Bientôt périmés", soonProducts.size, Icons.Default.Notifications, MaterialTheme.colorScheme.tertiary)
                     }
-                    items(soonProducts, key = { it.id }) { product ->
+                    items(soonProducts, key = { it.id }, contentType = { "alert_product" }) { product ->
+                        val productId = product.id
+                        val productClick = remember(productId) { { onProductClick(productId) } }
                         ProductCard(
                             product = product,
                             isSelected = false,
                             isSelectionMode = false,
-                            onClick = { onProductClick(product.id) },
+                            onClick = productClick,
                             onLongClick = {}
                         )
                     }
