@@ -421,6 +421,11 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - Vérification : `./gradlew.bat :app:assembleDebug` OK (0 warning) ; APK installé sur `moto g54 5G - 15`.
 - À vérifier sur appareil : clic profil/foyer → Paramètres, share sheet code invitation, mode invité (boutons corrects), indicateur On/Off notifications.
 
+**2026-05-09 — Mission fluidité Android — Étape 1 : @Immutable sur les modèles domaine**
+- `Product`, `Household` et `Member` annotés `@Immutable` : Compose peut désormais prouver leur stabilité et évite de recomposer leurs composants enfants lors d'émissions parentes sans changement de données.
+- Impact : réduction des recompositions parasites dans toute l'application (IndexScreen, HistoryScreen, NotificationsScreen, ProductDetailScreen…).
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

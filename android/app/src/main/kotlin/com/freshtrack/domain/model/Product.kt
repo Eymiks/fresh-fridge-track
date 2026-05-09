@@ -1,5 +1,6 @@
 package com.freshtrack.domain.model
 
+import androidx.compose.runtime.Immutable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
@@ -14,6 +15,7 @@ enum class ProductStatus { ACTIVE, OPENED, CONSUMED, THROWN }
 
 enum class ExpirationStatus { FRESH, SOON, EXPIRED }
 
+@Immutable
 data class Product(
     val id: String = "",
     val name: String,
