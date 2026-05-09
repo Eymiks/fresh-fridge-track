@@ -481,6 +481,11 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - `AddProductScreen` utilise désormais un `ImageRequest` Coil mémorisé sur `(ui.imageUrl, context)` pour la miniature image principale, comme déjà fait pour la grille OFF et l'historique. Coil ne reconstruit plus la requête à chaque frappe dans le formulaire.
 - Vérification : `./gradlew.bat :app:compileDebugKotlin` OK.
 
+**2026-05-09 — Mission optimisation v2 — Étape 7 : ImageLoader Coil global dédié**
+- `FreshTrackApp` implémente désormais `coil3.SingletonImageLoader.Factory` et fournit un `ImageLoader` borné explicitement : `MemoryCache` 32 Mo et `DiskCache` 64 Mo dans `cacheDir/coil_image_cache`. Plus de surconsommation mémoire silencieuse via les défauts Coil 3 (~25 % du heap), et le cache disque survit aux redémarrages d'application.
+- Tous les `AsyncImage` du projet (cartes accueil, historique, fiche produit, dialog OFF, avatar) tirent automatiquement sur ce singleton.
+- Vérification : `./gradlew.bat :app:compileDebugKotlin` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
