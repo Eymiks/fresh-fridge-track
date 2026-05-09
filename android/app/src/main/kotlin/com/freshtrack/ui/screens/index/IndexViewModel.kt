@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -85,31 +86,29 @@ class IndexViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    val totalCounts = combine(products, _ui) { prods, uiState ->
-        val base = baseFiltered(prods, uiState)
-        TotalCounts(
-            expired = base.count { it.getExpirationStatus() == ExpirationStatus.EXPIRED },
-            soon = base.count { it.getExpirationStatus() == ExpirationStatus.SOON },
-            fresh = base.count { it.getExpirationStatus() == ExpirationStatus.FRESH }
-        )
-    }
-        .flowOn(Dispatchers.Default)
-        .distinctUntilChanged()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, TotalCounts())
-
-    val groups = combine(products, _ui) { prods, uiState ->
+    private val derived = combine(products, _ui) { prods, uiState ->
         val sorted = sorted(baseFiltered(prods, uiState), uiState.sortOrder)
         val expired = sorted.filter { it.getExpirationStatus() == ExpirationStatus.EXPIRED }
         val soon = sorted.filter { it.getExpirationStatus() == ExpirationStatus.SOON }
         val fresh = sorted.filter { it.getExpirationStatus() == ExpirationStatus.FRESH }
-        when (uiState.statusFilter) {
+        val counts = TotalCounts(expired.size, soon.size, fresh.size)
+        val groups = when (uiState.statusFilter) {
             StatusFilter.ALL -> ProductGroups(expired, soon, fresh)
             StatusFilter.EXPIRED -> ProductGroups(expired = expired)
             StatusFilter.SOON -> ProductGroups(soon = soon)
             StatusFilter.FRESH -> ProductGroups(fresh = fresh)
         }
+        counts to groups
     }
         .flowOn(Dispatchers.Default)
+        .distinctUntilChanged()
+        .shareIn(viewModelScope, SharingStarted.Eagerly, replay = 1)
+
+    val totalCounts = derived.map { it.first }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, TotalCounts())
+
+    val groups = derived.map { it.second }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, ProductGroups())
 

@@ -465,6 +465,11 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - Le schéma v2 est exporté dans `android/app/schemas/com.freshtrack.data.db.FreshTrackDatabase/2.json`.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-09 — Mission optimisation v2 — Étape 4 : fusion des combine d'IndexViewModel**
+- `IndexViewModel` ne déclare plus deux `combine(products, _ui)` indépendants pour `totalCounts` et `groups`. Un unique flux dérivé partagé via `shareIn(viewModelScope, Eagerly, replay = 1)` calcule simultanément les compteurs et les groupes triés/filtrés ; `totalCounts` et `groups` n'en consomment que la projection correspondante.
+- Gain : `baseFiltered`/`sorted` n'est exécuté qu'une fois par changement (au lieu de deux), ce qui réduit le coût CPU lors des frappes dans la barre de recherche et lors de chaque émission Realtime.
+- Vérification : `./gradlew.bat :app:compileDebugKotlin` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
