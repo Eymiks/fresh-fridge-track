@@ -7,7 +7,9 @@
       "Bash(powershell -Command \"Stop-Process -Id 19900 -Force\")",
       "Bash(bun run *)",
       "PowerShell(netstat -ano | Select-String \":3000\" | ForEach-Object { ($_ -split '\\s+')[-1] } | Sort-Object -Unique | ForEach-Object { if ($_ -match '^\\d+$') { taskkill /PID $_ /F 2>$null } })",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(./gradlew.bat :app:installDebug)",
+      "Bash(./gradlew.bat :app:assembleDebug)"
     ]
   },
   "hooks": {
