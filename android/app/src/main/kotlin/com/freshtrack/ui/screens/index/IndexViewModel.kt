@@ -13,15 +13,18 @@ import com.freshtrack.domain.model.getExpirationStatus
 import com.freshtrack.domain.model.isActive
 import com.freshtrack.domain.usecase.ExpirationUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -85,7 +88,10 @@ class IndexViewModel @Inject constructor(
             soon = base.count { it.getExpirationStatus() == ExpirationStatus.SOON },
             fresh = base.count { it.getExpirationStatus() == ExpirationStatus.FRESH }
         )
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, TotalCounts())
+    }
+        .flowOn(Dispatchers.Default)
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, TotalCounts())
 
     val groups = combine(products, _ui) { prods, uiState ->
         val sorted = sorted(baseFiltered(prods, uiState), uiState.sortOrder)
@@ -98,7 +104,10 @@ class IndexViewModel @Inject constructor(
             StatusFilter.SOON -> ProductGroups(soon = soon)
             StatusFilter.FRESH -> ProductGroups(fresh = fresh)
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, ProductGroups())
+    }
+        .flowOn(Dispatchers.Default)
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ProductGroups())
 
     init {
         viewModelScope.launch {

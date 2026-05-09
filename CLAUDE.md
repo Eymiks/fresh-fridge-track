@@ -448,6 +448,11 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - Vérification : `./gradlew.bat :app:assembleDebug` OK (0 warning) ; APK installé sur `moto g54 5G - 15`.
 - À vérifier sur appareil : clic profil/foyer → Paramètres, share sheet code invitation, mode invité (boutons corrects), indicateur On/Off notifications.
 
+**2026-05-09 — Mission fluidité Android — Étape 2 : IndexViewModel flows dérivés sur thread de fond**
+- `totalCounts` et `groups` ajoutent `.flowOn(Dispatchers.Default)` + `.distinctUntilChanged()` : le tri/filtrage des produits ne bloque plus le thread principal et n'émet plus quand le résultat est identique.
+- Impact direct : pas de freeze UI lors de chaque frappe dans la barre de recherche ; les `stateIn` ne rediffusent que quand les groupes changent réellement.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 **2026-05-09 — Mission fluidité Android — Étape 1 : @Immutable sur les modèles domaine**
 - `Product`, `Household` et `Member` annotés `@Immutable` : Compose peut désormais prouver leur stabilité et évite de recomposer leurs composants enfants lors d'émissions parentes sans changement de données.
 - Impact : réduction des recompositions parasites dans toute l'application (IndexScreen, HistoryScreen, NotificationsScreen, ProductDetailScreen…).
