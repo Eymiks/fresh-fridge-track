@@ -9,10 +9,13 @@ import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.usecase.StatsResult
 import com.freshtrack.domain.usecase.StatsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
@@ -39,5 +42,7 @@ class StatsViewModel @Inject constructor(
 
     val stats = products
         .map { products -> statsUseCase.compute(products) }
+        .flowOn(Dispatchers.Default)
+        .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 }
