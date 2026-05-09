@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.freshtrack.R
 
@@ -36,28 +37,46 @@ private val NunitoFontFamily = FontFamily(
     Font(R.font.nunito_extrabold, FontWeight.ExtraBold)
 )
 
-private fun TextStyle.withNunito(weight: FontWeight? = null): TextStyle =
-    copy(fontFamily = NunitoFontFamily, fontWeight = weight ?: fontWeight)
+private fun freshTextStyle(
+    fontSize: Int,
+    lineHeight: Int,
+    fontWeight: FontWeight = FontWeight.Normal
+): TextStyle = TextStyle(
+    fontFamily = NunitoFontFamily,
+    fontWeight = fontWeight,
+    fontSize = fontSize.sp,
+    lineHeight = lineHeight.sp
+)
 
-private val FreshTrackTypography = Typography().let { base ->
-    base.copy(
-        displayLarge = base.displayLarge.withNunito(),
-        displayMedium = base.displayMedium.withNunito(),
-        displaySmall = base.displaySmall.withNunito(FontWeight.ExtraBold),
-        headlineLarge = base.headlineLarge.withNunito(),
-        headlineMedium = base.headlineMedium.withNunito(FontWeight.ExtraBold),
-        headlineSmall = base.headlineSmall.withNunito(),
-        titleLarge = base.titleLarge.withNunito(FontWeight.ExtraBold),
-        titleMedium = base.titleMedium.withNunito(FontWeight.Bold),
-        titleSmall = base.titleSmall.withNunito(FontWeight.Bold),
-        bodyLarge = base.bodyLarge.withNunito(),
-        bodyMedium = base.bodyMedium.withNunito(),
-        bodySmall = base.bodySmall.withNunito(),
-        labelLarge = base.labelLarge.withNunito(FontWeight.Bold),
-        labelMedium = base.labelMedium.withNunito(FontWeight.Bold),
-        labelSmall = base.labelSmall.withNunito(FontWeight.Bold)
-    )
+object FreshTextStyles {
+    val ProductTitle = freshTextStyle(14, 17, FontWeight.Bold)
+    val ProductSubtitle = freshTextStyle(12, 15)
+    val ProductMeta = freshTextStyle(10, 12, FontWeight.SemiBold)
+    val ProductBadge = freshTextStyle(10, 12, FontWeight.ExtraBold)
+    val ProductTinyBadge = freshTextStyle(9, 11, FontWeight.ExtraBold)
+    val SectionHeader = freshTextStyle(12, 14, FontWeight.ExtraBold)
+    val SectionCount = freshTextStyle(12, 14, FontWeight.SemiBold)
+    val StatCount = freshTextStyle(16, 18, FontWeight.ExtraBold)
+    val StatLabel = freshTextStyle(10, 12, FontWeight.SemiBold)
 }
+
+private val FreshTrackTypography = Typography(
+    displayLarge = freshTextStyle(40, 46, FontWeight.ExtraBold),
+    displayMedium = freshTextStyle(34, 40, FontWeight.ExtraBold),
+    displaySmall = freshTextStyle(28, 34, FontWeight.ExtraBold),
+    headlineLarge = freshTextStyle(24, 30, FontWeight.ExtraBold),
+    headlineMedium = freshTextStyle(22, 28, FontWeight.ExtraBold),
+    headlineSmall = freshTextStyle(20, 25, FontWeight.ExtraBold),
+    titleLarge = freshTextStyle(20, 24, FontWeight.ExtraBold),
+    titleMedium = freshTextStyle(18, 22, FontWeight.Bold),
+    titleSmall = freshTextStyle(14, 18, FontWeight.Bold),
+    bodyLarge = freshTextStyle(16, 22),
+    bodyMedium = freshTextStyle(14, 20),
+    bodySmall = freshTextStyle(12, 16),
+    labelLarge = freshTextStyle(14, 18, FontWeight.Bold),
+    labelMedium = freshTextStyle(12, 16, FontWeight.Bold),
+    labelSmall = freshTextStyle(10, 12, FontWeight.Bold)
+)
 
 private fun lightSchemeForAccent(accent: AccentColor) = when (accent) {
     AccentColor.GREEN -> lightColorScheme(

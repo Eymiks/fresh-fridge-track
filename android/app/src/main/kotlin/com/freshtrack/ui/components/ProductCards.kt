@@ -71,6 +71,7 @@ import com.freshtrack.ui.theme.ColorExpired
 import com.freshtrack.ui.theme.ColorFresh
 import com.freshtrack.ui.theme.ColorSoon
 import com.freshtrack.ui.theme.Density
+import com.freshtrack.ui.theme.FreshTextStyles
 import com.freshtrack.ui.theme.LocalAppearance
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
@@ -345,14 +346,14 @@ private fun RowScope.ProductMainText(
     Column(modifier = Modifier.weight(1f)) {
         Text(
             product.name,
-            style = MaterialTheme.typography.bodyMedium,
+            style = FreshTextStyles.ProductTitle,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
         Text(
             subtitleOverride ?: listOfNotNull(product.brand, product.quantity).joinToString(" · ").ifBlank { "Produit du foyer" },
-            style = MaterialTheme.typography.bodySmall,
+            style = FreshTextStyles.ProductSubtitle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -375,7 +376,7 @@ private fun RowScope.ProductMainText(
                 )
                 Text(
                     "Ajouté par ${product.addedByName}",
-                    style = MaterialTheme.typography.labelSmall,
+                    style = FreshTextStyles.ProductMeta,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -395,7 +396,12 @@ private fun Pill(label: String, color: Color, filled: Boolean = false) {
             .background(bg)
             .padding(horizontal = 8.dp, vertical = 3.dp)
     ) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = fg, fontWeight = FontWeight.Bold)
+        Text(
+            label,
+            style = if (label.length > 4) FreshTextStyles.ProductTinyBadge else FreshTextStyles.ProductBadge,
+            color = fg,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -413,7 +419,7 @@ private fun NutriScoreBadge(score: String) {
         Modifier.size(20.dp).clip(MaterialTheme.shapes.extraSmall).background(bg),
         contentAlignment = Alignment.Center
     ) {
-        Text(score.uppercase(), color = fg, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+        Text(score.uppercase(), color = fg, style = FreshTextStyles.ProductBadge, fontWeight = FontWeight.Bold)
     }
 }
 

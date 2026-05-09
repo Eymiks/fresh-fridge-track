@@ -363,6 +363,13 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 - Commit prévu : `android: appliquer la police Nunito`.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-09 — Alignement typographique Android / PWA**
+- `FreshTrackTypography` définit désormais une échelle `sp` explicite proche de la PWA avec Nunito sur tous les styles Material.
+- Ajout de micro-styles partagés pour les stat-cards, sections, titres produit, sous-titres, métadonnées et badges.
+- `ProductSectionHeader`, `ProductCards` et les stat-cards de l'accueil utilisent ces tailles compactes pour se rapprocher de la capture PWA.
+- Commit prévu : `android: aligner la typographie avec la PWA`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

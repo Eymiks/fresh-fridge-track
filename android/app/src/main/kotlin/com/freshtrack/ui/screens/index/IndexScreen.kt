@@ -85,6 +85,7 @@ import com.freshtrack.ui.components.ProductSectionHeader
 import com.freshtrack.ui.theme.ColorExpired
 import com.freshtrack.ui.theme.ColorFresh
 import com.freshtrack.ui.theme.ColorSoon
+import com.freshtrack.ui.theme.FreshTextStyles
 import com.freshtrack.ui.theme.LocalAppearance
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -696,13 +697,13 @@ private fun StatCard(
             Column {
                 Text(
                     count.toString(),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = FreshTextStyles.StatCount,
                     fontWeight = FontWeight.ExtraBold,
                     color = if (isActive || count > 0) color else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     label,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = FreshTextStyles.StatLabel,
                     color = if (isActive) color else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
