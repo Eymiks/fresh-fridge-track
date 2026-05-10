@@ -593,3 +593,28 @@ Bannière jaune en haut de l'Index (ou MainScreen) : "Hors ligne — les donnée
 
 - Lookup OpenFoodFacts après scan barcode : récupère jusqu'à 5 images (principale, recto, nutrition, ingrédients, packaging). Afficher un dialog de sélection avec previews — ne pas auto-sélectionner la première.
 - OCR date : d'abord ML Kit local (`TextRecognition`), puis Edge Function Gemini 2.5 Flash si pas de résultat (cooldown 30s). Ajouter retry avec backoff exponentiel (2 tentatives, délai 2s) sur l'Edge Function.
+
+---
+
+## Journal de développement Android (améliorations UX 2026-05-10)
+
+**2026-05-10 — Amélioration scanners : tap-to-focus**
+- `BarcodeScannerScreen.kt` et `DateScannerScreen.kt` : remplacement de `SurfaceOrientedMeteringPointFactory` par `previewView.meteringPointFactory` (orientation-aware).
+- Ajout `FocusMeteringAction.FLAG_AE` en plus de `FLAG_AF` — l'exposition s'ajuste aussi au point tapé.
+- Intervalle boucle auto réduit de 2 500 ms à 2 000 ms.
+- Tap-to-focus : `Modifier.pointerInput` sur le `Box` parent détecte le toucher, annule la boucle auto, déclenche le focus au point précis, affiche un anneau blanc 60dp pendant 700 ms, puis relance la boucle auto après 3 s.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK ; APK installé sur moto g54 5G.
+
+**2026-05-10 — Snackbar d'annulation après swipe produit**
+- `IndexViewModel` : ajout de `SwipeUiEvent.ShowUndo` (sealed class) et `Channel<SwipeUiEvent>` pour les événements one-shot. `quickSetStatus` capture le `previousStatus` avant l'action et émet un event `ShowUndo`. Nouvelle fonction `undoSwipe(product, previousStatus)` pour inverser.
+- `IndexScreen` : `SnackbarHostState` + `LaunchedEffect` qui consomme les events du channel ; affiche "Marqué comme consommé / Jeté · Annuler" via `snackbarHostState.showSnackbar` ; si `ActionPerformed` → appelle `vm.undoSwipe`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK ; APK installé sur moto g54 5G.
+
+**2026-05-10 — Option position hamburger menu (gauche/droite)**
+- `AppPreferences` : clé `frigo-hamburger-side` (DataStore), flow et setter exposés.
+- `AppearanceState` : enum `HamburgerSide { LEFT, RIGHT }` avec `fromKey()` ; champ `hamburgerSide` dans `AppearanceState`.
+- `AppearanceViewModel` : combine nested pour inclure `prefs.hamburgerSide` + `setHamburgerSide()`.
+- `HamburgerMenuDrawer` : paramètre `alignLeft: Boolean` — aligne le panneau à gauche ou droite, arrondit les coins du bon côté.
+- `AppNavigation` : lit `appearance.hamburgerSide`, passe `alignLeft` au drawer et inverse `slideInHorizontally` / `slideOutHorizontally`.
+- `SettingsScreen` : section Apparence → `SegmentedRow` "Gauche / Droite" avec import `HamburgerSide`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK ; APK installé sur moto g54 5G.
