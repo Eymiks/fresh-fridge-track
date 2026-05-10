@@ -15,6 +15,7 @@ import com.freshtrack.domain.model.isActive
 import com.freshtrack.domain.usecase.ExpirationUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -35,6 +36,14 @@ import javax.inject.Inject
 
 enum class SortOrder { EXPIRATION, NAME, ADDED_DATE }
 enum class StatusFilter { ALL, EXPIRED, SOON, FRESH }
+
+sealed class SwipeUiEvent {
+    data class ShowUndo(
+        val message: String,
+        val product: Product,
+        val previousStatus: ProductStatus
+    ) : SwipeUiEvent()
+}
 
 @Immutable
 data class IndexUiState(
@@ -64,6 +73,8 @@ class IndexViewModel @Inject constructor(
     private val productRepository: ProductRepository,
     private val expirationUseCase: ExpirationUseCase
 ) : ViewModel() {
+
+    val swipeEvents = Channel<SwipeUiEvent>(Channel.BUFFERED)
 
     private val _ui = MutableStateFlow(IndexUiState())
     val ui = _ui.asStateFlow()
@@ -150,6 +161,7 @@ class IndexViewModel @Inject constructor(
 
     fun quickSetStatus(productId: String, status: ProductStatus) = viewModelScope.launch {
         val product = products.value.find { it.id == productId } ?: return@launch
+        val previousStatus = product.status
         val state = authState.value
         when (state) {
             is AuthState.Authenticated -> {
@@ -157,6 +169,20 @@ class IndexViewModel @Inject constructor(
                 runCatching { productRepository.setStatus(product, hId, status) }
             }
             is AuthState.Guest -> runCatching { productRepository.setGuestStatus(product, status) }
+            else -> {}
+        }
+        val message = if (status == ProductStatus.CONSUMED) "Marqué comme consommé" else "Marqué comme jeté"
+        swipeEvents.send(SwipeUiEvent.ShowUndo(message, product, previousStatus))
+    }
+
+    fun undoSwipe(product: Product, previousStatus: ProductStatus) = viewModelScope.launch {
+        val state = authState.value
+        when (state) {
+            is AuthState.Authenticated -> {
+                val hId = state.household?.id ?: return@launch
+                runCatching { productRepository.setStatus(product, hId, previousStatus) }
+            }
+            is AuthState.Guest -> runCatching { productRepository.setGuestStatus(product, previousStatus) }
             else -> {}
         }
     }

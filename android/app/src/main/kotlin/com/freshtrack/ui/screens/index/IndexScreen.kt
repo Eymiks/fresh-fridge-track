@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,12 +32,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
@@ -57,11 +61,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -106,6 +114,25 @@ fun IndexScreen(
     val products by vm.products.collectAsState()
     val reduceMotion = LocalAppearance.current.reduceMotion
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(vm) {
+        for (event in vm.swipeEvents) {
+            when (event) {
+                is SwipeUiEvent.ShowUndo -> {
+                    val result = snackbarHostState.showSnackbar(
+                        message = event.message,
+                        actionLabel = "Annuler",
+                        duration = androidx.compose.material3.SnackbarDuration.Short
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        vm.undoSwipe(event.product, event.previousStatus)
+                    }
+                }
+            }
+        }
+    }
+
     var showSortMenu by remember { mutableStateOf(false) }
     var showFilterMenu by remember { mutableStateOf(false) }
     var fabExpanded by remember { mutableStateOf(false) }
@@ -133,6 +160,7 @@ fun IndexScreen(
         groups.expired.isEmpty() && groups.soon.isEmpty() && groups.fresh.isEmpty()
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Column(
                 Modifier
@@ -298,7 +326,7 @@ fun IndexScreen(
                                         { IconButton(onClick = { vm.setSearch("") }) { Icon(Icons.Default.Close, null, Modifier.size(18.dp)) } }
                                     } else null,
                                     singleLine = true,
-                                    modifier = Modifier.weight(1f).height(42.dp),
+                                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                                     shape = MaterialTheme.shapes.medium,
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -352,9 +380,11 @@ fun IndexScreen(
                                         expanded = showFilterMenu,
                                         onDismissRequest = onDismissFilterMenu
                                     ) {
+                                        FilterMenuSectionLabel("Statut")
                                         DropdownMenuItem(
                                             text = { Text("Tous les statuts", style = FreshTextStyles.MenuItem) },
                                             onClick = { vm.setStatusFilter(StatusFilter.ALL); showFilterMenu = false },
+                                            leadingIcon = { Icon(Icons.Default.Category, null, modifier = Modifier.size(18.dp)) },
                                             trailingIcon = if (ui.statusFilter == StatusFilter.ALL) {
                                                 { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
                                             } else null
@@ -384,12 +414,22 @@ fun IndexScreen(
                                             } else null
                                         )
                                         HorizontalDivider()
+                                        FilterMenuSectionLabel("Catégorie")
                                         PRODUCT_CATEGORIES.forEach { cat ->
                                             DropdownMenuItem(
                                                 text = { Text(if (cat.key == "all") "Toutes les catégories" else cat.label, style = FreshTextStyles.MenuItem) },
                                                 onClick = {
                                                     vm.setCategory(cat.key)
                                                     showFilterMenu = false
+                                                },
+                                                leadingIcon = {
+                                                    Icon(
+                                                        categoryIcon(cat.icon),
+                                                        null,
+                                                        tint = if (ui.selectedCategory == cat.key) MaterialTheme.colorScheme.primary
+                                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
                                                 },
                                                 trailingIcon = if (ui.selectedCategory == cat.key) {
                                                     { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
@@ -653,6 +693,27 @@ private fun HeaderIconButton(
             )
         }
     }
+}
+
+@Composable
+private fun FilterMenuSectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.ExtraBold,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+    )
+}
+
+private fun categoryIcon(iconName: String): ImageVector = when (iconName) {
+    "Apple", "Wheat", "Sparkles" -> Icons.Default.Eco
+    "Milk", "Beef", "Fish", "Croissant", "CupSoda", "UtensilsCrossed" -> Icons.Default.Restaurant
+    "Snowflake" -> Icons.Default.AcUnit
+    "Archive", "Package" -> Icons.Default.Inventory2
+    "LayoutGrid", "Droplets", "Baby" -> Icons.Default.Category
+    "Egg" -> Icons.Default.CheckCircle
+    else -> Icons.Default.Inventory2
 }
 
 @Composable
