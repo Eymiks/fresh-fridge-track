@@ -557,6 +557,15 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - `SettingsScreen` : section Apparence → `SegmentedRow` "Gauche / Droite" avec import `HamburgerSide`.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK ; APK installé sur moto g54 5G.
 
+**2026-05-10 — Audit et corrections sécurité**
+- `AndroidManifest.xml` : `allowBackup="false"` + `fullBackupContent="false"` — empêche l'extraction des sessions Supabase via Google Backup ou ADB. **Ne pas réactiver.**
+- `res/xml/network_security_config.xml` : créé, `cleartextTrafficPermitted="false"` — tout trafic HTTP cleartext est interdit en production.
+- `supabase/functions/ocr-date/index.ts` : vérification du header `Authorization: Bearer …` avant traitement — protège le quota Gemini contre les appels non authentifiés.
+- Upload images (3 points d'entrée) : whitelist MIME `{image/jpeg, image/png, image/webp}` + plafond 5 Mo avant `readBytes()` dans `AddProductScreen`, `SettingsScreen`, `HouseholdSettingsScreen` ; extension sanitisée (`safeExt` whitelist) dans `ProductRepository.uploadImage()` et `HouseholdRepository.uploadAvatar()`.
+- `AuthViewModel` : `MIN_PASSWORD_LENGTH` porté à 8. **Ne pas réduire.**
+- `proguard-rules.pro` : `-keep` Supabase/Ktor réduit aux APIs publiques avec `allowobfuscation`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
@@ -641,3 +650,19 @@ Bannière jaune en haut de l'Index (ou MainScreen) : "Hors ligne — les donnée
 
 - Lookup OpenFoodFacts après scan barcode : récupère jusqu'à 5 images (principale, recto, nutrition, ingrédients, packaging). Afficher un dialog de sélection avec previews — ne pas auto-sélectionner la première.
 - OCR date : d'abord ML Kit local (`TextRecognition`), puis Edge Function Gemini 2.5 Flash si pas de résultat (cooldown 30s). Ajouter retry avec backoff exponentiel (2 tentatives, délai 2s) sur l'Edge Function.
+
+### Sécurité Android — règles permanentes
+
+Ces décisions ont été prises lors d'un audit sécurité (2026-05-10) et ne doivent pas être revertées sans justification explicite.
+
+| Règle | Fichier | Raison |
+|-------|---------|--------|
+| `allowBackup="false"` | `AndroidManifest.xml` | Empêche l'extraction des sessions Supabase via Google Backup / ADB |
+| `cleartext interdit` | `res/xml/network_security_config.xml` | Toutes les communications doivent passer par HTTPS |
+| MIME whitelist uploads + plafond 5 Mo | `AddProductScreen`, `SettingsScreen`, `HouseholdSettingsScreen` | Évite l'upload de fichiers malveillants ou hors-mémoire |
+| `safeExt` whitelist côté repository | `ProductRepository`, `HouseholdRepository` | Empêche le path traversal dans les chemins Supabase Storage |
+| `MIN_PASSWORD_LENGTH = 8` | `AuthViewModel` | Minimum de sécurité raisonnable côté client |
+| Edge Function OCR : check `Authorization` | `supabase/functions/ocr-date/index.ts` | Protège le quota Gemini API contre les abus |
+| `-keep allowobfuscation` Supabase/Ktor | `proguard-rules.pro` | Réduit la surface d'inspection par reverse engineering |
+
+**Hors-scope accepté** : SQLCipher (breaking change Room), DataStore chiffré (breaking change), certificate pinning (rotation de cert Supabase non maîtrisée), DELETE policy `households` (Supabase migrations), rate limiting code invitation.
