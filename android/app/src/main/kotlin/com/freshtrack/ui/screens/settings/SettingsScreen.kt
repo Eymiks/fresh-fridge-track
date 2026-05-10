@@ -103,6 +103,7 @@ import com.freshtrack.ui.screens.household.HouseholdSettingsViewModel
 import com.freshtrack.ui.theme.AccentColor
 import com.freshtrack.ui.theme.AppearanceViewModel
 import com.freshtrack.ui.theme.Density
+import com.freshtrack.ui.theme.HamburgerSide
 import com.freshtrack.ui.theme.ThemeMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -299,6 +300,15 @@ fun SettingsScreen(
                         ),
                         selected = appearance.density,
                         onSelected = appearanceVm::setDensity
+                    )
+                    Label("MENU HAMBURGER")
+                    SegmentedRow(
+                        entries = listOf(
+                            SegmentItem(HamburgerSide.LEFT, "Gauche", null),
+                            SegmentItem(HamburgerSide.RIGHT, "Droite", null),
+                        ),
+                        selected = appearance.hamburgerSide,
+                        onSelected = appearanceVm::setHamburgerSide
                     )
                 }
 

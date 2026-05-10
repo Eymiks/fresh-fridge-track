@@ -16,17 +16,17 @@ class AppearanceViewModel @Inject constructor(
 ) : ViewModel() {
 
     val appearance = combine(
-        prefs.themeMode,
-        prefs.accentColor,
-        prefs.density,
-        prefs.reduceMotion
-    ) { theme, accent, density, reduce ->
-        AppearanceState(
-            themeMode = ThemeMode.entries.firstOrNull { it.name.lowercase() == theme } ?: ThemeMode.SYSTEM,
-            accentColor = AccentColor.fromKey(accent),
-            density = Density.fromKey(density),
-            reduceMotion = reduce
-        )
+        combine(prefs.themeMode, prefs.accentColor, prefs.density, prefs.reduceMotion) { theme, accent, density, reduce ->
+            AppearanceState(
+                themeMode = ThemeMode.entries.firstOrNull { it.name.lowercase() == theme } ?: ThemeMode.SYSTEM,
+                accentColor = AccentColor.fromKey(accent),
+                density = Density.fromKey(density),
+                reduceMotion = reduce
+            )
+        },
+        prefs.hamburgerSide
+    ) { state, hSide ->
+        state.copy(hamburgerSide = HamburgerSide.fromKey(hSide))
     }.stateIn(viewModelScope, SharingStarted.Eagerly, AppearanceState())
 
     val notifEnabled = prefs.notifEnabled
@@ -47,6 +47,9 @@ class AppearanceViewModel @Inject constructor(
     }
     fun setReduceMotion(reduce: Boolean) = viewModelScope.launch {
         prefs.setReduceMotion(reduce)
+    }
+    fun setHamburgerSide(side: HamburgerSide) = viewModelScope.launch {
+        prefs.setHamburgerSide(side.key)
     }
     fun setNotifEnabled(value: Boolean) = viewModelScope.launch {
         prefs.setNotifEnabled(value)

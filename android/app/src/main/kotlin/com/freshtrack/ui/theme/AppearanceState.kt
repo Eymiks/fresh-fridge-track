@@ -27,11 +27,19 @@ enum class Density(val key: String, val label: String) {
     }
 }
 
+enum class HamburgerSide(val key: String) {
+    LEFT("left"), RIGHT("right");
+    companion object {
+        fun fromKey(key: String) = entries.firstOrNull { it.key == key } ?: RIGHT
+    }
+}
+
 data class AppearanceState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val accentColor: AccentColor = AccentColor.GREEN,
     val density: Density = Density.NORMAL,
-    val reduceMotion: Boolean = false
+    val reduceMotion: Boolean = false,
+    val hamburgerSide: HamburgerSide = HamburgerSide.RIGHT
 )
 
 val LocalAppearance = compositionLocalOf { AppearanceState() }

@@ -76,6 +76,7 @@ fun HamburgerMenuDrawer(
     state: HamburgerMenuUiState,
     currentRoute: String?,
     isDarkMode: Boolean,
+    alignLeft: Boolean = false,
     onClose: () -> Unit,
     onNavigate: (String) -> Unit,
     onProfileClick: () -> Unit,
@@ -114,13 +115,16 @@ fun HamburgerMenuDrawer(
                 .clickable(onClick = onClose)
         )
 
-        // Panneau à droite
+        // Panneau latéral (gauche ou droite selon préférence)
         Surface(
             modifier = Modifier
-                .align(Alignment.CenterEnd)
+                .align(if (alignLeft) Alignment.CenterStart else Alignment.CenterEnd)
                 .width(drawerWidth)
                 .fillMaxHeight(),
-            shape = RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp),
+            shape = if (alignLeft)
+                RoundedCornerShape(topEnd = 20.dp, bottomEnd = 20.dp)
+            else
+                RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp),
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = 16.dp
         ) {

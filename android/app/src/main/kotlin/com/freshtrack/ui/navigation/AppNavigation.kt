@@ -323,16 +323,18 @@ private fun MainScreen(rootNavController: androidx.navigation.NavController) {
             }
         }
 
-        // Hamburger menu drawer (slide depuis la droite)
+        // Hamburger menu drawer (position selon préférence gauche/droite)
+        val alignLeft = appearance.hamburgerSide == com.freshtrack.ui.theme.HamburgerSide.LEFT
         AnimatedVisibility(
             visible = showMenu,
-            enter = fadeIn() + slideInHorizontally(initialOffsetX = { it }),
-            exit = fadeOut() + slideOutHorizontally(targetOffsetX = { it })
+            enter = fadeIn() + slideInHorizontally(initialOffsetX = { if (alignLeft) -it else it }),
+            exit = fadeOut() + slideOutHorizontally(targetOffsetX = { if (alignLeft) -it else it })
         ) {
             HamburgerMenuDrawer(
                 state = menuState,
                 currentRoute = currentRoute,
                 isDarkMode = isDarkMode,
+                alignLeft = alignLeft,
                 onClose = { showMenu = false },
                 onNavigate = { route ->
                     when (route) {
