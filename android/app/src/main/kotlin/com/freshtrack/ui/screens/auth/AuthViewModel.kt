@@ -100,7 +100,7 @@ class AuthViewModel @Inject constructor(
     private enum class AuthAction { SignIn, SignUp }
 
     companion object {
-        private const val MIN_PASSWORD_LENGTH = 6
+        private const val MIN_PASSWORD_LENGTH = 8
         private val EMAIL_REGEX = Regex("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$", RegexOption.IGNORE_CASE)
     }
 }

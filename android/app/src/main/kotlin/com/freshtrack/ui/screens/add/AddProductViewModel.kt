@@ -190,6 +190,7 @@ class AddProductViewModel @Inject constructor(
     fun setAllergens(v: String) = _ui.update { it.copy(allergens = v) }
     fun setIngredients(v: String) = _ui.update { it.copy(ingredients = v) }
     fun setNutritionData(v: String) = _ui.update { it.copy(nutritionData = v) }
+    fun setError(msg: String?) = _ui.update { it.copy(error = msg) }
 
     fun uploadImage(bytes: ByteArray, ext: String) = viewModelScope.launch {
         val auth = authState.value as? AuthState.Authenticated ?: run {

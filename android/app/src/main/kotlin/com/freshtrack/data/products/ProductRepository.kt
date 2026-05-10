@@ -182,8 +182,9 @@ class ProductRepository @Inject constructor(
     }
 
     suspend fun uploadImage(householdId: String, productId: String, bytes: ByteArray, ext: String): String {
+        val safeExt = ext.lowercase().takeIf { it in setOf("jpg", "jpeg", "png", "webp") } ?: "jpg"
         val timestamp = Clock.System.now().toEpochMilliseconds()
-        val path = "$householdId/${productId}_$timestamp.$ext"
+        val path = "$householdId/${productId}_$timestamp.$safeExt"
         supabase.storage.from("product-images").upload(path, bytes)
         return supabase.storage.from("product-images").publicUrl(path)
     }

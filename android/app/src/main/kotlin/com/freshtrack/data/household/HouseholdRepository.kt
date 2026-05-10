@@ -62,8 +62,9 @@ class HouseholdRepository @Inject constructor(private val supabase: SupabaseClie
     }
 
     suspend fun uploadAvatar(householdId: String, userId: String, bytes: ByteArray, ext: String): MemberRow {
+        val safeExt = ext.lowercase().takeIf { it in setOf("jpg", "jpeg", "png", "webp") } ?: "jpg"
         val timestamp = Clock.System.now().toEpochMilliseconds()
-        val path = "$householdId/avatar_${userId}_$timestamp.$ext"
+        val path = "$householdId/avatar_${userId}_$timestamp.$safeExt"
         val bucket = supabase.storage.from("product-images")
         bucket.upload(path, bytes)
         val publicUrl = bucket.publicUrl(path)

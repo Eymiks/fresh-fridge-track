@@ -13,9 +13,9 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
-# supabase-kt / ktor
--keep class io.github.jan.** { *; }
--keep class io.ktor.** { *; }
+# supabase-kt / ktor — seules les APIs publiques sont préservées
+-keep,allowobfuscation class io.github.jan.supabase.** { public protected *; }
+-keep,allowobfuscation class io.ktor.** { public protected *; }
 -dontwarn io.ktor.**
 
 # Retrofit / OkHttp (si transitif)

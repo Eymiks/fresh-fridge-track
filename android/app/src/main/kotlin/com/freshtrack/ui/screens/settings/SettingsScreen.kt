@@ -110,6 +110,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+private val ALLOWED_IMAGE_MIME = setOf("image/jpeg", "image/png", "image/webp")
+private const val MAX_IMAGE_BYTES = 5 * 1024 * 1024
+
 private val accentColorMap: Map<AccentColor, Color> = mapOf(
     AccentColor.GREEN to Color(0xFF27AA83),
     AccentColor.BLUE to Color(0xFF2F80ED),
@@ -189,12 +192,19 @@ fun SettingsScreen(
     val avatarLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         val mimeType = context.contentResolver.getType(uri)
+        if (mimeType !in ALLOWED_IMAGE_MIME) {
+            scope.launch { householdVm.reportError("Format non supporté. Utilisez JPEG, PNG ou WebP.") }
+            return@rememberLauncherForActivityResult
+        }
         val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "jpg"
         scope.launch {
             val bytes = withContext(Dispatchers.IO) {
-                context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                context.contentResolver.openInputStream(uri)?.use { stream ->
+                    val b = stream.readBytes()
+                    if (b.size > MAX_IMAGE_BYTES) null else b
+                }
             } ?: run {
-                householdVm.reportError("Impossible de lire l'image sélectionnée.")
+                householdVm.reportError("Image trop volumineuse (max 5 Mo) ou illisible.")
                 return@launch
             }
             householdVm.uploadCurrentUserAvatar(bytes, ext)

@@ -95,6 +95,9 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 
+private val ALLOWED_IMAGE_MIME = setOf("image/jpeg", "image/png", "image/webp")
+private const val MAX_IMAGE_BYTES = 5 * 1024 * 1024
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddProductScreen(
@@ -130,15 +133,24 @@ fun AddProductScreen(
 
         scope.launch {
             val mimeType = context.contentResolver.getType(uri)
+            if (mimeType !in ALLOWED_IMAGE_MIME) {
+                vm.setError("Format non supporté. Utilisez JPEG, PNG ou WebP.")
+                return@launch
+            }
             val ext = MimeTypeMap.getSingleton()
                 .getExtensionFromMimeType(mimeType)
                 ?: "jpg"
             val bytes = withContext(Dispatchers.IO) {
-                context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                context.contentResolver.openInputStream(uri)?.use { stream ->
+                    val b = stream.readBytes()
+                    if (b.size > MAX_IMAGE_BYTES) null else b
+                }
             }
-            if (bytes != null) {
-                vm.uploadImage(bytes, ext)
+            if (bytes == null) {
+                vm.setError("Image trop volumineuse (max 5 Mo).")
+                return@launch
             }
+            vm.uploadImage(bytes, ext)
         }
     }
 
