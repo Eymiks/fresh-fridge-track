@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 Exprime-toi toujours en français
 
@@ -42,7 +42,7 @@ bun run test:watch                   # vitest (watch mode)
 
 `AuthProvider` (`src/contexts/AuthContext.tsx`) is the root of all authenticated state. It listens to `supabase.auth.onAuthStateChange` and resolves the user's `household` + `members` array. Important: `TOKEN_REFRESHED` events fire a new `members` array reference — hooks that depend on `members` must use a `useRef` (see `membersRef` in `useProducts`) to avoid spurious effect re-runs that would tear down and recreate Supabase Realtime channels.
 
-`AppRoutes` in `src/App.tsx` gates rendering: unauthenticated → `<Auth>`, no household → `<HouseholdSetup>`, otherwise the full route tree wrapped in `<AnimatePresence mode="wait">` for page transitions. `<Layout>` renders `<DesktopSidebar>` on non-mobile; mobile uses a bottom nav.
+`AppRoutes` in `src/App.tsx` gates rendering: unauthenticated → `<Auth>`, no household → `<HouseholdSetup>`, otherwise the full route tree wrapped in `<AnimatePresence mode="sync">` for page transitions. `<Layout>` renders `<DesktopSidebar>` on non-mobile; mobile uses a bottom nav.
 
 ### Product data
 
@@ -301,6 +301,33 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - À vérifier sur appareil : exécution WorkManager réelle, notifications en mode invité, et retour depuis les paramètres Android.
 - Vérifications : `./gradlew.bat :app:assembleDebug` OK ; `./gradlew.bat :app:testDebugUnitTest` OK (`NO-SOURCE`).
 
+**2026-05-06 — Étape 21 : fiabilisation notifications locales**
+- `BootReceiver` créé (`notifications/BootReceiver.kt`) : reçoit `BOOT_COMPLETED` et `QUICKBOOT_POWERON`, relance `ExpirationCheckWorker.schedule()` après un redémarrage du téléphone.
+- `AndroidManifest.xml` : déclaration du receiver avec `android:exported="false"`.
+- `ExpirationCheckWorker` : politique `KEEP` → `UPDATE` (relance un worker en état FAILED/CANCELLED) ; ajout d'un `setInitialDelay(1h)` pour éviter un run immédiat au boot.
+- Filtre corrigé : les produits déjà périmés (`daysLeft < 0`) sont toujours notifiés, indépendamment du seuil `notifDays` (avant, un produit périmé depuis plus de `notifDays` jours était silencieusement ignoré).
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
+**2026-05-06 — Étape 22 : polish accueil et icône notification**
+- `ic_notification.xml` : remplacé le flocon de neige par une icône de cloche (Material Design) — l'icône système dans la barre de statut Android est désormais correcte.
+- `IndexScreen` : remplacement de la `SearchBar` Material3 (expansive plein écran) par un `OutlinedTextField` compact dans un `Row`, plus proche du comportement de la PWA. Suppression de la variable `searchActive` devenue inutile. Correction du warning `Icons.Default.Sort` → `Icons.AutoMirrored.Filled.Sort`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
+**2026-05-06 — Étape 23 : polish ProductDetailScreen**
+- `ProductDetailScreen.kt` : `copiedBarcode` se réinitialise à `false` après 2 secondes via `LaunchedEffect(copiedBarcode)` — l'icône "Copier" revient correctement à son état initial après la copie du code-barres.
+- `ProductDetailScreen.kt` : `OpeningDialog` plafonne `days` à 365 — le bouton "+" est désormais bloqué au-delà de 365 jours après ouverture.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
+**2026-05-06 — Étape 24 : corrections et améliorations groupées**
+- `SettingsScreen.kt` : `copiedInvite` se réinitialise à `false` après 2 secondes via `LaunchedEffect(copiedInvite)` — cohérent avec le fix `copiedBarcode` de l'étape 23.
+- `StatsScreen.kt` : `key(tab)` enveloppe la `Column` scrollable — le scroll est maintenant remis à zéro à chaque changement d'onglet (Frigo/Anti-Gaspi/Tendances).
+- `StatsScreen.kt` : `SmallMetric` accepte un paramètre `icon: ImageVector` ; les trois métriques affichent désormais des icônes sémantiques (⭐ Série, TrendingUp Utilisation, Schedule Conso moy.).
+- `StatsScreen.kt` : Légende colorée ajoutée sous le chart barres groupées dans l'onglet Tendances (Ajoutés / Consommés / Jetés).
+- `HistoryViewModel.kt` : `restoreProduct()` expose maintenant les erreurs via `error: StateFlow<String?>` + `clearError()`.
+- `HistoryScreen.kt` : `SnackbarHost` ajouté dans un `Box` racine — affiche le message d'erreur si la restauration d'un produit échoue.
+- Correction dépréciation : `Icons.Default.TrendingUp` → `Icons.AutoMirrored.Filled.TrendingUp` dans StatsScreen.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK, aucun warning.
+
 **2026-05-07 — Mission alignement visuel Android / PWA**
 - Thème Android rapproché de la PWA : fond vert très pâle, surfaces carte, bordures, couleurs statut, arrondis et graisses typographiques Compose.
 - `AuthScreen`, `IndexScreen`, `AddProductScreen` et `AppNavigation` polis visuellement sans changement de logique métier : Auth vertical, header accueil, stat-cards, cartes produit avec badges courts, sections formulaire et barre de navigation.
@@ -509,6 +536,36 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - Vérification : `./gradlew.bat :app:assembleDebug` OK ; `./gradlew.bat :app:installDebug` impossible dans Codex car aucun appareil connecté.
 - Commit créé : `android: reproduire les paramètres PWA`.
 
+**2026-05-10 — Amélioration scanners : tap-to-focus**
+- `BarcodeScannerScreen.kt` et `DateScannerScreen.kt` : remplacement de `SurfaceOrientedMeteringPointFactory` par `previewView.meteringPointFactory` (orientation-aware).
+- Ajout `FocusMeteringAction.FLAG_AE` en plus de `FLAG_AF` — l'exposition s'ajuste aussi au point tapé.
+- Intervalle boucle auto réduit de 2 500 ms à 2 000 ms.
+- Tap-to-focus : `Modifier.pointerInput` sur le `Box` parent détecte le toucher, annule la boucle auto, déclenche le focus au point précis, affiche un anneau blanc 60dp pendant 700 ms, puis relance la boucle auto après 3 s.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK ; APK installé sur moto g54 5G.
+
+**2026-05-10 — Snackbar d'annulation après swipe produit**
+- `IndexViewModel` : ajout de `SwipeUiEvent.ShowUndo` (sealed class) et `Channel<SwipeUiEvent>` pour les événements one-shot. `quickSetStatus` capture le `previousStatus` avant l'action et émet un event `ShowUndo`. Nouvelle fonction `undoSwipe(product, previousStatus)` pour inverser.
+- `IndexScreen` : `SnackbarHostState` + `LaunchedEffect` qui consomme les events du channel ; affiche "Marqué comme consommé / Jeté · Annuler" via `snackbarHostState.showSnackbar` ; si `ActionPerformed` → appelle `vm.undoSwipe`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK ; APK installé sur moto g54 5G.
+
+**2026-05-10 — Option position hamburger menu (gauche/droite)**
+- `AppPreferences` : clé `frigo-hamburger-side` (DataStore), flow et setter exposés.
+- `AppearanceState` : enum `HamburgerSide { LEFT, RIGHT }` avec `fromKey()` ; champ `hamburgerSide` dans `AppearanceState`.
+- `AppearanceViewModel` : combine nested pour inclure `prefs.hamburgerSide` + `setHamburgerSide()`.
+- `HamburgerMenuDrawer` : paramètre `alignLeft: Boolean` — aligne le panneau à gauche ou droite, arrondit les coins du bon côté.
+- `AppNavigation` : lit `appearance.hamburgerSide`, passe `alignLeft` au drawer et inverse `slideInHorizontally` / `slideOutHorizontally`.
+- `SettingsScreen` : section Apparence → `SegmentedRow` "Gauche / Droite" avec import `HamburgerSide`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK ; APK installé sur moto g54 5G.
+
+**2026-05-10 — Audit et corrections sécurité**
+- `AndroidManifest.xml` : `allowBackup="false"` + `fullBackupContent="false"` — empêche l'extraction des sessions Supabase via Google Backup ou ADB. **Ne pas réactiver.**
+- `res/xml/network_security_config.xml` : créé, `cleartextTrafficPermitted="false"` — tout trafic HTTP cleartext est interdit en production.
+- `supabase/functions/ocr-date/index.ts` : vérification du header `Authorization: Bearer …` avant traitement — protège le quota Gemini contre les appels non authentifiés.
+- Upload images (3 points d'entrée) : whitelist MIME `{image/jpeg, image/png, image/webp}` + plafond 5 Mo avant `readBytes()` dans `AddProductScreen`, `SettingsScreen`, `HouseholdSettingsScreen` ; extension sanitisée (`safeExt` whitelist) dans `ProductRepository.uploadImage()` et `HouseholdRepository.uploadAvatar()`.
+- `AuthViewModel` : `MIN_PASSWORD_LENGTH` porté à 8. **Ne pas réduire.**
+- `proguard-rules.pro` : `-keep` Supabase/Ktor réduit aux APIs publiques avec `allowobfuscation`.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
@@ -609,37 +666,3 @@ Ces décisions ont été prises lors d'un audit sécurité (2026-05-10) et ne do
 | `-keep allowobfuscation` Supabase/Ktor | `proguard-rules.pro` | Réduit la surface d'inspection par reverse engineering |
 
 **Hors-scope accepté** : SQLCipher (breaking change Room), DataStore chiffré (breaking change), certificate pinning (rotation de cert Supabase non maîtrisée), DELETE policy `households` (Supabase migrations), rate limiting code invitation.
-
----
-
-## Journal de développement Android (améliorations UX 2026-05-10)
-
-**2026-05-10 — Amélioration scanners : tap-to-focus**
-- `BarcodeScannerScreen.kt` et `DateScannerScreen.kt` : remplacement de `SurfaceOrientedMeteringPointFactory` par `previewView.meteringPointFactory` (orientation-aware).
-- Ajout `FocusMeteringAction.FLAG_AE` en plus de `FLAG_AF` — l'exposition s'ajuste aussi au point tapé.
-- Intervalle boucle auto réduit de 2 500 ms à 2 000 ms.
-- Tap-to-focus : `Modifier.pointerInput` sur le `Box` parent détecte le toucher, annule la boucle auto, déclenche le focus au point précis, affiche un anneau blanc 60dp pendant 700 ms, puis relance la boucle auto après 3 s.
-- Vérification : `./gradlew.bat :app:assembleDebug` OK ; APK installé sur moto g54 5G.
-
-**2026-05-10 — Snackbar d'annulation après swipe produit**
-- `IndexViewModel` : ajout de `SwipeUiEvent.ShowUndo` (sealed class) et `Channel<SwipeUiEvent>` pour les événements one-shot. `quickSetStatus` capture le `previousStatus` avant l'action et émet un event `ShowUndo`. Nouvelle fonction `undoSwipe(product, previousStatus)` pour inverser.
-- `IndexScreen` : `SnackbarHostState` + `LaunchedEffect` qui consomme les events du channel ; affiche "Marqué comme consommé / Jeté · Annuler" via `snackbarHostState.showSnackbar` ; si `ActionPerformed` → appelle `vm.undoSwipe`.
-- Vérification : `./gradlew.bat :app:assembleDebug` OK ; APK installé sur moto g54 5G.
-
-**2026-05-10 — Option position hamburger menu (gauche/droite)**
-- `AppPreferences` : clé `frigo-hamburger-side` (DataStore), flow et setter exposés.
-- `AppearanceState` : enum `HamburgerSide { LEFT, RIGHT }` avec `fromKey()` ; champ `hamburgerSide` dans `AppearanceState`.
-- `AppearanceViewModel` : combine nested pour inclure `prefs.hamburgerSide` + `setHamburgerSide()`.
-- `HamburgerMenuDrawer` : paramètre `alignLeft: Boolean` — aligne le panneau à gauche ou droite, arrondit les coins du bon côté.
-- `AppNavigation` : lit `appearance.hamburgerSide`, passe `alignLeft` au drawer et inverse `slideInHorizontally` / `slideOutHorizontally`.
-- `SettingsScreen` : section Apparence → `SegmentedRow` "Gauche / Droite" avec import `HamburgerSide`.
-- Vérification : `./gradlew.bat :app:assembleDebug` OK ; APK installé sur moto g54 5G.
-
-**2026-05-10 — Audit et corrections sécurité**
-- `AndroidManifest.xml` : `allowBackup="false"` + `fullBackupContent="false"` — empêche l'extraction des sessions Supabase via Google Backup ou ADB. **Ne pas réactiver.**
-- `res/xml/network_security_config.xml` : créé, `cleartextTrafficPermitted="false"` — tout trafic HTTP cleartext est interdit en production.
-- `supabase/functions/ocr-date/index.ts` : vérification du header `Authorization: Bearer …` avant traitement — protège le quota Gemini contre les appels non authentifiés.
-- Upload images (3 points d'entrée) : whitelist MIME `{image/jpeg, image/png, image/webp}` + plafond 5 Mo avant `readBytes()` dans `AddProductScreen`, `SettingsScreen`, `HouseholdSettingsScreen` ; extension sanitisée (`safeExt` whitelist) dans `ProductRepository.uploadImage()` et `HouseholdRepository.uploadAvatar()`.
-- `AuthViewModel` : `MIN_PASSWORD_LENGTH` porté à 8. **Ne pas réduire.**
-- `proguard-rules.pro` : `-keep` Supabase/Ktor réduit aux APIs publiques avec `allowobfuscation`.
-- Vérification : `./gradlew.bat :app:assembleDebug` OK.

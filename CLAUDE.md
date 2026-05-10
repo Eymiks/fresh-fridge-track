@@ -42,7 +42,7 @@ bun run test:watch                   # vitest (watch mode)
 
 `AuthProvider` (`src/contexts/AuthContext.tsx`) is the root of all authenticated state. It listens to `supabase.auth.onAuthStateChange` and resolves the user's `household` + `members` array. Important: `TOKEN_REFRESHED` events fire a new `members` array reference — hooks that depend on `members` must use a `useRef` (see `membersRef` in `useProducts`) to avoid spurious effect re-runs that would tear down and recreate Supabase Realtime channels.
 
-`AppRoutes` in `src/App.tsx` gates rendering: unauthenticated → `<Auth>`, no household → `<HouseholdSetup>`, otherwise the full route tree wrapped in `<AnimatePresence mode="wait">` for page transitions. `<Layout>` renders `<DesktopSidebar>` on non-mobile; mobile uses a bottom nav.
+`AppRoutes` in `src/App.tsx` gates rendering: unauthenticated → `<Auth>`, no household → `<HouseholdSetup>`, otherwise the full route tree wrapped in `<AnimatePresence mode="sync">` for page transitions. `<Layout>` renders `<DesktopSidebar>` on non-mobile; mobile uses a bottom nav.
 
 ### Product data
 
@@ -159,7 +159,7 @@ L'application Android native (`android/`) vise la parité complète avec la PWA.
 | 3 | Stats visuelles : jauge semicircle (Canvas Compose), barre de vie produits urgents, medals 🥇🥈🥉 | `StatsScreen.kt` | ✅ |
 | 4 | ProductDetail : sticky header au scroll, grille 3 boutons côte à côte, auto-save notes | `ProductDetailScreen.kt` | ✅ |
 | 5 | History : 3 sections colorées (Ouverts/Consommés/Jetés). Notifications : carte "permission refusée" + lien paramètres Android | `HistoryScreen.kt`, `NotificationsScreen.kt` | ✅ |
-| 6 | Sélection image OFF (5 choix), bannière hors ligne, retry OCR avec backoff | `AddProductScreen.kt`, `AddProductViewModel.kt`, `SettingsScreen.kt`, `OfflineBanner.kt`, `DateScannerViewModel.kt` | ✅ |
+| 6 | Sélection image OFF (5 choix), email dans profil, bannière hors ligne, retry OCR avec backoff | `AddProductScreen.kt`, `AddProductViewModel.kt`, `SettingsScreen.kt`, `OfflineBanner.kt`, `DateScannerViewModel.kt` | ✅ |
 
 ### Installation Android sur device
 
