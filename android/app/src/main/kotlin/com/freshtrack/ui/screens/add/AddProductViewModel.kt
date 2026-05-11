@@ -7,6 +7,7 @@ import com.freshtrack.data.auth.AuthRepository
 import com.freshtrack.data.auth.AuthState
 import com.freshtrack.data.openfoodfacts.OffApi
 import com.freshtrack.data.openfoodfacts.OffResult
+import com.freshtrack.data.openfoodfacts.normalizeOpenFoodFactsImageUrl
 import com.freshtrack.data.products.ProductRepository
 import com.freshtrack.domain.catalog.matchCategory
 import com.freshtrack.domain.catalog.matchSubcategory
@@ -150,7 +151,7 @@ class AddProductViewModel @Inject constructor(
                     brand = product.brand ?: it.brand,
                     category = if (it.category.isBlank()) product.category.orEmpty() else it.category,
                     subcategory = if (it.subcategory.isBlank()) product.subcategory.orEmpty() else it.subcategory,
-                    imageUrl = fallbackImage ?: it.imageUrl,
+                    imageUrl = fallbackImage?.let(::normalizeOpenFoodFactsImageUrl) ?: it.imageUrl,
                     quantity = product.quantity ?: it.quantity,
                     nutriScore = product.nutriScore ?: it.nutriScore,
                     novaGroup = product.novaGroup?.toString() ?: it.novaGroup,
@@ -167,7 +168,9 @@ class AddProductViewModel @Inject constructor(
         }
     }
 
-    fun selectOffImage(url: String) = _ui.update { it.copy(imageUrl = url, showImageDialog = false) }
+    fun selectOffImage(url: String) = _ui.update {
+        it.copy(imageUrl = normalizeOpenFoodFactsImageUrl(url), showImageDialog = false)
+    }
     fun dismissImageDialog() = _ui.update { it.copy(showImageDialog = false) }
 
     fun setExpirationDate(date: String) = _ui.update { it.copy(expirationDate = normalizeDateInput(date)) }
@@ -179,7 +182,7 @@ class AddProductViewModel @Inject constructor(
     fun setSubcategory(v: String) = _ui.update { it.copy(subcategory = v) }
     fun setQuantity(v: String) = _ui.update { it.copy(quantity = v) }
     fun setBarcode(v: String) = _ui.update { it.copy(barcode = v) }
-    fun setImageUrl(v: String) = _ui.update { it.copy(imageUrl = v) }
+    fun setImageUrl(v: String) = _ui.update { it.copy(imageUrl = normalizeOpenFoodFactsImageUrl(v)) }
     fun setNotes(v: String) = _ui.update { it.copy(notes = v) }
     fun setFrozenUntil(v: String) = _ui.update { it.copy(frozenUntil = normalizeDateInput(v)) }
     fun setOpened(v: Boolean) = _ui.update { it.copy(isOpened = v) }
@@ -253,7 +256,7 @@ class AddProductViewModel @Inject constructor(
             category = finalCategory,
             subcategory = finalSubcategory,
             quantity = state.quantity.takeIf { it.isNotBlank() },
-            imageUrl = state.imageUrl.takeIf { it.isNotBlank() },
+            imageUrl = state.imageUrl.takeIf { it.isNotBlank() }?.let(::normalizeOpenFoodFactsImageUrl),
             nutriScore = state.nutriScore.takeIf { it.isNotBlank() },
             novaGroup = state.novaGroup.toIntOrNull(),
             ecoScore = state.ecoScore.takeIf { it.isNotBlank() },

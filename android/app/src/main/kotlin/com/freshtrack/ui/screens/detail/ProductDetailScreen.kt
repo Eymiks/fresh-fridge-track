@@ -76,6 +76,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -89,9 +90,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.compose.ui.platform.LocalContext
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
+import com.freshtrack.data.openfoodfacts.OpenFoodFactsImageSize
 import com.freshtrack.domain.catalog.PRODUCT_CATEGORIES
 import com.freshtrack.domain.catalog.getFreezeDuration
 import com.freshtrack.domain.catalog.getPostExpiryNote
@@ -105,6 +104,7 @@ import com.freshtrack.domain.model.getDaysUntilExpiration
 import com.freshtrack.domain.model.getEffectiveExpirationDate
 import com.freshtrack.domain.model.getExpirationStatus
 import com.freshtrack.ui.navigation.Routes
+import com.freshtrack.ui.components.FreshProductImage
 import com.freshtrack.ui.theme.ColorExpired
 import com.freshtrack.ui.theme.ColorFresh
 import com.freshtrack.ui.theme.ColorSoon
@@ -347,16 +347,13 @@ fun ProductDetailScreen(
 
 @Composable
 private fun ProductHeroBackdrop(product: Product, statusColor: Color) {
-    val context = LocalContext.current
-    val imageRequest: ImageRequest? = remember(product.imageUrl) {
-        product.imageUrl?.let { url -> ImageRequest.Builder(context).data(url).build() }
-    }
     Box(Modifier.fillMaxWidth().height(260.dp)) {
-        if (imageRequest != null) {
-            AsyncImage(
-                model = imageRequest,
+        if (!product.imageUrl.isNullOrBlank()) {
+            FreshProductImage(
+                imageUrl = product.imageUrl,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize().blur(18.dp),
+                shape = RectangleShape,
                 contentScale = ContentScale.Crop
             )
             Box(
@@ -506,10 +503,6 @@ private fun ProductSummaryCard(
 
 @Composable
 private fun ProductThumbnail(product: Product, modifier: Modifier, onClick: () -> Unit) {
-    val context = LocalContext.current
-    val imageRequest: ImageRequest? = remember(product.imageUrl) {
-        product.imageUrl?.let { url -> ImageRequest.Builder(context).data(url).build() }
-    }
     Box(
         modifier
             .clip(RoundedCornerShape(22.dp))
@@ -517,16 +510,13 @@ private fun ProductThumbnail(product: Product, modifier: Modifier, onClick: () -
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        if (imageRequest != null) {
-            AsyncImage(
-                model = imageRequest,
-                contentDescription = product.name,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            Icon(Icons.Default.Restaurant, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-        }
+        FreshProductImage(
+            imageUrl = product.imageUrl,
+            contentDescription = product.name,
+            modifier = Modifier.fillMaxSize(),
+            shape = RoundedCornerShape(22.dp),
+            contentScale = ContentScale.Crop
+        )
     }
 }
 
@@ -1271,10 +1261,13 @@ private fun EmptyState(message: String) {
 private fun FullscreenImageDialog(imageUrl: String, productName: String, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
-            AsyncImage(
-                model = imageUrl,
+            FreshProductImage(
+                imageUrl = imageUrl,
                 contentDescription = productName,
                 modifier = Modifier.fillMaxWidth(),
+                imageSize = OpenFoodFactsImageSize.FULL,
+                shape = RectangleShape,
+                tint = Color.White,
                 contentScale = ContentScale.Fit
             )
             IconButton(

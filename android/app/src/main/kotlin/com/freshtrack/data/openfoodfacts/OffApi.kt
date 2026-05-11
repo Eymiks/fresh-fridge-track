@@ -43,14 +43,7 @@ class OffApi @Inject constructor(private val httpClient: HttpClient) {
 
         val name = str("product_name_fr") ?: str("product_name") ?: str("product_name_en") ?: return null
         val brand = str("brands")
-        val availableImages = listOfNotNull(
-            str("image_front_url"),
-            str("image_url"),
-            str("image_ingredients_url"),
-            str("image_nutrition_url"),
-            str("image_packaging_url"),
-            str("image_small_url")
-        ).distinct().take(5)
+        val availableImages = openFoodFactsImageCandidates(p)
         val imageUrl: String? = null  // sera choisi par l'utilisateur via le dialog
         val nutriScore = str("nutriscore_grade") ?: str("nutrition_grade_fr")
         val novaGroup = str("nova_group")?.toIntOrNull()

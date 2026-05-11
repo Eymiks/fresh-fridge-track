@@ -79,13 +79,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
 import com.freshtrack.domain.catalog.PRODUCT_CATEGORIES
 import com.freshtrack.domain.catalog.matchCategory
 import com.freshtrack.domain.format.formatDate
 import com.freshtrack.domain.format.parseUserDate
 import com.freshtrack.ui.navigation.Routes
+import com.freshtrack.ui.components.FreshProductImage
 import com.freshtrack.ui.theme.FreshTextStyles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -439,17 +438,14 @@ fun AddProductScreen(
 
             CompactFormSection(title = "Image") {
                 if (ui.imageUrl.isNotBlank()) {
-                    val previewRequest = remember(ui.imageUrl, context) {
-                        ImageRequest.Builder(context).data(ui.imageUrl).build()
-                    }
-                    AsyncImage(
-                        model = previewRequest,
+                    FreshProductImage(
+                        imageUrl = ui.imageUrl,
                         contentDescription = null,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(140.dp)
-                            .clip(MaterialTheme.shapes.large),
-                        contentScale = ContentScale.Crop
+                            .height(140.dp),
+                        shape = MaterialTheme.shapes.large,
+                        contentScale = ContentScale.Fit
                     )
                 } else {
                     Box(
@@ -877,17 +873,13 @@ private fun OffImageSelectionDialog(
                     modifier = Modifier.heightIn(max = 320.dp)
                 ) {
                     items(images, key = { it }, contentType = { "off_image" }) { url ->
-                        val context = LocalContext.current
-                        val request: ImageRequest = remember(url) {
-                            ImageRequest.Builder(context).data(url).build()
-                        }
-                        AsyncImage(
-                            model = request,
+                        FreshProductImage(
+                            imageUrl = url,
                             contentDescription = null,
                             modifier = Modifier
                                 .aspectRatio(1f)
-                                .clip(RoundedCornerShape(12.dp))
                                 .clickable { onSelect(url) },
+                            shape = RoundedCornerShape(12.dp),
                             contentScale = ContentScale.Crop
                         )
                     }

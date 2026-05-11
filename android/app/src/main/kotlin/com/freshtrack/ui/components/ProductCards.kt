@@ -59,12 +59,8 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
 import com.freshtrack.domain.format.formatInstantDate
 import com.freshtrack.domain.model.ExpirationStatus
 import com.freshtrack.domain.model.Product
@@ -118,8 +114,6 @@ fun ProductCard(
             else -> "${daysLeft}j"
         }
     }
-    val imageRequest = rememberProductImageRequest(product.imageUrl)
-
     val verticalPadding = when (LocalAppearance.current.density) {
         Density.COMPACT -> 2.dp
         Density.NORMAL -> 5.dp
@@ -172,7 +166,7 @@ fun ProductCard(
                     Spacer(Modifier.width(4.dp))
                 }
 
-                ProductImage(product = product, imageRequest = imageRequest, tint = MaterialTheme.colorScheme.primary)
+                ProductImage(product = product, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(10.dp))
 
                 ProductMainText(product = product, showOpenedPill = true)
@@ -243,8 +237,6 @@ fun ArchivedProductCard(
     modifier: Modifier = Modifier
 ) {
     val status = product.status.archiveMeta()
-    val imageRequest = rememberProductImageRequest(product.imageUrl)
-
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -262,7 +254,7 @@ fun ArchivedProductCard(
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            ProductImage(product = product, imageRequest = imageRequest, tint = status.color)
+            ProductImage(product = product, tint = status.color)
             Spacer(Modifier.width(10.dp))
             ProductMainText(product = product, showOpenedPill = false, subtitleOverride = statusDate(product))
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -318,26 +310,15 @@ private fun SwipeBackground(direction: SwipeToDismissBoxValue) {
 }
 
 @Composable
-private fun ProductImage(product: Product, imageRequest: ImageRequest?, tint: Color) {
+private fun ProductImage(product: Product, tint: Color) {
     Box(contentAlignment = Alignment.TopEnd) {
-        if (imageRequest != null) {
-            AsyncImage(
-                model = imageRequest,
-                contentDescription = product.name,
-                modifier = Modifier.size(44.dp).clip(MaterialTheme.shapes.small),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            Box(
-                Modifier
-                    .size(44.dp)
-                    .clip(MaterialTheme.shapes.small)
-                    .background(tint.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.AcUnit, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
-            }
-        }
+        FreshProductImage(
+            imageUrl = product.imageUrl,
+            contentDescription = product.name,
+            modifier = Modifier.size(44.dp),
+            tint = tint,
+            fallbackIcon = Icons.Default.AcUnit
+        )
         if (product.frozenUntil != null) {
             Box(
                 Modifier
@@ -433,18 +414,6 @@ private fun NutriScoreBadge(score: String) {
         contentAlignment = Alignment.Center
     ) {
         Text(score.uppercase(), color = fg, style = FreshTextStyles.ProductBadge)
-    }
-}
-
-@Composable
-private fun rememberProductImageRequest(imageUrl: String?): ImageRequest? {
-    val context = LocalContext.current
-    return remember(imageUrl) {
-        imageUrl?.let { url ->
-            ImageRequest.Builder(context)
-                .data(url)
-                .build()
-        }
     }
 }
 

@@ -657,6 +657,7 @@ Bannière jaune en haut de l'Index (ou MainScreen) : "Hors ligne — les donnée
 ### Barcode / date scanning
 
 - Lookup OpenFoodFacts après scan barcode : récupère jusqu'à 5 images (principale, recto, nutrition, ingrédients, packaging). Afficher un dialog de sélection avec previews — ne pas auto-sélectionner la première.
+- Images OpenFoodFacts Android : privilégier `selected_images` et les URLs non-miniatures, normaliser l'affichage vers `400` quand disponible, réserver `full` au plein écran, et ne pas persister/afficher de miniature `_small` ou `_thumb` si une meilleure version existe.
 - OCR date : d'abord ML Kit local (`TextRecognition`), puis Edge Function Gemini 2.5 Flash si pas de résultat (cooldown 30s). Ajouter retry avec backoff exponentiel (2 tentatives, délai 2s) sur l'Edge Function.
 
 ### Sécurité Android — règles permanentes
