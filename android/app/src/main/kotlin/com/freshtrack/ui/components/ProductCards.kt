@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AcUnit
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -30,6 +31,8 @@ import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,6 +43,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -72,6 +77,11 @@ import com.freshtrack.ui.theme.ColorSoon
 import com.freshtrack.ui.theme.Density
 import com.freshtrack.ui.theme.FreshTextStyles
 import com.freshtrack.ui.theme.LocalAppearance
+import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.toLocalDateTime
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -83,7 +93,8 @@ fun ProductCard(
     onLongClick: () -> Unit,
     onEdit: (() -> Unit)? = null,
     onConsume: (() -> Unit)? = null,
-    onThrow: (() -> Unit)? = null
+    onThrow: (() -> Unit)? = null,
+    onUpdateDate: (() -> Unit)? = null
 ) {
     val status = remember(
         product.status,
@@ -186,6 +197,13 @@ fun ProductCard(
                                 expanded = showMenu,
                                 onDismissRequest = { showMenu = false }
                             ) {
+                                if (onUpdateDate != null) {
+                                    DropdownMenuItem(
+                                        text = { Text("Modifier la date") },
+                                        onClick = { showMenu = false; onUpdateDate() },
+                                        leadingIcon = { Icon(Icons.Default.CalendarMonth, null, modifier = Modifier.size(18.dp)) }
+                                    )
+                                }
                                 if (onEdit != null) {
                                     DropdownMenuItem(
                                         text = { Text("Modifier") },
@@ -456,6 +474,40 @@ private fun ProductStatus.archiveMeta(): ArchiveMeta = when (this) {
     ProductStatus.CONSUMED -> ArchiveMeta("Consommé", ColorFresh, Icons.Default.Restaurant)
     ProductStatus.THROWN -> ArchiveMeta("Jeté", MaterialTheme.colorScheme.error, Icons.Default.Delete)
     ProductStatus.ACTIVE -> ArchiveMeta("Actif", MaterialTheme.colorScheme.onSurfaceVariant, Icons.Default.Check)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun UpdateExpirationDateDialog(
+    initialDate: LocalDate,
+    onConfirm: (LocalDate) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val initialMillis = remember(initialDate) {
+        initialDate.atStartOfDayIn(TimeZone.UTC).toEpochMilliseconds()
+    }
+    val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    pickerState.selectedDateMillis?.let { millis ->
+                        val newDate = Instant.fromEpochMilliseconds(millis)
+                            .toLocalDateTime(TimeZone.UTC).date
+                        onConfirm(newDate)
+                    }
+                    onDismiss()
+                }
+            ) { Text("OK") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Annuler") }
+        }
+    ) {
+        DatePicker(state = pickerState)
+    }
 }
 
 private fun statusDate(product: Product): String {

@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
 import javax.inject.Inject
 
 @Immutable
@@ -35,7 +36,7 @@ data class NotificationSettings(
 class NotificationsViewModel @Inject constructor(
     private val prefs: AppPreferences,
     authRepository: AuthRepository,
-    productRepository: ProductRepository
+    private val productRepository: ProductRepository
 ) : ViewModel() {
 
     private val authState = authRepository.authState
@@ -83,5 +84,19 @@ class NotificationsViewModel @Inject constructor(
     fun setDays(days: Int) = viewModelScope.launch { prefs.setNotifDays(days) }
     fun markPermissionRequested() = viewModelScope.launch {
         prefs.setNotifPermissionRequested(true)
+    }
+
+    fun updateProductDate(productId: String, newDate: LocalDate) = viewModelScope.launch {
+        val product = products.value.find { it.id == productId } ?: return@launch
+        if (product.expirationDate == newDate) return@launch
+        val updated = product.copy(expirationDate = newDate)
+        when (val state = authState.value) {
+            is AuthState.Authenticated -> {
+                val hId = state.household?.id ?: return@launch
+                runCatching { productRepository.updateProduct(updated, hId) }
+            }
+            is AuthState.Guest -> runCatching { productRepository.updateGuestProduct(updated) }
+            else -> {}
+        }
     }
 }

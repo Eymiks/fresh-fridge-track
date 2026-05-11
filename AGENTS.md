@@ -566,6 +566,12 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - `proguard-rules.pro` : `-keep` Supabase/Ktor réduit aux APIs publiques avec `allowobfuscation`.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-11 — Parité PWA : « Modifier la date » inline depuis ProductCard**
+- `ProductCards.kt` : ajout du paramètre `onUpdateDate` sur `ProductCard` + nouvelle entrée « Modifier la date » dans le menu kebab, en tête de menu. Composable réutilisable `UpdateExpirationDateDialog` basé sur `DatePickerDialog` Material3 (TimeZone UTC pour la conversion millis ↔ `LocalDate`).
+- `IndexViewModel.updateProductDate()` et `NotificationsViewModel.updateProductDate()` : copie du produit avec la nouvelle `expirationDate`, route vers `productRepository.updateProduct()` ou `updateGuestProduct()` selon le mode auth.
+- `IndexScreen` et `NotificationsScreen` : état `pendingDateProduct` + rendu conditionnel du dialog. Aucun nouveau ViewModel, aucune nouvelle route.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

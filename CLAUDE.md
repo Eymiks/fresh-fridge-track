@@ -566,6 +566,14 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - `proguard-rules.pro` : `-keep` Supabase/Ktor réduit aux APIs publiques avec `allowobfuscation`.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK.
 
+**2026-05-11 — Parité PWA : « Modifier la date » inline depuis ProductCard**
+- Écart PWA / Android comblé : sur la PWA, le menu kebab de `ProductCard` (`src/components/ProductCard.tsx:279, 319`) propose « Modifier la date » avec un DatePicker rapide. Côté Android, seules `Modifier` / `Marquer consommé` / `Jeter` étaient exposées.
+- `ProductCards.kt` : nouveau paramètre `onUpdateDate: (() -> Unit)? = null` sur `ProductCard` + entrée `DropdownMenuItem("Modifier la date")` avec icône `Icons.Default.CalendarMonth`. Ajout d'un composable réutilisable `UpdateExpirationDateDialog(initialDate, onConfirm, onDismiss)` basé sur `DatePickerDialog` Material3 (millis encodés en `TimeZone.UTC` pour rester aligné avec le `DatePicker` Material3).
+- `IndexViewModel.updateProductDate(productId, newDate)` : copie le produit avec la nouvelle `expirationDate`, route vers `productRepository.updateProduct()` (foyer authentifié) ou `updateGuestProduct()` (mode invité), avec garde anti no-op.
+- `NotificationsViewModel.updateProductDate(productId, newDate)` : même logique. `productRepository` passe en `private val` pour permettre l'accès.
+- `IndexScreen` et `NotificationsScreen` : état `pendingDateProduct: Product?` mémorisé ; les `ProductCard` reçoivent un callback qui le positionne ; le composable de page rend `UpdateExpirationDateDialog` quand l'état n'est pas nul.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK. À vérifier sur appareil : sélecteur de date propre (clair/sombre), date persistée après reload, et propagation Realtime entre deux instances connectées au même foyer.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

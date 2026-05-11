@@ -91,6 +91,7 @@ import com.freshtrack.domain.model.ProductStatus
 import com.freshtrack.domain.model.isActive
 import com.freshtrack.ui.components.ProductCard
 import com.freshtrack.ui.components.ProductSectionHeader
+import com.freshtrack.ui.components.UpdateExpirationDateDialog
 import com.freshtrack.ui.theme.ColorExpired
 import com.freshtrack.ui.theme.ColorFresh
 import com.freshtrack.ui.theme.ColorSoon
@@ -144,6 +145,8 @@ fun IndexScreen(
     var expiredCollapsed by rememberSaveable { mutableStateOf(false) }
     var soonCollapsed by rememberSaveable { mutableStateOf(false) }
     var freshCollapsed by rememberSaveable { mutableStateOf(false) }
+
+    var pendingDateProduct by remember { mutableStateOf<Product?>(null) }
 
     val headerBg = when {
         totalCounts.expired > 0 -> ColorExpired.copy(alpha = 0.055f)
@@ -477,6 +480,7 @@ fun IndexScreen(
                                     val throwClick = remember(productId) {
                                         { vm.quickSetStatus(productId, ProductStatus.THROWN); Unit }
                                     }
+                                    val updateDateClick = remember(product) { { pendingDateProduct = product } }
                                     ProductCard(
                                         product = product,
                                         isSelected = productId in ui.selectedIds,
@@ -485,7 +489,8 @@ fun IndexScreen(
                                         onLongClick = longClick,
                                         onEdit = editClick,
                                         onConsume = consumeClick,
-                                        onThrow = throwClick
+                                        onThrow = throwClick,
+                                        onUpdateDate = updateDateClick
                                     )
                                 }
                             }
@@ -519,6 +524,7 @@ fun IndexScreen(
                                     val throwClick = remember(productId) {
                                         { vm.quickSetStatus(productId, ProductStatus.THROWN); Unit }
                                     }
+                                    val updateDateClick = remember(product) { { pendingDateProduct = product } }
                                     ProductCard(
                                         product = product,
                                         isSelected = productId in ui.selectedIds,
@@ -527,7 +533,8 @@ fun IndexScreen(
                                         onLongClick = longClick,
                                         onEdit = editClick,
                                         onConsume = consumeClick,
-                                        onThrow = throwClick
+                                        onThrow = throwClick,
+                                        onUpdateDate = updateDateClick
                                     )
                                 }
                             }
@@ -561,6 +568,7 @@ fun IndexScreen(
                                     val throwClick = remember(productId) {
                                         { vm.quickSetStatus(productId, ProductStatus.THROWN); Unit }
                                     }
+                                    val updateDateClick = remember(product) { { pendingDateProduct = product } }
                                     ProductCard(
                                         product = product,
                                         isSelected = productId in ui.selectedIds,
@@ -569,7 +577,8 @@ fun IndexScreen(
                                         onLongClick = longClick,
                                         onEdit = editClick,
                                         onConsume = consumeClick,
-                                        onThrow = throwClick
+                                        onThrow = throwClick,
+                                        onUpdateDate = updateDateClick
                                     )
                                 }
                             }
@@ -609,6 +618,14 @@ fun IndexScreen(
                 }
             }
         }
+    }
+
+    pendingDateProduct?.let { target ->
+        UpdateExpirationDateDialog(
+            initialDate = target.expirationDate,
+            onConfirm = { newDate -> vm.updateProductDate(target.id, newDate) },
+            onDismiss = { pendingDateProduct = null }
+        )
     }
 }
 

@@ -15,6 +15,7 @@ import com.freshtrack.domain.model.isActive
 import com.freshtrack.domain.usecase.ExpirationUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.datetime.LocalDate
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -224,6 +225,20 @@ class IndexViewModel @Inject constructor(
         _ui.update { it.copy(isLoading = true) }
         runCatching { productRepository.fetchAndCache(hId) }
         _ui.update { it.copy(isLoading = false) }
+    }
+
+    fun updateProductDate(productId: String, newDate: LocalDate) = viewModelScope.launch {
+        val product = products.value.find { it.id == productId } ?: return@launch
+        if (product.expirationDate == newDate) return@launch
+        val updated = product.copy(expirationDate = newDate)
+        when (val state = authState.value) {
+            is AuthState.Authenticated -> {
+                val hId = state.household?.id ?: return@launch
+                runCatching { productRepository.updateProduct(updated, hId) }
+            }
+            is AuthState.Guest -> runCatching { productRepository.updateGuestProduct(updated) }
+            else -> {}
+        }
     }
 
     private fun baseFiltered(prods: List<Product>, uiState: IndexUiState): List<Product> {

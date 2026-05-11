@@ -56,8 +56,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.core.content.ContextCompat
+import com.freshtrack.domain.model.Product
 import com.freshtrack.ui.components.ProductCard
 import com.freshtrack.ui.components.ProductSectionHeader
+import com.freshtrack.ui.components.UpdateExpirationDateDialog
 
 @Composable
 fun NotificationsScreen(
@@ -70,6 +72,7 @@ fun NotificationsScreen(
     val soonProducts by vm.soonProducts.collectAsState()
     var filter by remember { mutableStateOf(AlertFilter.ALL) }
     var settingsOpen by remember { mutableStateOf(false) }
+    var pendingDateProduct by remember { mutableStateOf<Product?>(null) }
     val alertCount = expiredProducts.size + soonProducts.size
     val filteredCount = when (filter) {
         AlertFilter.ALL -> alertCount
@@ -280,12 +283,14 @@ fun NotificationsScreen(
                     items(expiredProducts, key = { it.id }, contentType = { "alert_product" }) { product ->
                         val productId = product.id
                         val productClick = remember(productId) { { onProductClick(productId) } }
+                        val updateDateClick = remember(product) { { pendingDateProduct = product } }
                         ProductCard(
                             product = product,
                             isSelected = false,
                             isSelectionMode = false,
                             onClick = productClick,
-                            onLongClick = {}
+                            onLongClick = {},
+                            onUpdateDate = updateDateClick
                         )
                     }
                 }
@@ -297,17 +302,27 @@ fun NotificationsScreen(
                     items(soonProducts, key = { it.id }, contentType = { "alert_product" }) { product ->
                         val productId = product.id
                         val productClick = remember(productId) { { onProductClick(productId) } }
+                        val updateDateClick = remember(product) { { pendingDateProduct = product } }
                         ProductCard(
                             product = product,
                             isSelected = false,
                             isSelectionMode = false,
                             onClick = productClick,
-                            onLongClick = {}
+                            onLongClick = {},
+                            onUpdateDate = updateDateClick
                         )
                     }
                 }
             }
         }
+    }
+
+    pendingDateProduct?.let { target ->
+        UpdateExpirationDateDialog(
+            initialDate = target.expirationDate,
+            onConfirm = { newDate -> vm.updateProductDate(target.id, newDate) },
+            onDismiss = { pendingDateProduct = null }
+        )
     }
 }
 
