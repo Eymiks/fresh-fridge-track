@@ -73,6 +73,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -199,11 +203,15 @@ fun AddProductScreen(
                 ) {
                     Surface(
                         onClick = { navController.popBackStack() },
+                        modifier = Modifier.clearAndSetSemantics {
+                            role = Role.Button
+                            contentDescription = "Retour"
+                        },
                         shape = MaterialTheme.shapes.small,
                         color = MaterialTheme.colorScheme.surfaceVariant
                     ) {
                         Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Retour")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                         }
                     }
                     Column(Modifier.weight(1f)) {
@@ -304,11 +312,22 @@ fun AddProductScreen(
                         singleLine = true,
                         isError = ui.error?.contains("Date") == true
                     )
-                    OutlinedButton(onClick = { showExpirationDatePicker = true }, shape = MaterialTheme.shapes.medium) {
-                        Icon(Icons.Default.DateRange, contentDescription = "Choisir une date")
+                    OutlinedButton(
+                        onClick = { showExpirationDatePicker = true },
+                        modifier = Modifier.clearAndSetSemantics {
+                            role = Role.Button
+                            contentDescription = "Choisir la date de péremption"
+                        },
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Icon(Icons.Default.DateRange, contentDescription = null)
                     }
                     OutlinedButton(
                         onClick = { navController.navigate(Routes.dateScanner(ui.barcode.ifBlank { "_" })) },
+                        modifier = Modifier.clearAndSetSemantics {
+                            role = Role.Button
+                            contentDescription = "Scanner la date avec la caméra"
+                        },
                         shape = MaterialTheme.shapes.medium
                     ) {
                         Icon(Icons.Default.CameraAlt, contentDescription = null)
@@ -429,6 +448,10 @@ fun AddProductScreen(
                     OutlinedButton(
                         onClick = { vm.lookupBarcode(ui.barcode) },
                         enabled = ui.barcode.isNotBlank(),
+                        modifier = Modifier.clearAndSetSemantics {
+                            role = Role.Button
+                            contentDescription = "Rechercher le code-barres"
+                        },
                         shape = MaterialTheme.shapes.medium
                     ) {
                         Text("OK", style = FreshTextStyles.ActionLabel)
@@ -471,7 +494,12 @@ fun AddProductScreen(
                 ) {
                     OutlinedButton(
                         onClick = { imagePicker.launch(arrayOf("image/*")) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clearAndSetSemantics {
+                                role = Role.Button
+                                contentDescription = if (ui.isUploadingImage) "Envoi de l'image en cours" else "Choisir une image du produit"
+                            },
                         enabled = !ui.isUploadingImage,
                         shape = MaterialTheme.shapes.medium
                     ) {
@@ -792,7 +820,13 @@ private fun AddProductBottomBar(
             if (isMultiMode && !ui.isEditing) {
                 Button(
                     onClick = onSaveAndScanNext,
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .clearAndSetSemantics {
+                            role = Role.Button
+                            contentDescription = "Ajouter et scanner le produit suivant"
+                        },
                     enabled = canSave,
                     shape = MaterialTheme.shapes.large
                 ) {
@@ -804,21 +838,33 @@ private fun AddProductBottomBar(
                 }
                 TextButton(
                     onClick = onFinishMultiScan,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clearAndSetSemantics {
+                            role = Role.Button
+                            contentDescription = "Terminer le mode chaîne"
+                        }
                 ) {
                     Text("Terminer", style = FreshTextStyles.ActionLabel)
                 }
             } else {
+                val saveLabel = if (ui.isEditing) "Enregistrer les modifications" else "Ajouter au frigo"
                 Button(
                     onClick = onSave,
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .clearAndSetSemantics {
+                            role = Role.Button
+                            contentDescription = saveLabel
+                        },
                     enabled = canSave,
                     shape = MaterialTheme.shapes.large
                 ) {
                     SaveProgressLabel(
                         isSaving = ui.isSaving,
                         savingLabel = "Enregistrement…",
-                        idleLabel = if (ui.isEditing) "Enregistrer les modifications" else "Ajouter au frigo"
+                        idleLabel = saveLabel
                     )
                 }
             }

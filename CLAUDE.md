@@ -590,6 +590,14 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - `IndexScreen.kt` : état de recherche sans résultat enrichi avec action `Réinitialiser`; descriptions sémantiques ajoutées aux boutons iconiques de tri/filtre et aux bulles du FAB.
 - Vérification intermédiaire : `./gradlew.bat :app:compileDebugKotlin` OK ; APK debug assemblé et installé sur moto g54 5G pour contrôle visuel MobAI.
 
+**2026-05-17 — Suite reprise UI/UX Android : accessibilité des actions**
+- Références PWA mobiles rafraîchies via le navigateur intégré Codex (`screenshots/pwa/2026-05-17-continue-index-mobile.png`, `...stats-mobile.png`). Les captures Alertes ont échoué côté navigateur intégré après timeout CDP, donc la comparaison a repris les références déjà disponibles.
+- MobAI a détecté des boutons anonymes dans l'arbre d'accessibilité Android malgré des libellés visuels : tri/filtre, FAB, menus produit, réglages Alertes, scanners, formulaire produit et actions de détail.
+- `IndexScreen.kt`, `ProductCards.kt`, `NotificationsScreen.kt`, `AddProductScreen.kt`, `ProductDetailScreen.kt`, `BarcodeScannerScreen.kt`, `DateScannerScreen.kt` : ajout de `clearAndSetSemantics` avec `Role.Button` et libellés explicites sur les surfaces cliquables custom et boutons iconiques.
+- Les libellés portent l'action réelle et le contexte produit quand utile (`Plus d'options pour <produit>`, `Choisir la date de péremption`, `Scanner la date avec la caméra`, `Modifier le produit`, etc.).
+- Vérification MobAI après installation sur moto g54 5G : accueil, ajout manuel, Alertes et fiche produit ne remontent plus d'avertissement `buttons have no accessibility labels`.
+- Vérification : `./gradlew.bat :app:compileDebugKotlin` OK, `./gradlew.bat :app:assembleDebug` OK, `./gradlew.bat :app:installDebug` OK (`Installed on 1 device.`).
+
 ---
 
 ## Android — Référence fonctionnalités PWA

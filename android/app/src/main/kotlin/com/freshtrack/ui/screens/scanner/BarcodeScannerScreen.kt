@@ -48,6 +48,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -86,8 +90,14 @@ fun BarcodeScannerScreen(navController: NavController, isMultiScan: Boolean = fa
             TopAppBar(
                 title = { Text(if (isMultiScan) "Scanner — produit suivant" else "Scanner un code-barres") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Retour")
+                    IconButton(
+                        onClick = { navController.popBackStack() },
+                        modifier = Modifier.clearAndSetSemantics {
+                            role = Role.Button
+                            contentDescription = "Retour"
+                        }
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
                 }
             )
@@ -167,12 +177,28 @@ private fun ScannerActions(
             Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(12.dp))
             onPermissionClick?.let {
-                Button(onClick = it, modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = it,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clearAndSetSemantics {
+                            role = Role.Button
+                            contentDescription = "Autoriser la caméra"
+                        }
+                ) {
                     Text("Autoriser la caméra")
                 }
                 Spacer(Modifier.height(8.dp))
             }
-            Button(onClick = onManualClick, modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = onManualClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clearAndSetSemantics {
+                        role = Role.Button
+                        contentDescription = "Saisir manuellement"
+                    }
+            ) {
                 Text("Saisir manuellement")
             }
         }

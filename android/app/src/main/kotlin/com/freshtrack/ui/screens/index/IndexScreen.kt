@@ -83,9 +83,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -701,7 +701,7 @@ private fun HeaderIconButton(
     Box {
         Surface(
             onClick = onClick,
-            modifier = Modifier.semantics {
+            modifier = Modifier.clearAndSetSemantics {
                 role = Role.Button
                 this.contentDescription = semanticLabel
             },
@@ -930,7 +930,12 @@ private fun FabBubbleMenu(
 
         FloatingActionButton(
             onClick = onToggle,
-            modifier = Modifier.size(64.dp),
+            modifier = Modifier
+                .size(64.dp)
+                .clearAndSetSemantics {
+                    role = Role.Button
+                    contentDescription = if (expanded) "Fermer le menu d'ajout" else "Ajouter un produit"
+                },
             shape = CircleShape,
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -1000,7 +1005,7 @@ private fun BubbleOption(
 ) {
     Surface(
         onClick = onClick,
-        modifier = Modifier.semantics {
+        modifier = Modifier.clearAndSetSemantics {
             role = Role.Button
             contentDescription = label
         },

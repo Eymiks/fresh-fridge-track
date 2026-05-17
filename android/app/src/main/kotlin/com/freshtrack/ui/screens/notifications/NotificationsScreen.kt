@@ -52,6 +52,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -211,10 +215,17 @@ fun NotificationsScreen(
                                         }
                                     }
                                 )
-                                IconButton(onClick = { settingsOpen = !settingsOpen }) {
+                                val settingsToggleLabel = if (settingsOpen) "Replier les réglages de notifications" else "Déplier les réglages de notifications"
+                                IconButton(
+                                    onClick = { settingsOpen = !settingsOpen },
+                                    modifier = Modifier.clearAndSetSemantics {
+                                        role = Role.Button
+                                        contentDescription = settingsToggleLabel
+                                    }
+                                ) {
                                     Icon(
                                         if (settingsOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                        contentDescription = if (settingsOpen) "Replier" else "Déplier"
+                                        contentDescription = null
                                     )
                                 }
                             }

@@ -82,6 +82,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -426,13 +430,17 @@ private fun FloatingIconButton(
     Surface(
         onClick = onClick,
         enabled = enabled,
+        modifier = Modifier.clearAndSetSemantics {
+            role = Role.Button
+            contentDescription = label
+        },
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.84f),
         tonalElevation = 4.dp,
         shadowElevation = 4.dp
     ) {
         Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
-            Icon(icon, contentDescription = label, tint = contentColor)
+            Icon(icon, contentDescription = null, tint = contentColor)
         }
     }
 }
@@ -982,7 +990,12 @@ private fun StickyBottomEditBar(isEnabled: Boolean, onEdit: () -> Unit, onDelete
             Button(
                 onClick = onEdit,
                 enabled = isEnabled,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clearAndSetSemantics {
+                        role = Role.Button
+                        contentDescription = "Modifier le produit"
+                    }
             ) {
                 Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
@@ -991,7 +1004,12 @@ private fun StickyBottomEditBar(isEnabled: Boolean, onEdit: () -> Unit, onDelete
             OutlinedButton(
                 onClick = onDelete,
                 enabled = isEnabled,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clearAndSetSemantics {
+                        role = Role.Button
+                        contentDescription = "Supprimer le produit"
+                    },
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
             ) {
                 Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))

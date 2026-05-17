@@ -59,6 +59,10 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.freshtrack.domain.format.formatInstantDate
@@ -189,9 +193,14 @@ fun ProductCard(
                         Box {
                             IconButton(
                                 onClick = { showMenu = true },
-                                modifier = Modifier.size(28.dp)
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clearAndSetSemantics {
+                                        role = Role.Button
+                                        contentDescription = "Plus d'options pour ${product.name}"
+                                    }
                             ) {
-                                Icon(Icons.Default.MoreVert, "Plus d'options", Modifier.size(18.dp))
+                                Icon(Icons.Default.MoreVert, contentDescription = null, Modifier.size(18.dp))
                             }
                             DropdownMenu(
                                 expanded = showMenu,

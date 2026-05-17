@@ -28,7 +28,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -56,12 +56,16 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.freshtrack.domain.format.normalizeDateInput
 import com.freshtrack.domain.ocr.parseExpirationDate
@@ -142,8 +146,14 @@ fun DateScannerScreen(
             TopAppBar(
                 title = { Text("Scanner la date") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, "Retour")
+                    IconButton(
+                        onClick = { navController.popBackStack() },
+                        modifier = Modifier.clearAndSetSemantics {
+                            role = Role.Button
+                            contentDescription = "Retour"
+                        }
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
                 }
             )
@@ -160,7 +170,13 @@ fun DateScannerScreen(
                 detectedDate?.let { date ->
                     Button(
                         onClick = { acceptDate(date) },
-                        modifier = Modifier.align(Alignment.Center).padding(16.dp)
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(16.dp)
+                            .clearAndSetSemantics {
+                                role = Role.Button
+                                contentDescription = "Utiliser la date ${normalizeDateInput(date)}"
+                            }
                     ) { Text("Utiliser : ${normalizeDateInput(date)}") }
                 }
 
@@ -173,7 +189,13 @@ fun DateScannerScreen(
                     )
                     Button(
                         onClick = { openManualEntry() },
-                        modifier = Modifier.align(Alignment.BottomStart).padding(16.dp)
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(16.dp)
+                            .clearAndSetSemantics {
+                                role = Role.Button
+                                contentDescription = "Saisir la date manuellement"
+                            }
                     ) {
                         Text("Saisir manuellement")
                     }
@@ -205,7 +227,13 @@ fun DateScannerScreen(
                             }
                         }
                     },
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp)
+                        .clearAndSetSemantics {
+                            role = Role.Button
+                            contentDescription = fabLabel
+                        },
                     icon = {
                         if (ui.isCloudLoading) {
                             CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp,
@@ -242,12 +270,22 @@ fun DateScannerScreen(
                         Spacer(Modifier.height(12.dp))
                         Button(
                             onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clearAndSetSemantics {
+                                    role = Role.Button
+                                    contentDescription = "Autoriser la caméra"
+                                }
                         ) { Text("Autoriser la caméra") }
                         Spacer(Modifier.height(8.dp))
                         Button(
                             onClick = { openManualEntry() },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clearAndSetSemantics {
+                                    role = Role.Button
+                                    contentDescription = "Saisir la date manuellement"
+                                }
                         ) { Text("Saisir la date manuellement") }
                     }
                 }
