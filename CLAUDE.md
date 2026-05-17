@@ -598,6 +598,14 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - Vérification MobAI après installation sur moto g54 5G : accueil, ajout manuel, Alertes et fiche produit ne remontent plus d'avertissement `buttons have no accessibility labels`.
 - Vérification : `./gradlew.bat :app:compileDebugKotlin` OK, `./gradlew.bat :app:assembleDebug` OK, `./gradlew.bat :app:installDebug` OK (`Installed on 1 device.`).
 
+**2026-05-17 — Suite reprise UI/UX Android : Paramètres et menu**
+- Référence PWA Paramètres capturée via navigateur intégré en viewport mobile (`screenshots/pwa/2026-05-17-continue2-settings-mobile.png`).
+- MobAI a comparé le tiroir hamburger et l'écran Paramètres Android avant/après (`screenshots/android/2026-05-17-continue2-before-menu.png`, `...after-menu.png`, `...before-settings.png`, `...after-settings.png`).
+- `HamburgerMenuDrawer.kt` : libellés d'accessibilité explicites pour profil, navigation, fermeture, foyer, thème, invitation et déconnexion. Les entrées indiquent aussi l'état actif (`Accueil, page active`).
+- `SettingsScreen.kt` : libellés explicites pour retour/menu, avatar, édition profil, segments thème/densité/position hamburger, swatches d'accent, switch réduire animations, actions foyer, invitation, membres et crédits.
+- Vérification MobAI après installation sur moto g54 5G : le menu et les Paramètres exposent désormais des `Button` nommés au lieu de boutons anonymes.
+- Vérification intermédiaire : `./gradlew.bat :app:compileDebugKotlin` OK ; `./gradlew.bat :app:installDebug` OK (`Installed on 1 device.`).
+
 ---
 
 ## Android — Référence fonctionnalités PWA

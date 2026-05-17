@@ -1,0 +1,49 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e10]: FreshTrack
+      - navigation [ref=e11]:
+        - link "Accueil" [ref=e12] [cursor=pointer]:
+          - /url: /
+          - img [ref=e14]
+          - text: Accueil
+        - link "Statistiques" [ref=e17] [cursor=pointer]:
+          - /url: /stats
+          - img [ref=e19]
+          - text: Statistiques
+        - link "Notifications" [ref=e21] [cursor=pointer]:
+          - /url: /notifications
+          - img [ref=e23]
+          - text: Notifications
+        - link "Historique" [ref=e26] [cursor=pointer]:
+          - /url: /history
+          - img [ref=e28]
+          - text: Historique
+        - link "Paramètres" [ref=e32] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e34]
+          - text: Paramètres
+        - link "Crédits" [ref=e37] [cursor=pointer]:
+          - /url: /credits
+          - img [ref=e39]
+          - text: Crédits
+      - generic [ref=e41]:
+        - generic [ref=e42]:
+          - generic [ref=e44]: I
+          - generic [ref=e45]: Invité
+        - button "Mode sombre" [ref=e46] [cursor=pointer]:
+          - img [ref=e47]
+          - text: Mode sombre
+    - main [ref=e49]:
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - img [ref=e56]
+          - heading "FreshTrack" [level=1] [ref=e59]
+        - button "Ajouter" [ref=e60] [cursor=pointer]:
+          - img [ref=e61]
+          - text: Ajouter

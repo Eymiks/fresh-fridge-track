@@ -1,0 +1,78 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e10]: FreshTrack
+      - navigation [ref=e11]:
+        - link "Accueil" [ref=e12] [cursor=pointer]:
+          - /url: /
+          - img [ref=e14]
+          - text: Accueil
+        - link "Statistiques" [ref=e17] [cursor=pointer]:
+          - /url: /stats
+          - img [ref=e19]
+          - text: Statistiques
+        - link "Notifications" [ref=e21] [cursor=pointer]:
+          - /url: /notifications
+          - img [ref=e23]
+          - text: Notifications
+        - link "Historique" [ref=e26] [cursor=pointer]:
+          - /url: /history
+          - img [ref=e28]
+          - text: Historique
+        - link "Paramètres" [ref=e32] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e34]
+          - text: Paramètres
+        - link "Crédits" [ref=e37] [cursor=pointer]:
+          - /url: /credits
+          - img [ref=e39]
+          - text: Crédits
+      - generic [ref=e41]:
+        - generic [ref=e42]:
+          - generic [ref=e44]: I
+          - generic [ref=e45]: Invité
+        - button "Mode sombre" [ref=e46] [cursor=pointer]:
+          - img [ref=e47]
+          - text: Mode sombre
+    - main [ref=e49]:
+      - generic [ref=e51]:
+        - generic [ref=e54]:
+          - heading "Alertes" [level=1] [ref=e55]
+          - paragraph [ref=e56]: Aucun produit à vérifier
+        - main [ref=e57]:
+          - button "Push · À activer" [ref=e59] [cursor=pointer]:
+            - img [ref=e60]
+            - text: Push · À activer
+          - generic [ref=e65]:
+            - button "Notifications push À activer Recevez un rappel avant qu'un produit arrive à expiration." [ref=e66] [cursor=pointer]:
+              - generic [ref=e67]:
+                - generic [ref=e68]:
+                  - heading "Notifications push" [level=2] [ref=e69]
+                  - generic [ref=e70]: À activer
+                - paragraph [ref=e71]: Recevez un rappel avant qu'un produit arrive à expiration.
+              - img [ref=e73]
+            - button "Activer les notifications" [ref=e75] [cursor=pointer]:
+              - img
+              - text: Activer les notifications
+          - tablist [ref=e77]:
+            - tab "Tout 0" [selected] [ref=e78] [cursor=pointer]:
+              - text: Tout
+              - generic [ref=e79]: "0"
+            - tab "Périmés 0" [ref=e80] [cursor=pointer]:
+              - text: Périmés
+              - generic [ref=e81]: "0"
+            - tab "Bientôt 0" [ref=e82] [cursor=pointer]:
+              - text: Bientôt
+              - generic [ref=e83]: "0"
+          - generic [ref=e84]:
+            - img [ref=e86]
+            - heading "Tout est sous contrôle" [level=2] [ref=e89]
+            - paragraph [ref=e90]: Aucun produit n'est périmé ou proche de sa date limite.
+            - button "Retour au frigo" [ref=e91] [cursor=pointer]:
+              - img
+              - text: Retour au frigo

@@ -84,6 +84,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -513,8 +517,16 @@ private fun SettingsHeader(
                 .padding(horizontal = 20.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour", tint = MaterialTheme.colorScheme.onBackground)
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .size(40.dp)
+                    .clearAndSetSemantics {
+                        role = Role.Button
+                        contentDescription = "Retour"
+                    }
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.onBackground)
             }
             Avatar(avatarUrl, displayName, Modifier.size(44.dp))
             Spacer(Modifier.width(12.dp))
@@ -541,14 +553,19 @@ private fun SettingsHeader(
             Box {
                 Surface(
                     onClick = onMenu,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clearAndSetSemantics {
+                            role = Role.Button
+                            contentDescription = "Ouvrir le menu"
+                        },
                     shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.surface,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    shadowElevation = 0.dp,
-                    modifier = Modifier.size(44.dp)
+                    shadowElevation = 0.dp
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu", tint = MaterialTheme.colorScheme.onBackground)
+                        Icon(Icons.Default.Menu, contentDescription = null, tint = MaterialTheme.colorScheme.onBackground)
                     }
                 }
                 Box(
@@ -617,6 +634,10 @@ private fun ProfileContent(
                 modifier = Modifier
                     .align(Alignment.Center)
                     .size(64.dp)
+                    .clearAndSetSemantics {
+                        role = Role.Button
+                        contentDescription = "Changer l'avatar"
+                    }
                     .clickable(onClick = onAvatarClick)
             )
             Surface(
@@ -641,11 +662,24 @@ private fun ProfileContent(
                         modifier = Modifier.weight(1f),
                         textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.ExtraBold)
                     )
-                    IconButton(onClick = onSave, enabled = editedName.trim().isNotBlank()) {
-                        Icon(Icons.Default.Check, contentDescription = "Sauvegarder", tint = MaterialTheme.colorScheme.primary)
+                    IconButton(
+                        onClick = onSave,
+                        enabled = editedName.trim().isNotBlank(),
+                        modifier = Modifier.clearAndSetSemantics {
+                            role = Role.Button
+                            contentDescription = "Sauvegarder le profil"
+                        }
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     }
-                    IconButton(onClick = onCancelEdit) {
-                        Icon(Icons.Default.Close, contentDescription = "Annuler", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    IconButton(
+                        onClick = onCancelEdit,
+                        modifier = Modifier.clearAndSetSemantics {
+                            role = Role.Button
+                            contentDescription = "Annuler la modification du profil"
+                        }
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             } else {
@@ -658,8 +692,16 @@ private fun ProfileContent(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
                     )
-                    IconButton(onClick = onStartEdit, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Edit, contentDescription = "Modifier le profil", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                    IconButton(
+                        onClick = onStartEdit,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clearAndSetSemantics {
+                                role = Role.Button
+                                contentDescription = "Modifier le profil"
+                            }
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -699,7 +741,11 @@ private fun <T> SegmentedRow(
                 onClick = { onSelected(entry.value) },
                 modifier = Modifier
                     .weight(1f)
-                    .height(40.dp),
+                    .height(40.dp)
+                    .clearAndSetSemantics {
+                        role = Role.Button
+                        contentDescription = if (isSelected) "${entry.label}, sélectionné" else "Choisir ${entry.label}"
+                    },
                 shape = RoundedCornerShape(12.dp),
                 color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else MaterialTheme.colorScheme.outlineVariant)
@@ -738,9 +784,13 @@ private fun AccentSwatch(color: AccentColor, selected: Boolean, onClick: () -> U
             .padding(4.dp)
             .clip(CircleShape)
             .background(accentC)
+            .clearAndSetSemantics {
+                role = Role.Button
+                contentDescription = if (selected) "Couleur d'accent ${color.label}, sélectionnée" else "Choisir la couleur d'accent ${color.label}"
+            }
             .clickable(onClick = onClick)
     ) {
-        if (selected) Icon(Icons.Default.Check, contentDescription = "Sélectionné", tint = Color.White, modifier = Modifier.size(20.dp))
+        if (selected) Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
     }
 }
 
@@ -759,7 +809,14 @@ private fun SettingsSwitchRow(title: String, subtitle: String, checked: Boolean,
                 Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.ExtraBold)
                 Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Switch(checked = checked, onCheckedChange = onCheckedChange)
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                modifier = Modifier.clearAndSetSemantics {
+                    role = Role.Button
+                    contentDescription = if (checked) "$title activé" else "$title désactivé"
+                }
+            )
         }
     }
 }
@@ -820,11 +877,24 @@ private fun HouseholdSummaryRow(
                     modifier = Modifier.weight(1f),
                     textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.ExtraBold)
                 )
-                IconButton(onClick = onSave, enabled = value.trim().isNotBlank()) {
-                    Icon(Icons.Default.Check, contentDescription = "Renommer", tint = MaterialTheme.colorScheme.primary)
+                IconButton(
+                    onClick = onSave,
+                    enabled = value.trim().isNotBlank(),
+                    modifier = Modifier.clearAndSetSemantics {
+                        role = Role.Button
+                        contentDescription = "Enregistrer le nom du foyer"
+                    }
+                ) {
+                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 }
-                IconButton(onClick = onCancelEdit) {
-                    Icon(Icons.Default.Close, contentDescription = "Annuler", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                IconButton(
+                    onClick = onCancelEdit,
+                    modifier = Modifier.clearAndSetSemantics {
+                        role = Role.Button
+                        contentDescription = "Annuler le renommage du foyer"
+                    }
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 Column(Modifier.weight(1f)) {
@@ -832,8 +902,14 @@ private fun HouseholdSummaryRow(
                     Text("$memberCount membre${if (memberCount > 1) "s" else ""}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (isOwner) {
-                    IconButton(onClick = onStartEdit) {
-                        Icon(Icons.Default.Edit, contentDescription = "Renommer le foyer", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                    IconButton(
+                        onClick = onStartEdit,
+                        modifier = Modifier.clearAndSetSemantics {
+                            role = Role.Button
+                            contentDescription = "Renommer le foyer"
+                        }
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -857,11 +933,11 @@ private fun InviteCodeRow(inviteCode: String, copied: Boolean, onCopy: () -> Uni
             textAlign = TextAlign.Center,
             letterSpacing = MaterialTheme.typography.titleLarge.letterSpacing
         )
-        IconActionButton(onClick = onCopy) {
-            Icon(if (copied) Icons.Default.Check else Icons.Default.ContentCopy, contentDescription = "Copier", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        IconActionButton(onClick = onCopy, contentDescription = if (copied) "Code d'invitation copié" else "Copier le code d'invitation") {
+            Icon(if (copied) Icons.Default.Check else Icons.Default.ContentCopy, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        IconActionButton(onClick = onShare) {
-            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Partager", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        IconActionButton(onClick = onShare, contentDescription = "Partager le code d'invitation") {
+            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -887,8 +963,16 @@ private fun MemberRow(member: Member, isMe: Boolean, canRemove: Boolean, onRemov
                 }
             }
             if (canRemove) {
-                IconButton(onClick = onRemove, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Default.PersonRemove, contentDescription = "Retirer", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                IconButton(
+                    onClick = onRemove,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clearAndSetSemantics {
+                            role = Role.Button
+                            contentDescription = "Retirer ${member.displayName} du foyer"
+                        }
+                ) {
+                    Icon(Icons.Default.PersonRemove, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                 }
             }
         }
@@ -901,7 +985,12 @@ private fun ApplicationRow(onClick: () -> Unit) {
         onClick = onClick,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.70f),
         shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clearAndSetSemantics {
+                role = Role.Button
+                contentDescription = "Ouvrir les crédits"
+            }
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -918,12 +1007,17 @@ private fun ApplicationRow(onClick: () -> Unit) {
 }
 
 @Composable
-private fun IconActionButton(onClick: () -> Unit, content: @Composable () -> Unit) {
+private fun IconActionButton(onClick: () -> Unit, contentDescription: String, content: @Composable () -> Unit) {
     Surface(
         onClick = onClick,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.80f),
         shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.size(48.dp)
+        modifier = Modifier
+            .size(48.dp)
+            .clearAndSetSemantics {
+                role = Role.Button
+                this.contentDescription = contentDescription
+            }
     ) {
         Box(contentAlignment = Alignment.Center) {
             content()

@@ -58,6 +58,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -145,6 +149,10 @@ fun HamburgerMenuDrawer(
                         Modifier
                             .fillMaxWidth()
                             .clip(MaterialTheme.shapes.medium)
+                            .clearAndSetSemantics {
+                                role = Role.Button
+                                contentDescription = "Ouvrir le profil"
+                            }
                             .clickable(onClick = onProfileClick),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -175,10 +183,16 @@ fun HamburgerMenuDrawer(
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
-                        IconButton(onClick = onClose) {
+                        IconButton(
+                            onClick = onClose,
+                            modifier = Modifier.clearAndSetSemantics {
+                                role = Role.Button
+                                contentDescription = "Fermer le menu"
+                            }
+                        ) {
                             Icon(
                                 Icons.Default.Close,
-                                contentDescription = "Fermer",
+                                contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -277,7 +291,12 @@ fun HamburgerMenuDrawer(
                     if (!state.isGuest && !state.householdName.isNullOrBlank()) {
                         Surface(
                             onClick = onHouseholdClick,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clearAndSetSemantics {
+                                    role = Role.Button
+                                    contentDescription = "Ouvrir les paramètres du foyer ${state.householdName}"
+                                },
                             shape = MaterialTheme.shapes.medium,
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
@@ -326,7 +345,12 @@ fun HamburgerMenuDrawer(
                     ) {
                         OutlinedButton(
                             onClick = onThemeToggle,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clearAndSetSemantics {
+                                    role = Role.Button
+                                    contentDescription = if (isDarkMode) "Passer au thème clair" else "Passer au thème sombre"
+                                },
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                         ) {
                             Text(
@@ -340,7 +364,12 @@ fun HamburgerMenuDrawer(
                             // Mode invité : bouton "Compte"
                             OutlinedButton(
                                 onClick = { onLogin(); onClose() },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clearAndSetSemantics {
+                                        role = Role.Button
+                                        contentDescription = "Ouvrir le compte"
+                                    },
                                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
                                 colors = ButtonDefaults.outlinedButtonColors(
                                     contentColor = MaterialTheme.colorScheme.primary
@@ -367,7 +396,12 @@ fun HamburgerMenuDrawer(
                                     onInviteShare(code)
                                 },
                                 enabled = state.inviteCode != null,
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clearAndSetSemantics {
+                                        role = Role.Button
+                                        contentDescription = if (copiedInvite) "Invitation copiée" else "Partager le code d'invitation"
+                                    },
                                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                             ) {
                                 Icon(
@@ -389,7 +423,12 @@ fun HamburgerMenuDrawer(
                     if (state.isGuest) {
                         FilledTonalButton(
                             onClick = { onLogin(); onClose() },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clearAndSetSemantics {
+                                    role = Role.Button
+                                    contentDescription = "Créer un compte ou se connecter"
+                                },
                             colors = ButtonDefaults.filledTonalButtonColors(
                                 containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
                                 contentColor = MaterialTheme.colorScheme.primary
@@ -409,7 +448,12 @@ fun HamburgerMenuDrawer(
                     } else {
                         FilledTonalButton(
                             onClick = { onSignOut(); onClose() },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clearAndSetSemantics {
+                                    role = Role.Button
+                                    contentDescription = "Se déconnecter"
+                                },
                             colors = ButtonDefaults.filledTonalButtonColors(
                                 containerColor = ColorExpired.copy(alpha = 0.10f),
                                 contentColor = ColorExpired
@@ -520,6 +564,10 @@ private fun MenuNavItem(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
+            .clearAndSetSemantics {
+                role = Role.Button
+                contentDescription = if (isActive) "$label, page active" else "Ouvrir $label"
+            }
             .padding(horizontal = 12.dp, vertical = 2.dp),
         shape = MaterialTheme.shapes.medium,
         color = bgColor
