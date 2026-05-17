@@ -28,7 +28,14 @@
       "mcp__plugin_playwright_playwright__browser_snapshot",
       "mcp__plugin_playwright_playwright__browser_click",
       "mcp__mobai__list_devices",
-      "mcp__plugin_playwright_playwright__browser_resize"
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "mcp__mobai__start_bridge",
+      "Bash(cat playwright.config.ts)",
+      "Bash(cat playwright.config.js)",
+      "mcp__mobai__execute_dsl",
+      "mcp__mobai__get_screenshot",
+      "Bash(mkdir -p screenshots/pwa)",
+      "Bash(npx playwright *)"
     ]
   },
   "hooks": {
