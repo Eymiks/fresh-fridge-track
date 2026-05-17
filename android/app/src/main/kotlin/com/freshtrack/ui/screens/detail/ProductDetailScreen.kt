@@ -40,8 +40,11 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -124,6 +127,11 @@ import com.freshtrack.ui.theme.NutriC
 import com.freshtrack.ui.theme.NutriD
 import com.freshtrack.ui.theme.NutriE
 import kotlinx.coroutines.delay
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.daysUntil
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.todayIn
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonObject
@@ -150,7 +158,7 @@ fun ProductDetailScreen(
     var scoreDialog by remember { mutableStateOf<ScoreDialogType?>(null) }
     var showFullscreenImage by remember { mutableStateOf(false) }
     var nutritionOpen by remember { mutableStateOf(true) }
-    var ingredientsOpen by remember { mutableStateOf(true) }
+    var ingredientsOpen by remember { mutableStateOf(false) }
     var detailsOpen by remember { mutableStateOf(false) }
     var ingredientsExpanded by remember(product?.ingredients) { mutableStateOf(false) }
     val clipboard = LocalClipboardManager.current
@@ -594,14 +602,124 @@ private fun DeadlineCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.SemiBold
             )
-            getPostExpiryNote(product.category, product.subcategory)?.takeIf { daysLeft < 0 }?.let { note ->
+            // Opened-since section (like PWA "Ouvert depuis X jours")
+            if (product.openedAt != null && product.daysAfterOpening != null) {
+                val tz = TimeZone.currentSystemDefault()
+                val today = Clock.System.todayIn(tz)
+                val openedDate = product.openedAt.toLocalDateTime(tz).date
+                val openedDays = maxOf(0, openedDate.daysUntil(today))
+                val effectiveDate = product.getEffectiveExpirationDate()
                 Spacer(Modifier.height(10.dp))
-                Text(
-                    "Peut encore se consommer : $note",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
+                Surface(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.padding(12.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Box(
+                                Modifier.size(32.dp).clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Inventory2,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                            Text(
+                                "Ouvert depuis $openedDays jour${if (openedDays > 1) "s" else ""}",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Black,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        if (effectiveDate != product.expirationDate) {
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                "Date effective : ${formatDate(effectiveDate).orEmpty()}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 40.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Frozen section (like PWA "Congelé jusqu'au")
+            if (product.frozenUntil != null) {
+                Spacer(Modifier.height(10.dp))
+                Surface(
+                    color = ColorFrozen.copy(alpha = 0.08f),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            Modifier.size(32.dp).clip(RoundedCornerShape(12.dp))
+                                .background(ColorFrozen.copy(alpha = 0.12f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.AcUnit,
+                                contentDescription = null,
+                                tint = ColorFrozen,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        Text(
+                            "Congelé jusqu'au ${formatDate(product.frozenUntil).orEmpty()}",
+                            color = ColorFrozen,
+                            fontWeight = FontWeight.Black,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+
+            // Post-expiry note (always shown when available, like PWA)
+            getPostExpiryNote(product.category, product.subcategory)?.let { note ->
+                Spacer(Modifier.height(10.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.08f),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Box(
+                            Modifier.size(32.dp).clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        Text(
+                            "Ce produit peut généralement être consommé jusqu'à $note après la date d'expiration.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
             }
         }
     }
@@ -624,41 +742,59 @@ private fun QuickActionsCard(
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SectionEyebrow(icon = Icons.Default.CheckCircle, eyebrow = "Statut", title = "Actions rapides")
-            if (product.status == ProductStatus.CONSUMED || product.status == ProductStatus.THROWN) {
-                Button(
+            // Always show all 3 status buttons like the PWA; clicking an active status deactivates it
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                QuickStatusButton(
+                    label = "Ouvert",
+                    icon = Icons.Default.Inventory2,
+                    selected = product.status == ProductStatus.OPENED,
+                    color = MaterialTheme.colorScheme.primary,
+                    enabled = !isMutating,
+                    onClick = {
+                        if (product.status == ProductStatus.OPENED) onSetStatus(ProductStatus.ACTIVE) else onOpen()
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+                QuickStatusButton(
+                    label = "Consommé",
+                    icon = Icons.Default.Restaurant,
+                    selected = product.status == ProductStatus.CONSUMED,
+                    color = ColorFresh,
+                    enabled = !isMutating,
+                    onClick = {
+                        onSetStatus(if (product.status == ProductStatus.CONSUMED) ProductStatus.ACTIVE else ProductStatus.CONSUMED)
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+                QuickStatusButton(
+                    label = "Jeté",
+                    icon = Icons.Default.Delete,
+                    selected = product.status == ProductStatus.THROWN,
+                    color = MaterialTheme.colorScheme.error,
+                    enabled = !isMutating,
+                    onClick = {
+                        onSetStatus(if (product.status == ProductStatus.THROWN) ProductStatus.ACTIVE else ProductStatus.THROWN)
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            // "Remettre en actif" text link visible when not active (like PWA)
+            if (product.status != ProductStatus.ACTIVE) {
+                Surface(
                     onClick = { onSetStatus(ProductStatus.ACTIVE) },
                     enabled = !isMutating,
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text("Remettre actif") }
-            } else {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    QuickStatusButton(
-                        label = "Ouvert",
-                        icon = Icons.Default.CheckCircle,
-                        selected = product.status == ProductStatus.OPENED,
-                        color = MaterialTheme.colorScheme.primary,
-                        enabled = !isMutating,
-                        onClick = onOpen,
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickStatusButton(
-                        label = "Consommé",
-                        icon = Icons.Default.Check,
-                        selected = product.status == ProductStatus.CONSUMED,
-                        color = ColorFresh,
-                        enabled = !isMutating,
-                        onClick = { onSetStatus(ProductStatus.CONSUMED) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickStatusButton(
-                        label = "Jeté",
-                        icon = Icons.Default.Delete,
-                        selected = product.status == ProductStatus.THROWN,
-                        color = MaterialTheme.colorScheme.error,
-                        enabled = !isMutating,
-                        onClick = { onSetStatus(ProductStatus.THROWN) },
-                        modifier = Modifier.weight(1f)
-                    )
+                    shape = RoundedCornerShape(999.dp),
+                    color = Color.Transparent
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.width(6.dp))
+                        Text("Remettre en actif", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
             Surface(
@@ -954,25 +1090,26 @@ private fun DetailsAccordionContent(
         )
     }
     InfoCard(title = "Historique") {
-        TimelineRow("Produit ajouté", formatInstantDate(product.addedAt).orEmpty())
+        TimelineRow("Produit ajouté", formatInstantDate(product.addedAt).orEmpty(), icon = Icons.Default.Schedule)
         product.openedAt?.let {
             TimelineRow(
                 "Produit ouvert",
                 formatInstantDate(it).orEmpty(),
-                product.daysAfterOpening?.let { days -> "À consommer dans $days jour(s) après ouverture" }
+                product.daysAfterOpening?.let { days -> "À consommer dans $days jour(s) après ouverture" },
+                icon = Icons.Default.Inventory2
             )
         }
         product.frozenUntil?.let {
-            TimelineRow("Congélation active", formatDate(it).orEmpty(), "La date effective prend cette congélation en compte.")
+            TimelineRow("Congélation active", formatDate(it).orEmpty(), "La date effective prend cette congélation en compte.", icon = Icons.Default.AcUnit)
         }
         product.statusChangedAt?.let { changedAt ->
-            val statusLabel = when (product.status) {
-                ProductStatus.ACTIVE -> "Produit remis actif"
-                ProductStatus.OPENED -> "Statut mis à ouvert"
-                ProductStatus.CONSUMED -> "Produit consommé"
-                ProductStatus.THROWN -> "Produit jeté"
+            val (statusLabel, statusIcon) = when (product.status) {
+                ProductStatus.ACTIVE -> "Produit remis actif" to Icons.Default.Refresh
+                ProductStatus.OPENED -> "Statut mis à ouvert" to Icons.Default.Inventory2
+                ProductStatus.CONSUMED -> "Produit consommé" to Icons.Default.Restaurant
+                ProductStatus.THROWN -> "Produit jeté" to Icons.Default.Delete
             }
-            TimelineRow(statusLabel, formatInstantDate(changedAt).orEmpty())
+            TimelineRow(statusLabel, formatInstantDate(changedAt).orEmpty(), icon = statusIcon)
         }
     }
 }
@@ -980,18 +1117,18 @@ private fun DetailsAccordionContent(
 @Composable
 private fun StickyBottomEditBar(isEnabled: Boolean, onEdit: () -> Unit, onDelete: () -> Unit) {
     Surface(tonalElevation = 4.dp, shadowElevation = 6.dp) {
-        Column(
+        Row(
             Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Button(
                 onClick = onEdit,
                 enabled = isEnabled,
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(1f)
                     .clearAndSetSemantics {
                         role = Role.Button
                         contentDescription = "Modifier le produit"
@@ -1005,7 +1142,7 @@ private fun StickyBottomEditBar(isEnabled: Boolean, onEdit: () -> Unit, onDelete
                 onClick = onDelete,
                 enabled = isEnabled,
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(1f)
                     .clearAndSetSemantics {
                         role = Role.Button
                         contentDescription = "Supprimer le produit"
@@ -1072,9 +1209,9 @@ private fun SectionEyebrow(icon: ImageVector, eyebrow: String, title: String) {
 
 @Composable
 private fun ScoreBadgesRow(product: Product, onScoreClick: (ScoreDialogType) -> Unit) {
-    product.nutriScore?.let {
-        ScoreBadge("Nutri", it.uppercase(), scoreColor(it), onClick = { onScoreClick(ScoreDialogType.NUTRI) })
-    }
+    // Always show Nutri-Score like PWA (shows '?' if unknown)
+    val nutriGrade = (product.nutriScore ?: "?").uppercase()
+    ScoreBadge("Nutri", nutriGrade, scoreColor(nutriGrade), onClick = { onScoreClick(ScoreDialogType.NUTRI) })
     product.novaGroup?.let {
         ScoreBadge("NOVA", it.toString(), novaColor(it), onClick = { onScoreClick(ScoreDialogType.NOVA) })
     }
@@ -1242,13 +1379,13 @@ private fun BarcodeRow(barcode: String?, copied: Boolean, onCopy: (String) -> Un
 }
 
 @Composable
-private fun TimelineRow(title: String, date: String, detail: String? = null) {
+private fun TimelineRow(title: String, date: String, detail: String? = null, icon: ImageVector = Icons.Default.Check) {
     Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Box(
             Modifier.size(34.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+            Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
         }
         Column(Modifier.weight(1f)) {
             Text(title, fontWeight = FontWeight.Medium)
