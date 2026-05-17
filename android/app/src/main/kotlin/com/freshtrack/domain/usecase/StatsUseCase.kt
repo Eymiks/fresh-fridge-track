@@ -77,8 +77,8 @@ class StatsUseCase @Inject constructor() {
             val targetDate = today.minus(monthsBack.toLong(), DateTimeUnit.MONTH)
             val yr = targetDate.year; val mo = targetDate.monthNumber
             val key = monthKey(yr, mo)
-            val label = targetDate.month.name.take(3).lowercase()
-                .replaceFirstChar { it.uppercase() } + " ${yr % 100}"
+            val frMonths = arrayOf("Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc")
+            val label = frMonths[targetDate.monthNumber - 1] + " ${yr % 100}"
 
             val monthAdded = addedByMonth[key] ?: 0
             val monthConsumed = consumedByMonth[key] ?: 0

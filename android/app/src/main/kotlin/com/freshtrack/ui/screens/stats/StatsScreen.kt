@@ -503,7 +503,7 @@ private fun ChartLegend(label: String, color: androidx.compose.ui.graphics.Color
 
 @Composable
 private fun SmallMetric(title: String, value: String, subtitle: String, icon: ImageVector = Icons.Default.Restore, modifier: Modifier = Modifier) {
-    Card(modifier) {
+    Card(modifier, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))) {
         Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
             Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
