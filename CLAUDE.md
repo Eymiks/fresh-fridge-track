@@ -574,6 +574,14 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - `IndexScreen` et `NotificationsScreen` : état `pendingDateProduct: Product?` mémorisé ; les `ProductCard` reçoivent un callback qui le positionne ; le composable de page rend `UpdateExpirationDateDialog` quand l'état n'est pas nul.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK. À vérifier sur appareil : sélecteur de date propre (clair/sombre), date persistée après reload, et propagation Realtime entre deux instances connectées au même foyer.
 
+**2026-05-17 — Amélioration globale UI/UX Android**
+- Analyse comparative PWA ↔ Android via MobAI sur moto g54 5G (Android 15). Captures de tous les écrans principaux.
+- `StatsUseCase.kt` : labels de mois passés en français (tableau `frMonths`) — `month.name.take(3)` remplacé. Les graphiques Anti-Gaspi et Tendances affichent désormais "Déc Jan Fév Mar Avr Mai" au lieu de "Dec Jan Feb Mar Apr May".
+- `StatsScreen.kt` : `SmallMetric` (cartes Série/Utilisation/Conso moy.) utilise `CardDefaults.cardColors(containerColor = primaryContainer.copy(alpha = 0.3f))` — fond vert pâle cohérent avec le thème au lieu du gris Material par défaut.
+- `ProductDetailScreen.kt` : les boutons "Ouvert / Consommé / Jeté" sortis du bloc `verticalScroll` et placés en bloc fixe entre le hero et le contenu scrollable. `QuickActionsCard` gagne un paramètre `modifier`. Le seuil `showStickyHeader` passe de 110dp à 10dp (le hero n'est plus scrollable). Les actions rapides sont désormais toujours visibles dès l'ouverture de la fiche, conformément à la référence PWA.
+- `IndexScreen.kt` : le chiffre des stat-cards (Périmés/Bientôt/Frais) passe de `FreshTextStyles.StatCount` (16sp) à `MaterialTheme.typography.titleLarge + FontWeight.Black` (22sp) pour plus d'impact visuel.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK ; APK installé sur moto g54 5G. MobAI confirme : mois FR, cartes vertes, actions visibles sans scroll, barre distribution Frigo visible en haut.
+
 ---
 
 ## Android — Référence fonctionnalités PWA
