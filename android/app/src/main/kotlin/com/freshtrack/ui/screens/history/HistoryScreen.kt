@@ -185,5 +185,9 @@ private fun formatHistorySubtitle(products: List<Product>): String {
     val opened = products.count { it.status == ProductStatus.OPENED }
     val consumed = products.count { it.status == ProductStatus.CONSUMED }
     val thrown = products.count { it.status == ProductStatus.THROWN }
-    return "$opened ouvert(s) · $consumed consommé(s) · $thrown jeté(s)"
+    return buildList {
+        if (opened > 0) add("$opened ${if (opened > 1) "ouverts" else "ouvert"}")
+        if (consumed > 0) add("$consumed ${if (consumed > 1) "consommés" else "consommé"}")
+        if (thrown > 0) add("$thrown ${if (thrown > 1) "jetés" else "jeté"}")
+    }.joinToString(" · ").ifBlank { "Aucun mouvement pour le moment" }
 }

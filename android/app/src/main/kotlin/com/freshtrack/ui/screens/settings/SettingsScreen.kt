@@ -315,7 +315,7 @@ fun SettingsScreen(
                         selected = appearance.density,
                         onSelected = appearanceVm::setDensity
                     )
-                    Label("MENU HAMBURGER")
+                    Label("POSITION DU MENU")
                     SegmentedRow(
                         entries = listOf(
                             SegmentItem(HamburgerSide.LEFT, "Gauche", null),

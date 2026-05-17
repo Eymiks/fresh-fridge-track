@@ -149,7 +149,7 @@ private fun FrigoTab(products: List<Product>) {
     )
 
     if (urgent.isNotEmpty()) {
-        SectionCard("Bientôt à vérifier", Icons.Default.Schedule, ColorSoon) {
+        SectionCard("Bientôt à expirer", Icons.Default.Schedule, ColorSoon) {
             urgent.forEachIndexed { index, product ->
                 UrgentRow(product)
                 if (index != urgent.lastIndex) {
@@ -216,7 +216,7 @@ private fun UrgentRow(product: Product) {
         ExpirationStatus.FRESH -> ColorFresh
     }
     val label = when {
-        days < 0 -> "Périmé depuis ${-days}j"
+        days < 0 -> "Périmé"
         days == 0 -> "Aujourd'hui"
         days == 1 -> "Demain"
         else -> "${days}j"
@@ -299,9 +299,9 @@ private fun StockSummaryCard(
             if (activeCount > 0) {
                 StockDistributionBar(expiredCount, soonCount, freshCount, activeCount)
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Legend("Périmés", expiredCount, ColorExpired)
-                    Legend("Bientôt", soonCount, ColorSoon)
-                    Legend("Frais", freshCount, ColorFresh)
+                    if (expiredCount > 0) Legend("Périmés", expiredCount, ColorExpired)
+                    if (soonCount > 0) Legend("Bientôt", soonCount, ColorSoon)
+                    if (freshCount > 0) Legend("Frais", freshCount, ColorFresh)
                 }
             } else {
                 Text("Aucun produit en stock", color = MaterialTheme.colorScheme.onSurfaceVariant)
