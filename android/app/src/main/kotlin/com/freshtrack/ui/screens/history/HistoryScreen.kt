@@ -1,6 +1,7 @@
 package com.freshtrack.ui.screens.history
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -8,10 +9,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,7 +31,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -49,8 +47,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.model.ProductStatus
 import com.freshtrack.ui.components.ArchivedProductCard
+import com.freshtrack.ui.components.FreshFilterChip
 import com.freshtrack.ui.components.ProductSectionHeader
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HistoryScreen(
     onProductClick: (String) -> Unit,
@@ -73,7 +73,7 @@ fun HistoryScreen(
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             LazyColumn(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 item(key = "history_header", contentType = "header") {
@@ -92,30 +92,10 @@ fun HistoryScreen(
                         Modifier.horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        HistoryFilterChip(
-                            "Tout",
-                            products.size,
-                            filter == HistoryFilter.ALL,
-                            MaterialTheme.colorScheme.primary
-                        ) { filter = HistoryFilter.ALL }
-                        HistoryFilterChip(
-                            "Ouverts",
-                            openedList.size,
-                            filter == HistoryFilter.OPENED,
-                            MaterialTheme.colorScheme.primary
-                        ) { filter = HistoryFilter.OPENED }
-                        HistoryFilterChip(
-                            "Consommés",
-                            consumedList.size,
-                            filter == HistoryFilter.CONSUMED,
-                            ColorFresh
-                        ) { filter = HistoryFilter.CONSUMED }
-                        HistoryFilterChip(
-                            "Jetés",
-                            thrownList.size,
-                            filter == HistoryFilter.THROWN,
-                            MaterialTheme.colorScheme.error
-                        ) { filter = HistoryFilter.THROWN }
+                        FreshFilterChip("Tout", products.size, filter == HistoryFilter.ALL, MaterialTheme.colorScheme.primary) { filter = HistoryFilter.ALL }
+                        FreshFilterChip("Ouverts", openedList.size, filter == HistoryFilter.OPENED, MaterialTheme.colorScheme.primary) { filter = HistoryFilter.OPENED }
+                        FreshFilterChip("Consommés", consumedList.size, filter == HistoryFilter.CONSUMED, ColorFresh) { filter = HistoryFilter.CONSUMED }
+                        FreshFilterChip("Jetés", thrownList.size, filter == HistoryFilter.THROWN, MaterialTheme.colorScheme.error) { filter = HistoryFilter.THROWN }
                     }
                 }
 
@@ -126,7 +106,7 @@ fun HistoryScreen(
                 }
 
                 if ((filter == HistoryFilter.ALL || filter == HistoryFilter.OPENED) && openedList.isNotEmpty()) {
-                    item(key = "history_opened_header", contentType = "section_header") {
+                    stickyHeader(key = "history_opened_header", contentType = "section_header") {
                         ProductSectionHeader("Ouverts", openedList.size, Icons.Default.Inventory2, MaterialTheme.colorScheme.primary)
                     }
                     items(openedList, key = { "o_${it.id}" }, contentType = { "history_product" }) { product ->
@@ -138,7 +118,7 @@ fun HistoryScreen(
                 }
 
                 if ((filter == HistoryFilter.ALL || filter == HistoryFilter.CONSUMED) && consumedList.isNotEmpty()) {
-                    item(key = "history_consumed_header", contentType = "section_header") {
+                    stickyHeader(key = "history_consumed_header", contentType = "section_header") {
                         ProductSectionHeader("Consommés", consumedList.size, Icons.Default.Restaurant, ColorFresh)
                     }
                     items(consumedList, key = { "c_${it.id}" }, contentType = { "history_product" }) { product ->
@@ -150,7 +130,7 @@ fun HistoryScreen(
                 }
 
                 if ((filter == HistoryFilter.ALL || filter == HistoryFilter.THROWN) && thrownList.isNotEmpty()) {
-                    item(key = "history_thrown_header", contentType = "section_header") {
+                    stickyHeader(key = "history_thrown_header", contentType = "section_header") {
                         ProductSectionHeader("Jetés", thrownList.size, Icons.Default.Delete, MaterialTheme.colorScheme.error)
                     }
                     items(thrownList, key = { "t_${it.id}" }, contentType = { "history_product" }) { product ->
@@ -166,47 +146,6 @@ fun HistoryScreen(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
-    }
-}
-
-@Composable
-private fun HistoryFilterChip(
-    label: String,
-    count: Int,
-    selected: Boolean,
-    color: androidx.compose.ui.graphics.Color,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(999.dp),
-        color = if (selected) color.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, if (selected) color.copy(alpha = 0.24f) else MaterialTheme.colorScheme.outlineVariant)
-    ) {
-        Row(
-            Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                label,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Black,
-                color = if (selected) color else MaterialTheme.colorScheme.onSurface
-            )
-            Surface(
-                shape = RoundedCornerShape(999.dp),
-                color = if (selected) color else MaterialTheme.colorScheme.surfaceVariant
-            ) {
-                Text(
-                    count.toString(),
-                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Black,
-                    color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
     }
 }
 

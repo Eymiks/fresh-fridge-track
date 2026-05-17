@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -107,7 +108,17 @@ import com.freshtrack.ui.navigation.Routes
 import com.freshtrack.ui.components.FreshProductImage
 import com.freshtrack.ui.theme.ColorExpired
 import com.freshtrack.ui.theme.ColorFresh
+import com.freshtrack.ui.theme.ColorFrozen
 import com.freshtrack.ui.theme.ColorSoon
+import com.freshtrack.ui.theme.Nova1
+import com.freshtrack.ui.theme.Nova2
+import com.freshtrack.ui.theme.Nova3
+import com.freshtrack.ui.theme.Nova4
+import com.freshtrack.ui.theme.NutriA
+import com.freshtrack.ui.theme.NutriB
+import com.freshtrack.ui.theme.NutriC
+import com.freshtrack.ui.theme.NutriD
+import com.freshtrack.ui.theme.NutriE
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.doubleOrNull
@@ -439,7 +450,7 @@ private fun ProductSummaryCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column {
             Row(
@@ -493,7 +504,7 @@ private fun ProductSummaryCard(
                         StatusBadge(product.status)
                     }
                     if (product.frozenUntil != null) {
-                        CompactStatusPill(Icons.Default.AcUnit, "Congelé", Color(0xFF1976D2))
+                        CompactStatusPill(Icons.Default.AcUnit, "Congelé", ColorFrozen)
                     }
                 }
             }
@@ -542,7 +553,7 @@ private fun DeadlineCard(
         Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = statusColor.copy(alpha = 0.10f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             Modifier.fillMaxWidth().padding(22.dp),
@@ -645,14 +656,14 @@ private fun QuickActionsCard(
                 onClick = if (product.frozenUntil == null) onFreeze else onUnfreeze,
                 enabled = !isMutating,
                 shape = RoundedCornerShape(16.dp),
-                color = Color(0xFF1976D2).copy(alpha = 0.10f)
+                color = ColorFrozen.copy(alpha = 0.10f)
             ) {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 11.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.AcUnit, contentDescription = null, tint = Color(0xFF1976D2), modifier = Modifier.size(17.dp))
+                    Icon(Icons.Default.AcUnit, contentDescription = null, tint = ColorFrozen, modifier = Modifier.size(17.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(
                         if (product.frozenUntil == null) {
@@ -660,7 +671,7 @@ private fun QuickActionsCard(
                         } else {
                             "Retirer du congélateur"
                         },
-                        color = Color(0xFF1976D2),
+                        color = ColorFrozen,
                         fontWeight = FontWeight.Black,
                         style = MaterialTheme.typography.labelLarge,
                         maxLines = 1,
@@ -1110,7 +1121,7 @@ private fun CompactStatusPill(icon: ImageVector, label: String, color: Color) {
 private fun AlertInfoCard(title: String, subtitle: String?, items: List<String>) {
     Card(
         Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.70f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.88f)),
         shape = RoundedCornerShape(18.dp)
     ) {
         Column(Modifier.padding(13.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1144,7 +1155,7 @@ private fun NotesField(
         label = { Text("Notes") },
         modifier = Modifier
             .fillMaxWidth()
-            .height(150.dp)
+            .heightIn(min = 100.dp, max = 200.dp)
             .onFocusChanged { focusState ->
                 if (!focusState.hasFocus && isDirty) onSave()
             },
@@ -1476,18 +1487,18 @@ private fun extractAdditives(ingredients: String?): List<String> =
         .toList()
 
 private fun scoreColor(score: String): Color = when (score.uppercase()) {
-    "A" -> Color(0xFF1B5E20)
-    "B" -> Color(0xFF558B2F)
-    "C" -> Color(0xFFF9A825)
-    "D" -> Color(0xFFE65100)
-    "E" -> Color(0xFFB71C1C)
+    "A" -> NutriA
+    "B" -> NutriB
+    "C" -> NutriC
+    "D" -> NutriD
+    "E" -> NutriE
     else -> Color.Gray
 }
 
 private fun novaColor(group: Int): Color = when (group) {
-    1 -> Color(0xFF1B5E20)
-    2 -> Color(0xFFF9A825)
-    3 -> Color(0xFFE65100)
-    4 -> Color(0xFFB71C1C)
+    1 -> Nova1
+    2 -> Nova2
+    3 -> Nova3
+    4 -> Nova4
     else -> Color.Gray
 }

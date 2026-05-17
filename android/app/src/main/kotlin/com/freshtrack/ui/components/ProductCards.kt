@@ -69,10 +69,16 @@ import com.freshtrack.domain.model.getDaysUntilExpiration
 import com.freshtrack.domain.model.getExpirationStatus
 import com.freshtrack.ui.theme.ColorExpired
 import com.freshtrack.ui.theme.ColorFresh
+import com.freshtrack.ui.theme.ColorFrozen
 import com.freshtrack.ui.theme.ColorSoon
 import com.freshtrack.ui.theme.Density
 import com.freshtrack.ui.theme.FreshTextStyles
 import com.freshtrack.ui.theme.LocalAppearance
+import com.freshtrack.ui.theme.NutriA
+import com.freshtrack.ui.theme.NutriB
+import com.freshtrack.ui.theme.NutriC
+import com.freshtrack.ui.theme.NutriD
+import com.freshtrack.ui.theme.NutriE
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -324,7 +330,7 @@ private fun ProductImage(product: Product, tint: Color) {
                 Modifier
                     .size(16.dp)
                     .clip(MaterialTheme.shapes.extraSmall)
-                    .background(Color(0xFF0288D1)),
+                    .background(ColorFrozen),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.AcUnit, contentDescription = "Congelé", tint = Color.White, modifier = Modifier.size(10.dp))
@@ -402,11 +408,11 @@ private fun Pill(label: String, color: Color, filled: Boolean = false) {
 @Composable
 private fun NutriScoreBadge(score: String) {
     val (bg, fg) = when (score.uppercase()) {
-        "A" -> Color(0xFF1B5E20) to Color.White
-        "B" -> Color(0xFF558B2F) to Color.White
-        "C" -> Color(0xFFF9A825) to Color.Black
-        "D" -> Color(0xFFE65100) to Color.White
-        "E" -> Color(0xFFB71C1C) to Color.White
+        "A" -> NutriA to Color.White
+        "B" -> NutriB to Color.White
+        "C" -> NutriC to Color.Black
+        "D" -> NutriD to Color.White
+        "E" -> NutriE to Color.White
         else -> return
     }
     Box(

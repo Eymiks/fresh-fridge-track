@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.core.content.ContextCompat
 import com.freshtrack.domain.model.Product
+import com.freshtrack.ui.components.FreshFilterChip
 import com.freshtrack.ui.components.ProductCard
 import com.freshtrack.ui.components.ProductSectionHeader
 import com.freshtrack.ui.components.UpdateExpirationDateDialog
@@ -106,7 +107,7 @@ fun NotificationsScreen(
         Column(Modifier.fillMaxSize()) {
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 item(key = "alerts_header", contentType = "header") {
@@ -224,7 +225,7 @@ fun NotificationsScreen(
                                 Spacer(Modifier.height(6.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     listOf(1, 3, 7).forEach { option ->
-                                        AlertFilterPill(
+                                        FreshFilterChip(
                                             label = if (option == 1) "1 jour" else "$option jours",
                                             selected = settings.days == option,
                                             color = MaterialTheme.colorScheme.primary,
@@ -248,15 +249,9 @@ fun NotificationsScreen(
                         Modifier.horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        AlertFilterPill("Tout ($alertCount)", filter == AlertFilter.ALL, MaterialTheme.colorScheme.primary) {
-                            filter = AlertFilter.ALL
-                        }
-                        AlertFilterPill("Périmés (${expiredProducts.size})", filter == AlertFilter.EXPIRED, MaterialTheme.colorScheme.error) {
-                            filter = AlertFilter.EXPIRED
-                        }
-                        AlertFilterPill("Bientôt (${soonProducts.size})", filter == AlertFilter.SOON, MaterialTheme.colorScheme.tertiary) {
-                            filter = AlertFilter.SOON
-                        }
+                        FreshFilterChip("Tout", alertCount, filter == AlertFilter.ALL, MaterialTheme.colorScheme.primary) { filter = AlertFilter.ALL }
+                        FreshFilterChip("Périmés", expiredProducts.size, filter == AlertFilter.EXPIRED, MaterialTheme.colorScheme.error) { filter = AlertFilter.EXPIRED }
+                        FreshFilterChip("Bientôt", soonProducts.size, filter == AlertFilter.SOON, MaterialTheme.colorScheme.tertiary) { filter = AlertFilter.SOON }
                     }
                 }
 
@@ -264,14 +259,16 @@ fun NotificationsScreen(
                     item(key = "alerts_empty_all", contentType = "empty_state") {
                         EmptyAlertState(
                             title = "Tout est sous contrôle",
-                            subtitle = "Aucun produit n'est périmé ou proche de sa date limite."
+                            subtitle = "Aucun produit n'est périmé ou proche de sa date limite.",
+                            isAllClear = true
                         )
                     }
                 } else if (filteredCount == 0) {
                     item(key = "alerts_empty_filter", contentType = "empty_state") {
                         EmptyAlertState(
                             title = "Aucun produit pour ce filtre",
-                            subtitle = "Changez de filtre ou revenez à Tout."
+                            subtitle = "Changez de filtre ou revenez à Tout.",
+                            isAllClear = false
                         )
                     }
                 }
@@ -329,30 +326,7 @@ fun NotificationsScreen(
 private enum class AlertFilter { ALL, EXPIRED, SOON }
 
 @Composable
-private fun AlertFilterPill(
-    label: String,
-    selected: Boolean,
-    color: androidx.compose.ui.graphics.Color,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(999.dp),
-        color = if (selected) color.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, if (selected) color.copy(alpha = 0.22f) else MaterialTheme.colorScheme.outlineVariant)
-    ) {
-        Text(
-            label,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Black,
-            color = if (selected) color else MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Composable
-private fun EmptyAlertState(title: String, subtitle: String) {
+private fun EmptyAlertState(title: String, subtitle: String, isAllClear: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
@@ -369,16 +343,16 @@ private fun EmptyAlertState(title: String, subtitle: String) {
                 Modifier
                     .size(52.dp)
                     .background(
-                        if (title.startsWith("Tout")) MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+                        if (isAllClear) MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
                         else MaterialTheme.colorScheme.surfaceVariant,
                         RoundedCornerShape(18.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    if (title.startsWith("Tout")) Icons.Default.CheckCircle else Icons.Default.Notifications,
+                    if (isAllClear) Icons.Default.CheckCircle else Icons.Default.Notifications,
                     contentDescription = null,
-                    tint = if (title.startsWith("Tout")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = if (isAllClear) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Text(title, fontWeight = FontWeight.Black)

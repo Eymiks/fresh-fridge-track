@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -168,7 +169,8 @@ fun IndexScreen(
             Column(
                 Modifier
                     .background(headerBg)
-                    .padding(top = 22.dp, bottom = 16.dp)
+                    .statusBarsPadding()
+                    .padding(top = 8.dp, bottom = 16.dp)
             ) {
                 Row(
                     Modifier

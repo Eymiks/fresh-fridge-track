@@ -89,7 +89,7 @@ fun StatsScreen(vm: StatsViewModel = hiltViewModel()) {
         Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -185,7 +185,7 @@ private fun FrigoTab(products: List<Product>) {
 
 @Composable
 private fun StockDistributionBar(expired: Int, soon: Int, fresh: Int, total: Int) {
-    Row(Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(999.dp))) {
+    Row(Modifier.fillMaxWidth().height(14.dp).clip(RoundedCornerShape(999.dp))) {
         Segment(expired, total, ColorExpired)
         Segment(soon, total, ColorSoon)
         Segment(fresh, total, ColorFresh)
@@ -195,7 +195,7 @@ private fun StockDistributionBar(expired: Int, soon: Int, fresh: Int, total: Int
 @Composable
 private fun RowScope.Segment(count: Int, total: Int, color: androidx.compose.ui.graphics.Color) {
     if (count <= 0 || total <= 0) return
-    Box(Modifier.weight(count.toFloat()).height(10.dp).background(color))
+    Box(Modifier.weight(count.toFloat()).height(14.dp).background(color))
 }
 
 @Composable
@@ -245,9 +245,9 @@ private fun UrgentRow(product: Product) {
             Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(
                 progress = { lifeProgress },
-                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(999.dp)),
+                modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(999.dp)),
                 color = barColor,
-                trackColor = barColor.copy(alpha = 0.18f)
+                trackColor = barColor.copy(alpha = 0.20f)
             )
         }
     }
@@ -464,7 +464,15 @@ private fun EmptyStatsCard(title: String, subtitle: String) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Icon(Icons.Default.Inventory2, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(34.dp))
+            Box(
+                Modifier
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Inventory2, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            }
             Text(title, fontWeight = FontWeight.Black)
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }

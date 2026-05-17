@@ -43,6 +43,26 @@ val ColorExpired = Color(0xFFDF3E3E)
 val ColorSoon = Color(0xFFF59B1A)
 val ColorFresh = Color(0xFF2BAD6E)
 
+// Congélation
+val ColorFrozen = Color(0xFF1976D2)
+
+// Bannière hors ligne
+val ColorBannerWarn = Color(0xFFFEF08A)
+val ColorBannerWarnText = Color(0xFF92400E)
+
+// Palette NutriScore / EcoScore (A–E)
+val NutriA = Color(0xFF1B5E20)
+val NutriB = Color(0xFF558B2F)
+val NutriC = Color(0xFFF9A825)
+val NutriD = Color(0xFFE65100)
+val NutriE = Color(0xFFB71C1C)
+
+// Palette NovaScore (1–4)
+val Nova1 = Color(0xFF1B5E20)
+val Nova2 = Color(0xFFF9A825)
+val Nova3 = Color(0xFFE65100)
+val Nova4 = Color(0xFFB71C1C)
+
 // Surfaces PWA
 val FreshBackgroundLight = Color(0xFFF6F9F7)
 val FreshForegroundLight = Color(0xFF15261F)

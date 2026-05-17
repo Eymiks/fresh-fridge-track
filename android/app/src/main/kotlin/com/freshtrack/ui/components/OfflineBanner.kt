@@ -29,11 +29,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
+import com.freshtrack.ui.theme.ColorBannerWarn
+import com.freshtrack.ui.theme.ColorBannerWarnText
 
 @Composable
 fun OfflineBanner() {
@@ -67,7 +68,7 @@ fun OfflineBanner() {
         enter = fadeIn() + slideInVertically { -it },
         exit = fadeOut() + slideOutVertically { -it }
     ) {
-        Surface(color = Color(0xFFFEF08A)) {
+        Surface(color = ColorBannerWarn) {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -75,14 +76,14 @@ fun OfflineBanner() {
                 Icon(
                     Icons.Default.Warning,
                     contentDescription = null,
-                    tint = Color(0xFF92400E),
+                    tint = ColorBannerWarnText,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
                     "Hors ligne — les données affichées peuvent être obsolètes",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF92400E),
+                    color = ColorBannerWarnText,
                     fontWeight = FontWeight.Medium
                 )
             }
