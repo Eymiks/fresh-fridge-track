@@ -134,7 +134,7 @@ Tests live in `src/**/*.{test,spec}.{ts,tsx}` and run in jsdom via vitest. There
 
 ---
 
-## Android — État d'implémentation (2026-05-05)
+## Android — État d'implémentation (2026-05-05, mise à jour 2026-05-17)
 
 L'application Android native (`android/`) vise la parité complète avec la PWA. Architecture : Kotlin + Jetpack Compose, Hilt, Room, Supabase, CameraX + ML Kit, WorkManager, Vico (charts).
 
@@ -574,13 +574,13 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - `IndexScreen` et `NotificationsScreen` : état `pendingDateProduct: Product?` mémorisé ; les `ProductCard` reçoivent un callback qui le positionne ; le composable de page rend `UpdateExpirationDateDialog` quand l'état n'est pas nul.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK. À vérifier sur appareil : sélecteur de date propre (clair/sombre), date persistée après reload, et propagation Realtime entre deux instances connectées au même foyer.
 
-**2026-05-17 — Amélioration globale UI/UX Android**
+**2026-05-17 — Alignement UI/UX Android (session MobAI comparative PWA)**
 - Analyse comparative PWA ↔ Android via MobAI sur moto g54 5G (Android 15). Captures de tous les écrans principaux.
-- `StatsUseCase.kt` : labels de mois passés en français (tableau `frMonths`) — `month.name.take(3)` remplacé. Les graphiques Anti-Gaspi et Tendances affichent désormais "Déc Jan Fév Mar Avr Mai" au lieu de "Dec Jan Feb Mar Apr May".
-- `StatsScreen.kt` : `SmallMetric` (cartes Série/Utilisation/Conso moy.) utilise `CardDefaults.cardColors(containerColor = primaryContainer.copy(alpha = 0.3f))` — fond vert pâle cohérent avec le thème au lieu du gris Material par défaut.
-- `ProductDetailScreen.kt` : `QuickActionsCard` gagne un paramètre `modifier` (non-breaking). Les actions rapides restent dans la colonne scrollable — elles ne doivent PAS être sticky.
-- `IndexScreen.kt` : le chiffre des stat-cards (Périmés/Bientôt/Frais) passe de `FreshTextStyles.StatCount` (16sp) à `MaterialTheme.typography.titleLarge + FontWeight.Black` (22sp) pour plus d'impact visuel.
-- Vérification : `./gradlew.bat :app:assembleDebug` OK ; APK installé sur moto g54 5G. MobAI confirme : mois FR, cartes vertes, actions visibles sans scroll, barre distribution Frigo visible en haut.
+- `StatsUseCase.kt` (ligne 80) : labels des mois en français — `targetDate.month.name.take(3)` remplacé par un tableau `frMonths` indexé par `monthNumber - 1`. Les charts Anti-Gaspi et Tendances affichent désormais "Déc Jan Fév Mar Avr Mai" au lieu de "Dec Jan Feb Mar Apr May". Vérifié sur device via MobAI.
+- `StatsScreen.kt` (`SmallMetric`) : fond des cartes métriques (Série / Utilisation / Conso moy.) corrigé — `Card()` par défaut remplacé par `CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))`. Le fond gris/lavande est remplacé par un vert très pâle cohérent avec le thème. Vérifié sur device via MobAI.
+- `IndexScreen.kt` (`StatCardsRow`) : les chiffres Périmés / Bientôt / Frais passent de `FreshTextStyles.StatCount` (16sp) à `MaterialTheme.typography.titleLarge + FontWeight.Black` (22sp) pour plus d'impact visuel, conformément à la PWA. Vérifié sur device via MobAI.
+- `ProductDetailScreen.kt` (`QuickActionsCard`) : ajout du paramètre `modifier: Modifier = Modifier` pour permettre la personnalisation future. **Les boutons Ouvert/Consommé/Jeté restent dans la colonne scrollable — ne pas les extraire du scroll ni les rendre sticky.** Décision confirmée explicitement par l'utilisateur.
+- Vérification : `./gradlew.bat :app:assembleDebug` OK ; APK installé sur moto g54 5G (ZY22HVMV3X).
 
 ---
 
@@ -602,7 +602,7 @@ Ce guide documente les comportements de la PWA à reproduire sur Android. Toujou
 
 - **Hero scroll** : image plein-largeur (300dp) avec gradient selon statut (rouge/orange/vert).
 - **Sticky header** : apparaît après ~110dp de scroll — affiche bouton retour, miniature image, nom du produit (backdrop blur sur PWA). Sur Android : header compact dans la TopAppBar ou overlay dynamique.
-- **Actions produit** : grille 3 boutons côte à côte, toujours visibles : [Ouvert] [Consommé] [Jeté]. Bouton "Remettre actif" séparé pour les produits archivés.
+- **Actions produit** : grille 3 boutons côte à côte : [Ouvert] [Consommé] [Jeté]. Bouton "Remettre actif" séparé pour les produits archivés. Sur Android, ces boutons sont dans la colonne scrollable (`QuickActionsCard`) — **ne pas les rendre sticky ni les extraire du scroll** (décision confirmée 2026-05-17).
 - **Accordéons** (PWA) vs **Tabs** (Android acceptable) : sur la PWA, 3 accordéons verticaux (Nutrition & Allergènes / Ingrédients / Détails & Historique). Sur Android, tabs sont une adaptation native valide.
 - **Notes auto-save** : sauvegarder automatiquement à la perte de focus (`onFocusChanged hasFocus=false`), pas de bouton "Sauvegarder" explicite.
 - **Boutons Modifier/Supprimer** : full-width en bas de page sur la PWA. Sur Android, boutons fixes en bas avec `navigationBarsPadding()`.
