@@ -795,7 +795,8 @@ private fun StatCard(
             Column {
                 Text(
                     count.toString(),
-                    style = FreshTextStyles.StatCount,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Black,
                     color = if (isActive || count > 0) color else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(

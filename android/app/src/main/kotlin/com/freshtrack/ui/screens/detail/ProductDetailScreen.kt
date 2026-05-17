@@ -153,7 +153,7 @@ fun ProductDetailScreen(
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
     val showStickyHeader by remember(density) {
-        derivedStateOf { scrollState.value > with(density) { 110.dp.roundToPx() } }
+        derivedStateOf { scrollState.value > with(density) { 10.dp.roundToPx() } }
     }
 
     LaunchedEffect(ui.feedbackId) {
@@ -213,12 +213,8 @@ fun ProductDetailScreen(
         val notesDirty = notes != (product.notes ?: "")
 
         Box(Modifier.fillMaxSize().padding(innerPadding)) {
-            Column(
-                Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
-                    .padding(bottom = 14.dp)
-            ) {
+            Column(Modifier.fillMaxSize()) {
+                // Hero fixe — non-scrollable
                 Box(Modifier.fillMaxWidth().height(384.dp)) {
                     ProductHeroBackdrop(product = product, statusColor = statusColor)
                     TopFloatingActions(
@@ -234,8 +230,26 @@ fun ProductDetailScreen(
                     )
                 }
 
+                // Actions rapides toujours visibles (hors scroll)
+                QuickActionsCard(
+                    product = product,
+                    isMutating = ui.isMutating,
+                    onOpen = { vm.showOpeningDialog() },
+                    onSetStatus = vm::setStatus,
+                    onFreeze = { vm.freezeProduct() },
+                    onUnfreeze = { vm.unfreezeProduct() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                )
+
+                // Contenu scrollable
                 Column(
-                    Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+                    Modifier
+                        .weight(1f)
+                        .verticalScroll(scrollState)
+                        .padding(horizontal = 14.dp)
+                        .padding(bottom = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     DeadlineCard(
@@ -243,14 +257,6 @@ fun ProductDetailScreen(
                         daysLeft = daysLeft,
                         expirationStatus = expirationStatus,
                         statusColor = statusColor
-                    )
-                    QuickActionsCard(
-                        product = product,
-                        isMutating = ui.isMutating,
-                        onOpen = { vm.showOpeningDialog() },
-                        onSetStatus = vm::setStatus,
-                        onFreeze = { vm.freezeProduct() },
-                        onUnfreeze = { vm.unfreezeProduct() }
                     )
                     DetailAccordionCard(
                         title = "Nutrition & Allergènes",
@@ -606,10 +612,11 @@ private fun QuickActionsCard(
     onOpen: () -> Unit,
     onSetStatus: (ProductStatus) -> Unit,
     onFreeze: () -> Unit,
-    onUnfreeze: () -> Unit
+    onUnfreeze: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        Modifier.fillMaxWidth(),
+        modifier,
         shape = RoundedCornerShape(26.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {

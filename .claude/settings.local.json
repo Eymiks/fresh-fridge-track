@@ -22,7 +22,8 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Maxime\\\\Desktop\\\\Claude\\\\fresh-fridge-track\" -Recurse -Filter \"*.kt\")",
       "Bash(Select-Object -First 20 FullName)",
       "Bash(./gradlew.bat :app:testDebugUnitTest)",
-      "mcp__plugin_mobai_mobai-http__http_request"
+      "mcp__plugin_mobai_mobai-http__http_request",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot"
     ]
   },
   "hooks": {
