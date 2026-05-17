@@ -582,6 +582,14 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - `ProductDetailScreen.kt` (`QuickActionsCard`) : ajout du paramètre `modifier: Modifier = Modifier` pour permettre la personnalisation future. **Les boutons Ouvert/Consommé/Jeté restent dans la colonne scrollable — ne pas les extraire du scroll ni les rendre sticky.** Décision confirmée explicitement par l'utilisateur.
 - Vérification : `./gradlew.bat :app:assembleDebug` OK ; APK installé sur moto g54 5G (ZY22HVMV3X).
 
+**2026-05-17 — Amélioration globale UI/UX Android avec comparaison PWA**
+- PWA relancée sur `https://localhost:3000/` et `https://192.168.1.50:3000/`; références mobiles observées via le navigateur intégré Codex et enregistrées dans `screenshots/pwa/`.
+- App Android observée sur moto g54 5G via MobAI avant/après modifications ; captures conservées dans `screenshots/android/`.
+- `StatsScreen.kt` : onglet Frigo rapproché de la PWA — carte `EN STOCK` plus compacte, produits urgents affichés en lignes intégrées avec séparateurs et barres de vie, catégories affichées en tuiles compactes plutôt qu'en longues lignes.
+- `NotificationsScreen.kt` : sous-titres d'alertes humanisés (`1 produit périmé`, `Aucune alerte active`) au lieu des libellés techniques `périmé(s)`.
+- `IndexScreen.kt` : état de recherche sans résultat enrichi avec action `Réinitialiser`; descriptions sémantiques ajoutées aux boutons iconiques de tri/filtre et aux bulles du FAB.
+- Vérification intermédiaire : `./gradlew.bat :app:compileDebugKotlin` OK ; APK debug assemblé et installé sur moto g54 5G pour contrôle visuel MobAI.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

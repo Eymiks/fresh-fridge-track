@@ -35,6 +35,7 @@ import androidx.compose.runtime.key
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -140,48 +141,40 @@ private fun FrigoTab(products: List<Product>) {
     val urgent = active.sortedBy { it.getDaysUntilExpiration() }.take(5)
     val categoryCounts = active.groupingBy { it.category ?: "autre" }.eachCount()
 
-    FreshStatsCard {
-        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            SectionTitle("En stock", Icons.Default.Inventory2, MaterialTheme.colorScheme.primary)
-            Text(active.size.toString(), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black)
-            if (active.isNotEmpty()) {
-                StockDistributionBar(expired.size, soon.size, fresh.size, active.size)
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Legend("Périmés", expired.size, ColorExpired)
-                    Legend("Bientôt", soon.size, ColorSoon)
-                    Legend("Frais", fresh.size, ColorFresh)
-                }
-            } else {
-                Text("Aucun produit en stock", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-    }
+    StockSummaryCard(
+        activeCount = active.size,
+        expiredCount = expired.size,
+        soonCount = soon.size,
+        freshCount = fresh.size
+    )
 
     if (urgent.isNotEmpty()) {
         SectionCard("Bientôt à vérifier", Icons.Default.Schedule, ColorSoon) {
-            urgent.forEach { product -> UrgentRow(product) }
+            urgent.forEachIndexed { index, product ->
+                UrgentRow(product)
+                if (index != urgent.lastIndex) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f))
+                }
+            }
         }
     }
 
     if (categoryCounts.isNotEmpty()) {
         SectionCard("Par catégorie", Icons.Default.Category, MaterialTheme.colorScheme.primary) {
-            categoryCounts.entries.sortedByDescending { it.value }.forEach { (key, count) ->
-                val catIconName = PRODUCT_CATEGORIES.find { it.key == key }?.icon ?: ""
-                val catIcon = categoryIcon(catIconName)
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(catIcon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(8.dp))
-                    Text(categoryLabel(key), modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-                    Text(count.toString(), fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+            categoryCounts.entries
+                .sortedByDescending { it.value }
+                .take(6)
+                .chunked(3)
+                .forEach { row ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        row.forEach { (key, count) ->
+                            CategoryTile(key = key, count = count, modifier = Modifier.weight(1f))
+                        }
+                        repeat(3 - row.size) {
+                            Spacer(Modifier.weight(1f))
+                        }
+                    }
                 }
-            }
         }
     }
 
@@ -238,32 +231,106 @@ private fun UrgentRow(product: Product) {
         lifeProgress > 0.2f -> ColorSoon
         else -> ColorExpired
     }
-    FreshStatsCard {
-        Column(Modifier.padding(horizontal = 12.dp).padding(top = 12.dp, bottom = 10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                FreshProductImage(
-                    imageUrl = product.imageUrl,
-                    contentDescription = product.name,
-                    modifier = Modifier.size(44.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    tint = color,
-                    fallbackIcon = Icons.Default.Inventory2
-                )
-                Spacer(Modifier.size(10.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(product.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(categoryLabel(product.category ?: "autre"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Text(label, color = color, fontWeight = FontWeight.Bold)
-            }
-            Spacer(Modifier.height(8.dp))
-            LinearProgressIndicator(
-                progress = { lifeProgress },
-                modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(999.dp)),
-                color = barColor,
-                trackColor = barColor.copy(alpha = 0.20f)
+    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            FreshProductImage(
+                imageUrl = product.imageUrl,
+                contentDescription = product.name,
+                modifier = Modifier.size(42.dp),
+                shape = RoundedCornerShape(12.dp),
+                tint = color,
+                fallbackIcon = Icons.Default.Inventory2
             )
+            Spacer(Modifier.size(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    product.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    categoryLabel(product.category ?: "autre"),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Surface(
+                shape = RoundedCornerShape(999.dp),
+                color = color.copy(alpha = 0.12f)
+            ) {
+                Text(
+                    label,
+                    color = color,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
+                )
+            }
         }
+        LinearProgressIndicator(
+            progress = { lifeProgress },
+            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(999.dp)),
+            color = barColor,
+            trackColor = barColor.copy(alpha = 0.16f)
+        )
+    }
+}
+
+@Composable
+private fun StockSummaryCard(
+    activeCount: Int,
+    expiredCount: Int,
+    soonCount: Int,
+    freshCount: Int
+) {
+    FreshStatsCard {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            Text(
+                "EN STOCK",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Black
+            )
+            Text(activeCount.toString(), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black)
+            if (activeCount > 0) {
+                StockDistributionBar(expiredCount, soonCount, freshCount, activeCount)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Legend("Périmés", expiredCount, ColorExpired)
+                    Legend("Bientôt", soonCount, ColorSoon)
+                    Legend("Frais", freshCount, ColorFresh)
+                }
+            } else {
+                Text("Aucun produit en stock", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryTile(key: String, count: Int, modifier: Modifier = Modifier) {
+    val catIconName = PRODUCT_CATEGORIES.find { it.key == key }?.icon ?: ""
+    val catIcon = categoryIcon(catIconName)
+    Column(
+        modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f))
+            .padding(horizontal = 10.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(5.dp)
+    ) {
+        Icon(catIcon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        Text(count.toString(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+        Text(
+            categoryLabel(key),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

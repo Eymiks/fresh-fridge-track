@@ -366,8 +366,12 @@ private fun EmptyAlertState(title: String, subtitle: String, isAllClear: Boolean
 }
 
 private fun formatHeaderSubtitle(expiredCount: Int, soonCount: Int): String = when {
-    expiredCount > 0 && soonCount > 0 -> "$expiredCount périmé(s) · $soonCount bientôt"
-    expiredCount > 0 -> "$expiredCount périmé(s)"
-    soonCount > 0 -> "$soonCount bientôt périmé(s)"
-    else -> "Aucun produit à vérifier"
+    expiredCount > 0 && soonCount > 0 ->
+        "${expiredCount} ${plural(expiredCount, "périmé", "périmés")} · ${soonCount} ${plural(soonCount, "bientôt", "bientôt")}"
+    expiredCount > 0 -> "$expiredCount ${plural(expiredCount, "produit périmé", "produits périmés")}"
+    soonCount > 0 -> "$soonCount ${plural(soonCount, "produit bientôt périmé", "produits bientôt périmés")}"
+    else -> "Aucune alerte active"
 }
+
+private fun plural(count: Int, singular: String, plural: String): String =
+    if (count > 1) plural else singular

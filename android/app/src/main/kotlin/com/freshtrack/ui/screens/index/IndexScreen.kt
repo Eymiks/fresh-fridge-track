@@ -82,6 +82,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -611,6 +615,15 @@ fun IndexScreen(
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                    TextButton(
+                                        onClick = {
+                                            vm.setSearch("")
+                                            vm.setStatusFilter(StatusFilter.ALL)
+                                            vm.setCategory("all")
+                                        }
+                                    ) {
+                                        Text("Réinitialiser", style = FreshTextStyles.ActionLabel)
+                                    }
                                 }
                             }
                         }
@@ -684,9 +697,14 @@ private fun HeaderIconButton(
     contentDescription: String,
     isActive: Boolean
 ) {
+    val semanticLabel = contentDescription
     Box {
         Surface(
             onClick = onClick,
+            modifier = Modifier.semantics {
+                role = Role.Button
+                this.contentDescription = semanticLabel
+            },
             shape = MaterialTheme.shapes.medium,
             color = MaterialTheme.colorScheme.surface,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
@@ -982,6 +1000,10 @@ private fun BubbleOption(
 ) {
     Surface(
         onClick = onClick,
+        modifier = Modifier.semantics {
+            role = Role.Button
+            contentDescription = label
+        },
         shape = MaterialTheme.shapes.medium,
         color = containerColor,
         tonalElevation = 6.dp,
