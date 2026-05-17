@@ -1,6 +1,7 @@
 package com.freshtrack.ui.navigation
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -71,6 +72,7 @@ import com.freshtrack.ui.screens.add.AddProductScreen
 import com.freshtrack.ui.screens.stats.StatsScreen
 import com.freshtrack.ui.theme.AppearanceViewModel
 import com.freshtrack.ui.theme.FreshTextStyles
+import com.freshtrack.ui.theme.LocalAppearance
 import com.freshtrack.ui.theme.ThemeMode
 
 object Routes {
@@ -125,6 +127,9 @@ val bottomTabs = listOf(
 fun AppNavigation() {
     val authVm: AuthViewModel = hiltViewModel()
     val authState by authVm.authState.collectAsState()
+    val reduceMotion = LocalAppearance.current.reduceMotion
+    val slideDuration = if (reduceMotion) 120 else 220
+    val fadeDuration = if (reduceMotion) 100 else 180
 
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -152,11 +157,55 @@ fun AppNavigation() {
         }
     }
 
-    NavHost(navController = navController, startDestination = Routes.LOADING) {
-        composable(Routes.LOADING) { LoadingScreen() }
-        composable(Routes.AUTH) { AuthScreen(navController) }
-        composable(Routes.HOUSEHOLD_SETUP) { HouseholdSetupScreen(navController) }
-        composable(Routes.MAIN) { MainScreen(navController) }
+    NavHost(
+        navController = navController,
+        startDestination = Routes.LOADING,
+        enterTransition = {
+            if (reduceMotion) fadeIn(tween(fadeDuration))
+            else slideInHorizontally(tween(slideDuration)) { it } + fadeIn(tween(slideDuration))
+        },
+        exitTransition = {
+            if (reduceMotion) fadeOut(tween(fadeDuration))
+            else slideOutHorizontally(tween(fadeDuration)) { -it / 3 } + fadeOut(tween(fadeDuration))
+        },
+        popEnterTransition = {
+            if (reduceMotion) fadeIn(tween(fadeDuration))
+            else slideInHorizontally(tween(slideDuration)) { -it / 3 } + fadeIn(tween(slideDuration))
+        },
+        popExitTransition = {
+            if (reduceMotion) fadeOut(tween(fadeDuration))
+            else slideOutHorizontally(tween(fadeDuration)) { it } + fadeOut(tween(fadeDuration))
+        }
+    ) {
+        // Routes sans animation de slide (pas de back-stack ou transition root)
+        composable(
+            Routes.LOADING,
+            enterTransition = { fadeIn(tween(200)) },
+            exitTransition = { fadeOut(tween(200)) },
+            popEnterTransition = { fadeIn(tween(200)) },
+            popExitTransition = { fadeOut(tween(200)) }
+        ) { LoadingScreen() }
+        composable(
+            Routes.AUTH,
+            enterTransition = { fadeIn(tween(200)) },
+            exitTransition = { fadeOut(tween(200)) },
+            popEnterTransition = { fadeIn(tween(200)) },
+            popExitTransition = { fadeOut(tween(200)) }
+        ) { AuthScreen(navController) }
+        composable(
+            Routes.HOUSEHOLD_SETUP,
+            enterTransition = { fadeIn(tween(200)) },
+            exitTransition = { fadeOut(tween(200)) },
+            popEnterTransition = { fadeIn(tween(200)) },
+            popExitTransition = { fadeOut(tween(200)) }
+        ) { HouseholdSetupScreen(navController) }
+        composable(
+            Routes.MAIN,
+            enterTransition = { fadeIn(tween(200)) },
+            exitTransition = { fadeOut(tween(200)) },
+            popEnterTransition = { fadeIn(tween(200)) },
+            popExitTransition = { fadeOut(tween(200)) }
+        ) { MainScreen(navController) }
         composable(Routes.PRODUCT_DETAIL) { back ->
             ProductDetailScreen(navController, back.arguments?.getString("productId") ?: "")
         }
@@ -300,7 +349,11 @@ private fun MainScreen(rootNavController: androidx.navigation.NavController) {
                 NavHost(
                     navController = tabNavController,
                     startDestination = Routes.INDEX,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enterTransition = { fadeIn(tween(160)) },
+                    exitTransition = { fadeOut(tween(120)) },
+                    popEnterTransition = { fadeIn(tween(160)) },
+                    popExitTransition = { fadeOut(tween(120)) }
                 ) {
                     composable(Routes.INDEX) {
                         IndexScreen(

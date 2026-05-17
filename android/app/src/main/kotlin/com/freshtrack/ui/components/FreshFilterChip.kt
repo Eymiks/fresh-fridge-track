@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.freshtrack.ui.theme.Density
+import com.freshtrack.ui.theme.LocalAppearance
 
 @Composable
 fun FreshFilterChip(
@@ -23,6 +25,18 @@ fun FreshFilterChip(
     color: Color = MaterialTheme.colorScheme.primary,
     onClick: () -> Unit
 ) {
+    val density = LocalAppearance.current.density
+    val verticalPadding = when (density) {
+        Density.COMPACT -> 6.dp
+        Density.NORMAL -> 9.dp
+        Density.SPACIOUS -> 12.dp
+    }
+    val badgeVerticalPadding = when (density) {
+        Density.COMPACT -> 1.dp
+        Density.NORMAL -> 2.dp
+        Density.SPACIOUS -> 3.dp
+    }
+
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(999.dp),
@@ -30,7 +44,7 @@ fun FreshFilterChip(
         border = BorderStroke(1.dp, if (selected) color.copy(alpha = 0.24f) else MaterialTheme.colorScheme.outlineVariant)
     ) {
         Row(
-            Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            Modifier.padding(horizontal = 12.dp, vertical = verticalPadding),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -47,7 +61,7 @@ fun FreshFilterChip(
                 ) {
                     Text(
                         count.toString(),
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = badgeVerticalPadding),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Black,
                         color = if (selected) MaterialTheme.colorScheme.onPrimary

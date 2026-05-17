@@ -21,7 +21,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.freshtrack.ui.theme.Density
 import com.freshtrack.ui.theme.FreshTextStyles
+import com.freshtrack.ui.theme.LocalAppearance
 
 @Composable
 fun ProductSectionHeader(
@@ -33,6 +35,18 @@ fun ProductSectionHeader(
     isCollapsed: Boolean? = null,
     onToggle: (() -> Unit)? = null
 ) {
+    val density = LocalAppearance.current.density
+    val verticalPadding = when (density) {
+        Density.COMPACT -> 6.dp
+        Density.NORMAL -> 9.dp
+        Density.SPACIOUS -> 12.dp
+    }
+    val iconSpacing = when (density) {
+        Density.COMPACT -> 6.dp
+        Density.NORMAL -> 8.dp
+        Density.SPACIOUS -> 10.dp
+    }
+
     val clickableModifier = if (onToggle != null) {
         Modifier.clickable(onClick = onToggle)
     } else {
@@ -44,9 +58,9 @@ fun ProductSectionHeader(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
             .then(clickableModifier)
-            .padding(horizontal = 20.dp, vertical = 9.dp),
+            .padding(horizontal = 20.dp, vertical = verticalPadding),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        horizontalArrangement = Arrangement.spacedBy(iconSpacing)
     ) {
         Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(15.dp))
         Text(
