@@ -21,7 +21,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.AcUnit
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Schedule
@@ -55,6 +59,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.freshtrack.domain.catalog.PRODUCT_CATEGORIES
+import com.freshtrack.ui.components.FreshProductImage
 import com.freshtrack.domain.model.ExpirationStatus
 import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.model.ProductStatus
@@ -161,6 +166,8 @@ private fun FrigoTab(products: List<Product>) {
     if (categoryCounts.isNotEmpty()) {
         SectionCard("Par catégorie", Icons.Default.Category, MaterialTheme.colorScheme.primary) {
             categoryCounts.entries.sortedByDescending { it.value }.forEach { (key, count) ->
+                val catIconName = PRODUCT_CATEGORIES.find { it.key == key }?.icon ?: ""
+                val catIcon = categoryIcon(catIconName)
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -169,7 +176,7 @@ private fun FrigoTab(products: List<Product>) {
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Category, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                    Icon(catIcon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(8.dp))
                     Text(categoryLabel(key), modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
                     Text(count.toString(), fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
@@ -234,7 +241,14 @@ private fun UrgentRow(product: Product) {
     FreshStatsCard {
         Column(Modifier.padding(horizontal = 12.dp).padding(top = 12.dp, bottom = 10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Inventory2, contentDescription = null, tint = color)
+                FreshProductImage(
+                    imageUrl = product.imageUrl,
+                    contentDescription = product.name,
+                    modifier = Modifier.size(44.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    tint = color,
+                    fallbackIcon = Icons.Default.Inventory2
+                )
                 Spacer(Modifier.size(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(product.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -497,6 +511,15 @@ private fun SmallMetric(title: String, value: String, subtitle: String, icon: Im
             Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+}
+
+private fun categoryIcon(iconName: String): ImageVector = when (iconName) {
+    "Apple", "Wheat", "Sparkles" -> Icons.Default.Eco
+    "Milk", "Beef", "Fish", "Croissant", "CupSoda", "UtensilsCrossed" -> Icons.Default.Restaurant
+    "Snowflake" -> Icons.Default.AcUnit
+    "Archive", "Package" -> Icons.Default.Inventory2
+    "Egg" -> Icons.Default.CheckCircle
+    else -> Icons.Default.Category
 }
 
 @Composable

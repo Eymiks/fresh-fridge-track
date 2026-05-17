@@ -150,8 +150,8 @@ fun IndexScreen(
     var pendingDateProduct by remember { mutableStateOf<Product?>(null) }
 
     val headerBg = when {
-        totalCounts.expired > 0 -> ColorExpired.copy(alpha = 0.055f)
-        totalCounts.soon > 0 -> ColorSoon.copy(alpha = 0.055f)
+        totalCounts.expired > 0 -> ColorExpired.copy(alpha = 0.14f)
+        totalCounts.soon > 0 -> ColorSoon.copy(alpha = 0.10f)
         else -> MaterialTheme.colorScheme.surface
     }
 
