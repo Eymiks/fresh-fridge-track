@@ -1,0 +1,306 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e153]:
+    - generic [ref=e154]:
+      - generic [ref=e156]:
+        - img [ref=e158]
+        - heading "FreshTrack" [level=1] [ref=e161]
+      - generic [ref=e162]:
+        - button "1 Périmés" [ref=e163] [cursor=pointer]:
+          - img [ref=e165]
+          - generic [ref=e167]:
+            - paragraph [ref=e168]: "1"
+            - paragraph [ref=e169]: Périmés
+        - button "1 Bientôt" [ref=e170] [cursor=pointer]:
+          - img [ref=e172]
+          - generic [ref=e175]:
+            - paragraph [ref=e176]: "1"
+            - paragraph [ref=e177]: Bientôt
+        - button "11 Frais" [ref=e178] [cursor=pointer]:
+          - img [ref=e180]
+          - generic [ref=e183]:
+            - paragraph [ref=e184]: "11"
+            - paragraph [ref=e185]: Frais
+    - generic [ref=e186]:
+      - generic [ref=e187]:
+        - img [ref=e188]
+        - textbox "Rechercher un produit..." [ref=e191]
+      - button [ref=e193] [cursor=pointer]:
+        - img [ref=e194]
+      - button [ref=e197] [cursor=pointer]:
+        - img [ref=e198]
+    - generic [ref=e200]:
+      - generic [ref=e201]:
+        - img [ref=e202]
+        - generic [ref=e204]: 1 produit périmé
+      - button "Voir" [ref=e205] [cursor=pointer]
+    - generic [ref=e207]:
+      - generic [ref=e208]:
+        - button "Périmés(1)" [ref=e209] [cursor=pointer]:
+          - img [ref=e210]
+          - heading "Périmés(1)" [level=3] [ref=e212]:
+            - text: Périmés
+            - generic [ref=e213]: (1)
+          - img [ref=e214]
+        - generic [ref=e218]:
+          - generic [ref=e219]:
+            - img [ref=e220]
+            - generic [ref=e225]: Consommé
+          - generic [ref=e226]:
+            - generic [ref=e227]: Jeté
+            - img [ref=e228]
+          - generic [ref=e231] [cursor=pointer]:
+            - img "Coca-Cola goût original" [ref=e234]
+            - generic [ref=e235]:
+              - paragraph [ref=e236]: Coca-Cola goût original
+              - paragraph [ref=e237]: Coca cola
+              - paragraph [ref=e238]: Ajouté par Maxime
+              - generic [ref=e239]:
+                - img [ref=e240]
+                - text: Ouvert
+            - generic [ref=e244]:
+              - generic [ref=e245]: 140j
+              - generic [ref=e246]: E
+              - button [ref=e247]:
+                - img [ref=e248]
+      - generic [ref=e252]:
+        - button "Bientôt périmés(1)" [ref=e253] [cursor=pointer]:
+          - img [ref=e254]
+          - heading "Bientôt périmés(1)" [level=3] [ref=e257]:
+            - text: Bientôt périmés
+            - generic [ref=e258]: (1)
+          - img [ref=e259]
+        - generic [ref=e263]:
+          - generic [ref=e264]:
+            - img [ref=e265]
+            - generic [ref=e270]: Consommé
+          - generic [ref=e271]:
+            - generic [ref=e272]: Jeté
+            - img [ref=e273]
+          - generic [ref=e276] [cursor=pointer]:
+            - img "4 Nems porc" [ref=e279]
+            - generic [ref=e280]:
+              - paragraph [ref=e281]: 4 Nems porc
+              - paragraph [ref=e282]: Belle France
+              - paragraph [ref=e283]: Ajouté par Maxime
+              - generic [ref=e284]:
+                - img [ref=e285]
+                - text: Ouvert
+            - generic [ref=e289]:
+              - generic [ref=e290]: Auj.
+              - generic [ref=e291]: D
+              - button [ref=e292]:
+                - img [ref=e293]
+      - generic [ref=e297]:
+        - button "Frais(11)" [ref=e298] [cursor=pointer]:
+          - img [ref=e299]
+          - heading "Frais(11)" [level=3] [ref=e302]:
+            - text: Frais
+            - generic [ref=e303]: (11)
+          - img [ref=e304]
+        - generic [ref=e307]:
+          - generic [ref=e308]:
+            - generic [ref=e309]:
+              - img [ref=e310]
+              - generic [ref=e315]: Consommé
+            - generic [ref=e316]:
+              - generic [ref=e317]: Jeté
+              - img [ref=e318]
+            - generic [ref=e321] [cursor=pointer]:
+              - img "Tenders" [ref=e324]
+              - generic [ref=e325]:
+                - paragraph [ref=e326]: Tenders
+                - paragraph [ref=e327]: HappyVore
+                - paragraph [ref=e328]: Ajouté par Maxime
+              - generic [ref=e329]:
+                - generic [ref=e330]: 19j
+                - generic [ref=e331]: A
+                - button [ref=e332]:
+                  - img [ref=e333]
+          - generic [ref=e337]:
+            - generic [ref=e338]:
+              - img [ref=e339]
+              - generic [ref=e344]: Consommé
+            - generic [ref=e345]:
+              - generic [ref=e346]: Jeté
+              - img [ref=e347]
+            - generic [ref=e350] [cursor=pointer]:
+              - img "Honey and Lemon" [ref=e353]
+              - generic [ref=e354]:
+                - paragraph [ref=e355]: Honey and Lemon
+                - paragraph [ref=e356]: Jakemans
+                - paragraph [ref=e357]: Ajouté par Maxime
+              - generic [ref=e358]:
+                - generic [ref=e359]: 105j
+                - generic [ref=e360]: UNKNOWN
+                - button [ref=e361]:
+                  - img [ref=e362]
+          - generic [ref=e366]:
+            - generic [ref=e367]:
+              - img [ref=e368]
+              - generic [ref=e373]: Consommé
+            - generic [ref=e374]:
+              - generic [ref=e375]: Jeté
+              - img [ref=e376]
+            - generic [ref=e379] [cursor=pointer]:
+              - img "Honey and Lemon" [ref=e382]
+              - generic [ref=e383]:
+                - paragraph [ref=e384]: Honey and Lemon
+                - paragraph [ref=e385]: Jakemans
+                - paragraph [ref=e386]: Ajouté par Maxime
+              - generic [ref=e387]:
+                - generic [ref=e388]: 133j
+                - generic [ref=e389]: UNKNOWN
+                - button [ref=e390]:
+                  - img [ref=e391]
+          - generic [ref=e395]:
+            - generic [ref=e396]:
+              - img [ref=e397]
+              - generic [ref=e402]: Consommé
+            - generic [ref=e403]:
+              - generic [ref=e404]: Jeté
+              - img [ref=e405]
+            - generic [ref=e408] [cursor=pointer]:
+              - img "La Mordue Rouge" [ref=e411]
+              - generic [ref=e412]:
+                - paragraph [ref=e413]: La Mordue Rouge
+                - paragraph [ref=e414]: La Mordue
+                - paragraph [ref=e415]: Ajouté par Maxime
+              - generic [ref=e416]:
+                - generic [ref=e417]: 204j
+                - generic [ref=e418]: NOT-APPLICABLE
+                - button [ref=e419]:
+                  - img [ref=e420]
+          - generic [ref=e424]:
+            - generic [ref=e425]:
+              - img [ref=e426]
+              - generic [ref=e431]: Consommé
+            - generic [ref=e432]:
+              - generic [ref=e433]: Jeté
+              - img [ref=e434]
+            - generic [ref=e437] [cursor=pointer]:
+              - img "Monster Juiced khaotic" [ref=e440]
+              - generic [ref=e441]:
+                - paragraph [ref=e442]: Monster Juiced khaotic
+                - paragraph [ref=e443]: Monster energy
+                - paragraph [ref=e444]: Ajouté par Maxime
+              - generic [ref=e445]:
+                - generic [ref=e446]: 219j
+                - generic [ref=e447]: E
+                - button [ref=e448]:
+                  - img [ref=e449]
+          - generic [ref=e453]:
+            - generic [ref=e454]:
+              - img [ref=e455]
+              - generic [ref=e460]: Consommé
+            - generic [ref=e461]:
+              - generic [ref=e462]: Jeté
+              - img [ref=e463]
+            - generic [ref=e466] [cursor=pointer]:
+              - img "Breizh Cola cerise" [ref=e469]
+              - generic [ref=e470]:
+                - paragraph [ref=e471]: Breizh Cola cerise
+                - paragraph [ref=e472]: BREIZH COLA
+              - generic [ref=e473]:
+                - generic [ref=e474]: 247j
+                - generic [ref=e475]: E
+                - button [ref=e476]:
+                  - img [ref=e477]
+          - generic [ref=e481]:
+            - generic [ref=e482]:
+              - img [ref=e483]
+              - generic [ref=e488]: Consommé
+            - generic [ref=e489]:
+              - generic [ref=e490]: Jeté
+              - img [ref=e491]
+            - generic [ref=e494] [cursor=pointer]:
+              - generic [ref=e496]:
+                - img "Limonade" [ref=e497]
+                - img [ref=e499]
+              - generic [ref=e504]:
+                - paragraph [ref=e505]: Limonade
+                - paragraph [ref=e506]: Plancoët
+                - paragraph [ref=e507]: Ajouté par Maxime
+              - generic [ref=e508]:
+                - generic [ref=e509]: 73j
+                - generic [ref=e510]: D
+                - button [ref=e511]:
+                  - img [ref=e512]
+          - generic [ref=e516]:
+            - generic [ref=e517]:
+              - img [ref=e518]
+              - generic [ref=e523]: Consommé
+            - generic [ref=e524]:
+              - generic [ref=e525]: Jeté
+              - img [ref=e526]
+            - generic [ref=e529] [cursor=pointer]:
+              - img "Sirop de citron" [ref=e532]
+              - generic [ref=e533]:
+                - paragraph [ref=e534]: Sirop de citron
+                - paragraph [ref=e535]: Marque Repère, Frucci
+                - paragraph [ref=e536]: Ajouté par Maxime
+              - generic [ref=e537]:
+                - generic [ref=e538]: 281j
+                - generic [ref=e539]: UNKNOWN
+                - button [ref=e540]:
+                  - img [ref=e541]
+          - generic [ref=e545]:
+            - generic [ref=e546]:
+              - img [ref=e547]
+              - generic [ref=e552]: Consommé
+            - generic [ref=e553]:
+              - generic [ref=e554]: Jeté
+              - img [ref=e555]
+            - generic [ref=e558] [cursor=pointer]:
+              - img "Cola" [ref=e561]
+              - generic [ref=e562]:
+                - paragraph [ref=e563]: Cola
+                - paragraph [ref=e564]: Breizh Cola
+                - paragraph [ref=e565]: Ajouté par Maxime
+              - generic [ref=e566]:
+                - generic [ref=e567]: 311j
+                - generic [ref=e568]: E
+                - button [ref=e569]:
+                  - img [ref=e570]
+          - generic [ref=e574]:
+            - generic [ref=e575]:
+              - img [ref=e576]
+              - generic [ref=e581]: Consommé
+            - generic [ref=e582]:
+              - generic [ref=e583]: Jeté
+              - img [ref=e584]
+            - generic [ref=e587] [cursor=pointer]:
+              - img "Monster Energy Rio Punch" [ref=e590]
+              - generic [ref=e591]:
+                - paragraph [ref=e592]: Monster Energy Rio Punch
+                - paragraph [ref=e593]: Monster Energy
+                - paragraph [ref=e594]: Ajouté par Maxime
+              - generic [ref=e595]:
+                - generic [ref=e596]: 590j
+                - generic [ref=e597]: D
+                - button [ref=e598]:
+                  - img [ref=e599]
+          - generic [ref=e603]:
+            - generic [ref=e604]:
+              - img [ref=e605]
+              - generic [ref=e610]: Consommé
+            - generic [ref=e611]:
+              - generic [ref=e612]: Jeté
+              - img [ref=e613]
+            - generic [ref=e616] [cursor=pointer]:
+              - img "Monster Juiced khaotic" [ref=e619]
+              - generic [ref=e620]:
+                - paragraph [ref=e621]: Monster Juiced khaotic
+                - paragraph [ref=e622]: Monster energy
+                - paragraph [ref=e623]: Ajouté par Maxime
+              - generic [ref=e624]:
+                - generic [ref=e625]: 650j
+                - generic [ref=e626]: E
+                - button [ref=e627]:
+                  - img [ref=e628]
+    - button [ref=e632] [cursor=pointer]:
+      - img [ref=e633]
+  - button "Ouvrir le menu" [ref=e634] [cursor=pointer]:
+    - img [ref=e635]

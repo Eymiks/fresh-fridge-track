@@ -1,0 +1,26 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e117]:
+    - generic [ref=e118]:
+      - img [ref=e120]
+      - heading "FreshTrack" [level=1] [ref=e123]
+      - paragraph [ref=e124]: Gérez votre frigo en famille
+    - generic [ref=e125]:
+      - button "Connexion" [ref=e126] [cursor=pointer]
+      - button "Inscription" [ref=e127] [cursor=pointer]
+    - generic [ref=e128]:
+      - generic [ref=e129]:
+        - img [ref=e130]
+        - textbox "Email" [ref=e133]
+      - generic [ref=e134]:
+        - img [ref=e135]
+        - textbox "Mot de passe" [ref=e138]
+        - button [ref=e139] [cursor=pointer]:
+          - img [ref=e140]
+      - button "Se connecter" [ref=e143] [cursor=pointer]
+    - generic [ref=e146]: ou
+    - button "Continuer sans compte" [ref=e148] [cursor=pointer]:
+      - img [ref=e149]
+      - text: Continuer sans compte

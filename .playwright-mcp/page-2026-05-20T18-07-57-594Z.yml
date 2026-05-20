@@ -1,0 +1,162 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e638]:
+    - generic [ref=e836]:
+      - button [ref=e837] [cursor=pointer]:
+        - img [ref=e838]
+      - img "Coca-Cola goût original" [ref=e841]
+      - generic [ref=e842]: Coca-Cola goût original
+    - generic [ref=e639]:
+      - generic [ref=e640]:
+        - button:
+          - img
+      - generic [ref=e646]:
+        - generic [ref=e647]:
+          - generic [ref=e648]:
+            - generic [ref=e649]:
+              - generic [ref=e651]:
+                - button "Coca-Cola goût original" [ref=e652] [cursor=pointer]:
+                  - img "Coca-Cola goût original" [ref=e653]
+                - button "Changer l'image du produit" [ref=e654] [cursor=pointer]:
+                  - img [ref=e655]
+              - generic [ref=e661]:
+                - paragraph [ref=e662]: Fiche produit
+                - heading "Coca-Cola goût original" [level=1] [ref=e663]
+                - paragraph [ref=e664]: Coca cola · 500 ml
+                - paragraph [ref=e665]:
+                  - img [ref=e666]
+                  - generic [ref=e669]: Boissons · Sodas
+            - generic [ref=e671]:
+              - button "E Nutri" [ref=e672] [cursor=pointer]:
+                - generic [ref=e673]: E
+                - generic [ref=e674]: Nutri
+              - button "4 NOVA" [ref=e675] [cursor=pointer]:
+                - generic [ref=e676]: "4"
+                - generic [ref=e677]: NOVA
+              - button "NOT-APPLICABLE Eco" [ref=e678] [cursor=pointer]:
+                - generic [ref=e679]: NOT-APPLICABLE
+                - generic [ref=e680]: Eco
+              - generic [ref=e682]:
+                - img [ref=e683]
+                - text: Périmé
+              - generic [ref=e686]:
+                - img [ref=e687]
+                - text: Ouvert
+          - generic [ref=e691]:
+            - generic [ref=e692]:
+              - img [ref=e694]
+              - paragraph [ref=e696]: Date limite
+              - paragraph [ref=e697]: "140"
+              - paragraph [ref=e698]: jours de retard
+              - paragraph [ref=e699]: 31 décembre 2025
+            - generic [ref=e700]:
+              - generic [ref=e702]:
+                - img [ref=e704]
+                - paragraph [ref=e708]: Ouvert depuis 3 jours
+              - generic [ref=e709]:
+                - img [ref=e711]
+                - paragraph [ref=e713]: Ce produit peut généralement être consommé jusqu'à 3 à 6 mois après la date d'expiration.
+        - generic [ref=e714]:
+          - generic [ref=e715]:
+            - generic [ref=e716]:
+              - img [ref=e718]
+              - generic [ref=e722]:
+                - paragraph [ref=e723]: Statut
+                - heading "Actions rapides" [level=2] [ref=e724]
+            - generic [ref=e725]:
+              - button "Ouvert" [ref=e726] [cursor=pointer]:
+                - img [ref=e727]
+                - generic [ref=e731]: Ouvert
+              - button "Consommé" [ref=e732] [cursor=pointer]:
+                - img [ref=e733]
+                - generic [ref=e738]: Consommé
+              - button "Jeté" [ref=e739] [cursor=pointer]:
+                - img [ref=e740]
+                - generic [ref=e743]: Jeté
+            - button "Remettre en actif" [ref=e744] [cursor=pointer]:
+              - img [ref=e745]
+              - text: Remettre en actif
+            - button "Mettre au congélateur (3 mois)" [ref=e748] [cursor=pointer]:
+              - img [ref=e749]
+              - text: Mettre au congélateur (3 mois)
+          - generic [ref=e754]:
+            - generic [ref=e755]:
+              - heading "Nutrition & Allergènes" [level=3] [ref=e756]:
+                - button "Nutrition & Allergènes" [expanded] [ref=e757] [cursor=pointer]:
+                  - generic [ref=e758]:
+                    - img [ref=e760]
+                    - paragraph [ref=e761]: Nutrition & Allergènes
+                  - img [ref=e762]
+              - region "Nutrition & Allergènes" [ref=e764]:
+                - generic [ref=e766]:
+                  - generic [ref=e767]:
+                    - generic [ref=e768]:
+                      - paragraph [ref=e769]: Énergie
+                      - paragraph [ref=e770]: 42 kcal
+                    - generic [ref=e771]:
+                      - paragraph [ref=e772]: Sucres
+                      - paragraph [ref=e773]: 10.6 g
+                    - generic [ref=e774]:
+                      - paragraph [ref=e775]: Sel
+                      - paragraph [ref=e776]: 0 g
+                    - generic [ref=e777]:
+                      - paragraph [ref=e778]: Protéines
+                      - paragraph [ref=e779]: 0 g
+                  - generic [ref=e780]:
+                    - heading "Valeurs nutritionnelles pour 100 g" [level=3] [ref=e781]
+                    - generic [ref=e782]:
+                      - generic [ref=e783]:
+                        - generic [ref=e784]: Énergie
+                        - generic [ref=e785]: 42 kcal
+                      - generic [ref=e786]:
+                        - generic [ref=e787]: Matières grasses
+                        - generic [ref=e788]: 0 g
+                      - generic [ref=e789]:
+                        - generic [ref=e790]: dont saturées
+                        - generic [ref=e791]: 0 g
+                      - generic [ref=e792]:
+                        - generic [ref=e793]: Glucides
+                        - generic [ref=e794]: 10.6 g
+                      - generic [ref=e795]:
+                        - generic [ref=e796]: dont sucres
+                        - generic [ref=e797]: 10.6 g
+                      - generic [ref=e798]:
+                        - generic [ref=e799]: Protéines
+                        - generic [ref=e800]: 0 g
+                      - generic [ref=e801]:
+                        - generic [ref=e802]: Fibres
+                        - generic [ref=e803]: 0 g
+                      - generic [ref=e804]:
+                        - generic [ref=e805]: Sel
+                        - generic [ref=e806]: 0 g
+            - generic [ref=e807]:
+              - heading "Ingrédients" [level=3] [ref=e808]:
+                - button "Ingrédients" [expanded] [active] [ref=e809] [cursor=pointer]:
+                  - generic [ref=e810]:
+                    - img [ref=e812]
+                    - paragraph [ref=e813]: Ingrédients
+                  - img [ref=e814]
+              - region "Ingrédients" [ref=e843]:
+                - generic [ref=e845]:
+                  - paragraph [ref=e847]: "Eau gazeifiée: sucre colorant: E150d; acidifiant: acide phosphorique; aromes naturels: arôme caféine."
+                  - generic [ref=e848]:
+                    - paragraph [ref=e849]: Additifs détectés
+                    - generic [ref=e851]: E150D
+                  - paragraph [ref=e852]: Liste issue d'OpenFoodFacts, à vérifier sur l'emballage.
+            - heading "Détails & historique" [level=3] [ref=e817]:
+              - button "Détails & historique" [ref=e818] [cursor=pointer]:
+                - generic [ref=e819]:
+                  - img [ref=e821]
+                  - paragraph [ref=e823]: Détails & historique
+                - img [ref=e824]
+        - generic [ref=e826]:
+          - button "Modifier" [ref=e827] [cursor=pointer]:
+            - img [ref=e828]
+            - text: Modifier
+          - button "Supprimer" [ref=e831] [cursor=pointer]:
+            - img [ref=e832]
+            - text: Supprimer
+  - button "Ouvrir le menu" [ref=e634] [cursor=pointer]:
+    - img [ref=e635]
