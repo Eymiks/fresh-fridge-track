@@ -282,8 +282,8 @@ fun AddProductScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             CompactFormSection(title = "Essentiel") {
                 OutlinedTextField(
@@ -466,7 +466,7 @@ fun AddProductScreen(
                         contentDescription = null,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(140.dp),
+                            .height(124.dp),
                         shape = MaterialTheme.shapes.large,
                         contentScale = ContentScale.Fit
                     )
@@ -474,7 +474,7 @@ fun AddProductScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(112.dp)
+                            .height(88.dp)
                             .clip(MaterialTheme.shapes.large)
                             .background(MaterialTheme.colorScheme.surfaceVariant),
                         contentAlignment = Alignment.Center
@@ -714,7 +714,7 @@ private fun CompactFormSection(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         shape = MaterialTheme.shapes.large
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(
                 Modifier
                     .fillMaxWidth()

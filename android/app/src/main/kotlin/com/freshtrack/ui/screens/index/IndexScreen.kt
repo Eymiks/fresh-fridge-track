@@ -13,6 +13,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -632,6 +634,14 @@ fun IndexScreen(
                     }
                 }
             }
+            if (fabExpanded) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.10f))
+                        .clickable { fabExpanded = false }
+                )
+            }
         }
     }
 
@@ -983,12 +993,14 @@ private fun FabOptions(
     ) {
         BubbleOption(
             label = "Plusieurs produits",
+            icon = Icons.Default.Inventory2,
             onClick = onMultiProduct,
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer
         )
         BubbleOption(
             label = "Un produit",
+            icon = Icons.Default.Add,
             onClick = onSingleProduct,
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -999,6 +1011,7 @@ private fun FabOptions(
 @Composable
 private fun BubbleOption(
     label: String,
+    icon: ImageVector,
     onClick: () -> Unit,
     containerColor: androidx.compose.ui.graphics.Color,
     contentColor: androidx.compose.ui.graphics.Color
@@ -1014,11 +1027,21 @@ private fun BubbleOption(
         tonalElevation = 6.dp,
         shadowElevation = 4.dp
     ) {
-        Text(
-            text = label,
-            color = contentColor,
-            style = FreshTextStyles.ButtonLabel,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
-        )
+        Row(
+            modifier = Modifier
+                .widthIn(min = 156.dp)
+                .heightIn(min = 46.dp)
+                .padding(horizontal = 14.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(18.dp))
+            Text(
+                text = label,
+                color = contentColor,
+                style = FreshTextStyles.ButtonLabel,
+                maxLines = 1
+            )
+        }
     }
 }

@@ -603,6 +603,13 @@ Validation attendue : sortie Gradle `Installed on 1 device.` Exemple observé : 
 - Vérification MobAI après installation sur moto g54 5G : le menu et les Paramètres exposent désormais des `Button` nommés au lieu de boutons anonymes.
 - Vérification intermédiaire : `./gradlew.bat :app:compileDebugKotlin` OK ; `./gradlew.bat :app:installDebug` OK (`Installed on 1 device.`).
 
+**2026-05-20 — Amélioration design Android guidée par MobAI**
+- MobAI a observé l'accueil, le FAB d'ajout, le formulaire produit, la fiche produit, les Stats, Alertes, Paramètres et le menu sur moto g54 5G. Captures avant/après conservées dans `screenshots/android/2026-05-20-*.png`.
+- `IndexScreen.kt` : le menu FAB affiche désormais un léger scrim et des bulles compactes avec icônes, afin de rendre l'état d'ajout explicite lorsqu'il recouvre la liste.
+- `ProductDetailScreen.kt` : la carte Date limite est allégée (bordure/fond plus doux), les badges de score normalisent les valeurs longues (`NOT-APPLICABLE` -> `N/A`) et le header sticky garde un libellé accessibilité explicite.
+- `AddProductScreen.kt` : sections légèrement densifiées et placeholder image réduit pour mieux respirer sur petit écran sans changer les champs ni le flux métier.
+- Vérifications prévues/observées : compilation Kotlin OK, installation debug sur device OK, vérifications MobAI des écrans retouchés OK.
+
 ---
 
 ## Android — Référence fonctionnalités PWA

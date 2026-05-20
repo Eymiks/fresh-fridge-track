@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -574,21 +575,22 @@ private fun DeadlineCard(
     }
     Card(
         Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = statusColor.copy(alpha = 0.10f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = statusColor.copy(alpha = 0.07f)),
+        border = BorderStroke(1.dp, statusColor.copy(alpha = 0.16f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
-            Modifier.fillMaxWidth().padding(22.dp),
+            Modifier.fillMaxWidth().padding(18.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
-                Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface.copy(alpha = 0.80f)),
+                Modifier.size(44.dp).clip(RoundedCornerShape(15.dp)).background(MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(expirationStatus.icon(), contentDescription = null, tint = statusColor)
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
             Text(
                 "Date limite",
                 style = MaterialTheme.typography.labelSmall,
@@ -597,12 +599,12 @@ private fun DeadlineCard(
             )
             Text(
                 counter,
-                style = MaterialTheme.typography.displayLarge,
+                style = MaterialTheme.typography.displayMedium,
                 color = statusColor,
                 fontWeight = FontWeight.Black,
                 textAlign = TextAlign.Center
             )
-            Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+            Text(label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black)
             Text(
                 formatDateLong(product.getEffectiveExpirationDate()).orEmpty(),
                 style = MaterialTheme.typography.bodyMedium,
@@ -618,9 +620,13 @@ private fun DeadlineCard(
                 val effectiveDate = product.getEffectiveExpirationDate()
                 Spacer(Modifier.height(10.dp))
                 Surface(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
                     shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
                 ) {
                     Column(Modifier.padding(12.dp)) {
                         Row(
@@ -698,11 +704,11 @@ private fun DeadlineCard(
             getPostExpiryNote(product.category, product.subcategory)?.let { note ->
                 Spacer(Modifier.height(10.dp))
                 Surface(
-                    color = ColorFrozen.copy(alpha = 0.08f),
+                    color = ColorFrozen.copy(alpha = 0.05f),
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth().border(
                         width = 1.dp,
-                        color = ColorFrozen.copy(alpha = 0.20f),
+                        color = ColorFrozen.copy(alpha = 0.16f),
                         shape = RoundedCornerShape(16.dp)
                     )
                 ) {
@@ -1285,8 +1291,14 @@ private fun FloatingDetailHeader(product: Product, onBack: () -> Unit) {
             Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Retour")
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier.clearAndSetSemantics {
+                    role = Role.Button
+                    contentDescription = "Retour"
+                }
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
             }
             ProductThumbnail(product = product, modifier = Modifier.size(34.dp), onClick = {})
             Spacer(Modifier.width(10.dp))
@@ -1325,13 +1337,25 @@ private fun SectionEyebrow(icon: ImageVector, eyebrow: String, title: String) {
 @Composable
 private fun ScoreBadgesRow(product: Product, onScoreClick: (ScoreDialogType) -> Unit) {
     // Always show Nutri-Score like PWA (shows '?' if unknown)
-    val nutriGrade = (product.nutriScore ?: "?").uppercase()
+    val nutriGrade = displayScoreValue(product.nutriScore)
     ScoreBadge("Nutri", nutriGrade, scoreColor(nutriGrade), onClick = { onScoreClick(ScoreDialogType.NUTRI) })
     product.novaGroup?.let {
         ScoreBadge("NOVA", it.toString(), novaColor(it), onClick = { onScoreClick(ScoreDialogType.NOVA) })
     }
     product.ecoScore?.let {
-        ScoreBadge("Eco", it.uppercase(), scoreColor(it), onClick = { onScoreClick(ScoreDialogType.ECO) })
+        val ecoGrade = displayScoreValue(it)
+        ScoreBadge("Eco", ecoGrade, scoreColor(ecoGrade), onClick = { onScoreClick(ScoreDialogType.ECO) })
+    }
+}
+
+private fun displayScoreValue(raw: String?): String {
+    val value = raw?.trim().orEmpty()
+    if (value.isBlank()) return "?"
+    val normalized = value.lowercase()
+    return when {
+        normalized in setOf("not-applicable", "not_applicable", "not applicable", "unknown", "undefined") -> "N/A"
+        value.length > 3 -> value.take(3).uppercase()
+        else -> value.uppercase()
     }
 }
 
@@ -1340,10 +1364,17 @@ private fun ScoreBadge(label: String, value: String, color: Color, onClick: () -
     Surface(onClick = onClick, shape = RoundedCornerShape(13.dp), color = Color.Transparent) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(54.dp)) {
             Box(
-                Modifier.size(30.dp).clip(RoundedCornerShape(10.dp)).background(color),
+                Modifier.size(32.dp).clip(RoundedCornerShape(10.dp)).background(color),
                 contentAlignment = Alignment.Center
             ) {
-                Text(value, color = Color.White, fontWeight = FontWeight.Black)
+                Text(
+                    value,
+                    color = Color.White,
+                    style = if (value.length > 2) MaterialTheme.typography.labelSmall else MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip
+                )
             }
             Text(
                 label,
