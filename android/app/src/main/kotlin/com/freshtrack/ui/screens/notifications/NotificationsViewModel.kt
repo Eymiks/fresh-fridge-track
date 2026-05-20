@@ -58,7 +58,7 @@ class NotificationsViewModel @Inject constructor(
             is AuthState.Guest -> productRepository.observeGuestProducts()
             else -> flowOf(emptyList())
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private data class SplitProducts(val expired: List<Product>, val soon: List<Product>)
 
@@ -70,15 +70,15 @@ class NotificationsViewModel @Inject constructor(
         )
     }
         .flowOn(Dispatchers.Default)
-        .shareIn(viewModelScope, SharingStarted.Eagerly, replay = 1)
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
 
     val expiredProducts = splitProducts.map { it.expired }
         .distinctUntilChanged()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList<Product>())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList<Product>())
 
     val soonProducts = splitProducts.map { it.soon }
         .distinctUntilChanged()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList<Product>())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList<Product>())
 
     fun setEnabled(enabled: Boolean) = viewModelScope.launch { prefs.setNotifEnabled(enabled) }
     fun setDays(days: Int) = viewModelScope.launch { prefs.setNotifDays(days) }

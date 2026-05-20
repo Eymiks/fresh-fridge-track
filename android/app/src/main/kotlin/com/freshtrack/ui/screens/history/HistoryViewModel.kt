@@ -48,7 +48,7 @@ class HistoryViewModel @Inject constructor(
     }
         .flowOn(Dispatchers.Default)
         .distinctUntilChanged()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList<Product>())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList<Product>())
 
     private fun filterAndSort(products: List<Product>): List<Product> =
         products.filter {

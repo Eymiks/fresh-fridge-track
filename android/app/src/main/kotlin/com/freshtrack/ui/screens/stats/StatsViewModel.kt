@@ -38,11 +38,11 @@ class StatsViewModel @Inject constructor(
             state is AuthState.Guest -> productRepository.observeGuestProducts()
             else -> flowOf(emptyList())
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList<Product>())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList<Product>())
 
     val stats = products
         .map { products -> statsUseCase.compute(products) }
         .flowOn(Dispatchers.Default)
         .distinctUntilChanged()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 }

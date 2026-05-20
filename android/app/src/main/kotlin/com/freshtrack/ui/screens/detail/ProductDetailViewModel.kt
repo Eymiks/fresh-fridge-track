@@ -9,6 +9,7 @@ import com.freshtrack.data.products.ProductRepository
 import com.freshtrack.domain.catalog.getFreezeDuration
 import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.model.ProductStatus
+import androidx.compose.runtime.Immutable
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +30,7 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
 import javax.inject.Inject
 
+@Immutable
 data class DetailUiState(
     val isLoading: Boolean = true,
     val isMutating: Boolean = false,

@@ -14,11 +14,13 @@ import com.freshtrack.domain.model.ProductStatus
 import com.freshtrack.domain.model.getExpirationStatus
 import com.freshtrack.domain.model.isActive
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -57,10 +59,10 @@ class HamburgerMenuViewModel @Inject constructor(
             is AuthState.Guest -> productRepository.observeGuestProducts()
             else -> flowOf(emptyList())
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val notifEnabled = prefs.notifEnabled
-        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
     val uiState: StateFlow<HamburgerMenuUiState> = combine(
         authState, allProducts, notifEnabled
@@ -97,7 +99,9 @@ class HamburgerMenuViewModel @Inject constructor(
             isGuest = isGuest,
             notifEnabled = notifOn
         )
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, HamburgerMenuUiState())
+    }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HamburgerMenuUiState())
 
     fun signOut() = viewModelScope.launch {
         authRepository.signOut()

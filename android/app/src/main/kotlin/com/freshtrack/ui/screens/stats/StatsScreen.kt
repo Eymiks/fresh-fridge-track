@@ -134,12 +134,12 @@ fun StatsScreen(vm: StatsViewModel = hiltViewModel()) {
 
 @Composable
 private fun FrigoTab(products: List<Product>) {
-    val active = products.filter { it.isActive() }
-    val expired = active.filter { it.getExpirationStatus() == ExpirationStatus.EXPIRED }
-    val soon = active.filter { it.getExpirationStatus() == ExpirationStatus.SOON }
-    val fresh = active.filter { it.getExpirationStatus() == ExpirationStatus.FRESH }
-    val urgent = active.sortedBy { it.getDaysUntilExpiration() }.take(5)
-    val categoryCounts = active.groupingBy { it.category ?: "autre" }.eachCount()
+    val active = remember(products) { products.filter { it.isActive() } }
+    val expired = remember(active) { active.filter { it.getExpirationStatus() == ExpirationStatus.EXPIRED } }
+    val soon = remember(active) { active.filter { it.getExpirationStatus() == ExpirationStatus.SOON } }
+    val fresh = remember(active) { active.filter { it.getExpirationStatus() == ExpirationStatus.FRESH } }
+    val urgent = remember(active) { active.sortedBy { it.getDaysUntilExpiration() }.take(5) }
+    val categoryCounts = remember(active) { active.groupingBy { it.category ?: "autre" }.eachCount() }
 
     StockSummaryCard(
         activeCount = active.size,

@@ -62,7 +62,9 @@ object AppModule {
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true; isLenient = true })
         }
-        install(Logging) { level = LogLevel.INFO }
+        if (BuildConfig.DEBUG) {
+            install(Logging) { level = LogLevel.INFO }
+        }
     }
 
     @Provides
