@@ -1090,26 +1090,37 @@ private fun DetailsAccordionContent(
         )
     }
     InfoCard(title = "Historique") {
-        TimelineRow("Produit ajouté", formatInstantDate(product.addedAt).orEmpty(), icon = Icons.Default.Schedule)
+        TimelineRow(
+            "Produit ajouté",
+            formatInstantDate(product.addedAt).orEmpty(),
+            icon = Icons.Default.Schedule
+        )
         product.openedAt?.let {
             TimelineRow(
                 "Produit ouvert",
                 formatInstantDate(it).orEmpty(),
                 product.daysAfterOpening?.let { days -> "À consommer dans $days jour(s) après ouverture" },
-                icon = Icons.Default.Inventory2
+                icon = Icons.Default.Inventory2,
+                color = ColorFrozen // blue tone like PWA
             )
         }
         product.frozenUntil?.let {
-            TimelineRow("Congélation active", formatDate(it).orEmpty(), "La date effective prend cette congélation en compte.", icon = Icons.Default.AcUnit)
+            TimelineRow(
+                "Congélation active",
+                formatDate(it).orEmpty(),
+                "La date effective prend cette congélation en compte.",
+                icon = Icons.Default.AcUnit,
+                color = ColorFrozen
+            )
         }
         product.statusChangedAt?.let { changedAt ->
-            val (statusLabel, statusIcon) = when (product.status) {
-                ProductStatus.ACTIVE -> "Produit remis actif" to Icons.Default.Refresh
-                ProductStatus.OPENED -> "Statut mis à ouvert" to Icons.Default.Inventory2
-                ProductStatus.CONSUMED -> "Produit consommé" to Icons.Default.Restaurant
-                ProductStatus.THROWN -> "Produit jeté" to Icons.Default.Delete
+            val (statusLabel, statusIcon, statusColor) = when (product.status) {
+                ProductStatus.ACTIVE -> Triple("Produit remis actif", Icons.Default.Refresh, Color.Unspecified)
+                ProductStatus.OPENED -> Triple("Statut mis à ouvert", Icons.Default.Inventory2, ColorFrozen)
+                ProductStatus.CONSUMED -> Triple("Produit consommé", Icons.Default.Restaurant, ColorFresh)
+                ProductStatus.THROWN -> Triple("Produit jeté", Icons.Default.Delete, ColorExpired)
             }
-            TimelineRow(statusLabel, formatInstantDate(changedAt).orEmpty(), icon = statusIcon)
+            TimelineRow(statusLabel, formatInstantDate(changedAt).orEmpty(), icon = statusIcon, color = statusColor)
         }
     }
 }
@@ -1379,13 +1390,20 @@ private fun BarcodeRow(barcode: String?, copied: Boolean, onCopy: (String) -> Un
 }
 
 @Composable
-private fun TimelineRow(title: String, date: String, detail: String? = null, icon: ImageVector = Icons.Default.Check) {
+private fun TimelineRow(
+    title: String,
+    date: String,
+    detail: String? = null,
+    icon: ImageVector = Icons.Default.Check,
+    color: Color = Color.Unspecified
+) {
+    val resolvedColor = if (color == Color.Unspecified) MaterialTheme.colorScheme.primary else color
     Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Box(
-            Modifier.size(34.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+            Modifier.size(34.dp).clip(RoundedCornerShape(12.dp)).background(resolvedColor.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+            Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = resolvedColor)
         }
         Column(Modifier.weight(1f)) {
             Text(title, fontWeight = FontWeight.Medium)
