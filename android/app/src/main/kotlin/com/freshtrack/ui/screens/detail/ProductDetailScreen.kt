@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -41,9 +43,12 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -104,7 +109,9 @@ import com.freshtrack.domain.catalog.getFreezeDuration
 import com.freshtrack.domain.catalog.getPostExpiryNote
 import com.freshtrack.domain.catalog.getRecommendedDaysAfterOpening
 import com.freshtrack.domain.format.formatDate
+import com.freshtrack.domain.format.formatDateLong
 import com.freshtrack.domain.format.formatInstantDate
+import com.freshtrack.domain.format.formatInstantDateLong
 import com.freshtrack.domain.model.ExpirationStatus
 import com.freshtrack.domain.model.Product
 import com.freshtrack.domain.model.ProductStatus
@@ -597,7 +604,7 @@ private fun DeadlineCard(
             )
             Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
             Text(
-                formatDate(product.getEffectiveExpirationDate()).orEmpty(),
+                formatDateLong(product.getEffectiveExpirationDate()).orEmpty(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.SemiBold
@@ -687,13 +694,17 @@ private fun DeadlineCard(
                 }
             }
 
-            // Post-expiry note (always shown when available, like PWA)
+            // Post-expiry note (always shown when available, like PWA) — blue tint like PWA
             getPostExpiryNote(product.category, product.subcategory)?.let { note ->
                 Spacer(Modifier.height(10.dp))
                 Surface(
-                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.08f),
+                    color = ColorFrozen.copy(alpha = 0.08f),
                     shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().border(
+                        width = 1.dp,
+                        color = ColorFrozen.copy(alpha = 0.20f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
                 ) {
                     Row(
                         Modifier.padding(12.dp),
@@ -702,13 +713,13 @@ private fun DeadlineCard(
                     ) {
                         Box(
                             Modifier.size(32.dp).clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f)),
+                                .background(ColorFrozen.copy(alpha = 0.12f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.Default.Info,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.secondary,
+                                tint = ColorFrozen,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -1071,58 +1082,147 @@ private fun DetailsAccordionContent(
     isMutating: Boolean,
     onSaveNotes: () -> Unit
 ) {
-    InfoCard(title = "Identité") {
-        InfoRow("Catégorie", listOfNotNull(categoryLabel ?: product.category, product.subcategory).joinToString(" · "))
-        InfoRow("Marque", product.brand)
-        InfoRow("Quantité", product.quantity)
-        InfoRow("Péremption", formatDate(product.expirationDate))
-        InfoRow("Congelé jusqu'au", formatDate(product.frozenUntil))
-        InfoRow("Ajouté par", product.addedByName)
-        BarcodeRow(product.barcode, copiedBarcode, onCopyBarcode)
+    // ── IDENTITÉ ── icon rows like PWA's DetailRow
+    DetailsSectionLabel("Identité")
+    Spacer(Modifier.height(8.dp))
+    val catValue = listOfNotNull(categoryLabel ?: product.category, product.subcategory).joinToString(" › ")
+    if (!product.brand.isNullOrBlank()) {
+        IconDetailRow(icon = Icons.Default.Sell, label = "Marque", value = product.brand)
+        Spacer(Modifier.height(10.dp))
     }
-    InfoCard(title = "Note du foyer") {
-        NotesField(
-            notes = notes,
-            onNotesChange = onNotesChange,
-            isDirty = notesDirty,
-            isMutating = isMutating,
-            onSave = onSaveNotes
-        )
+    if (!product.quantity.isNullOrBlank()) {
+        IconDetailRow(icon = Icons.Default.Scale, label = "Quantité", value = product.quantity)
+        Spacer(Modifier.height(10.dp))
     }
-    InfoCard(title = "Historique") {
-        TimelineRow(
-            "Produit ajouté",
-            formatInstantDate(product.addedAt).orEmpty(),
-            icon = Icons.Default.Schedule
-        )
-        product.openedAt?.let {
-            TimelineRow(
-                "Produit ouvert",
-                formatInstantDate(it).orEmpty(),
-                product.daysAfterOpening?.let { days -> "À consommer dans $days jour(s) après ouverture" },
-                icon = Icons.Default.Inventory2,
-                color = ColorFrozen // blue tone like PWA
-            )
-        }
-        product.frozenUntil?.let {
-            TimelineRow(
-                "Congélation active",
-                formatDate(it).orEmpty(),
-                "La date effective prend cette congélation en compte.",
-                icon = Icons.Default.AcUnit,
-                color = ColorFrozen
-            )
-        }
-        product.statusChangedAt?.let { changedAt ->
-            val (statusLabel, statusIcon, statusColor) = when (product.status) {
-                ProductStatus.ACTIVE -> Triple("Produit remis actif", Icons.Default.Refresh, Color.Unspecified)
-                ProductStatus.OPENED -> Triple("Statut mis à ouvert", Icons.Default.Inventory2, ColorFrozen)
-                ProductStatus.CONSUMED -> Triple("Produit consommé", Icons.Default.Restaurant, ColorFresh)
-                ProductStatus.THROWN -> Triple("Produit jeté", Icons.Default.Delete, ColorExpired)
+    if (catValue.isNotBlank()) {
+        IconDetailRow(icon = Icons.Default.Category, label = "Catégorie", value = catValue)
+    }
+
+    Spacer(Modifier.height(16.dp))
+
+    // ── NOTE DU FOYER ──
+    DetailsSectionLabel("Note du foyer")
+    Spacer(Modifier.height(8.dp))
+    NotesField(
+        notes = notes,
+        onNotesChange = onNotesChange,
+        isDirty = notesDirty,
+        isMutating = isMutating,
+        onSave = onSaveNotes
+    )
+
+    Spacer(Modifier.height(16.dp))
+
+    // ── HISTORIQUE ──
+    DetailsSectionLabel("Historique")
+    Spacer(Modifier.height(8.dp))
+    Card(
+        Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.45f)),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            // Build timeline events to determine isLast
+            val events = buildList {
+                add(Triple(
+                    "Produit ajouté",
+                    formatInstantDateLong(product.addedAt).orEmpty(),
+                    Triple<String?, ImageVector, Color>(null, Icons.Default.Schedule, Color.Unspecified)
+                ))
+                product.openedAt?.let { openedAt ->
+                    add(Triple(
+                        "Produit ouvert",
+                        formatInstantDateLong(openedAt).orEmpty(),
+                        Triple(
+                            product.daysAfterOpening?.let { d -> "À consommer idéalement sous $d jour${if (d > 1) "s" else ""} après ouverture." },
+                            Icons.Default.Inventory2,
+                            ColorFrozen
+                        )
+                    ))
+                }
+                product.frozenUntil?.let { frozen ->
+                    add(Triple(
+                        "Congélation active",
+                        formatDateLong(frozen).orEmpty(),
+                        Triple("La date effective prend cette congélation en compte.", Icons.Default.AcUnit, ColorFrozen)
+                    ))
+                }
+                // Only show status change for consumed/thrown (not opened/active — like PWA)
+                if (product.status == ProductStatus.CONSUMED || product.status == ProductStatus.THROWN) {
+                    product.statusChangedAt?.let { changedAt ->
+                        val (statusLabel, statusIcon, statusColor) = when (product.status) {
+                            ProductStatus.CONSUMED -> Triple("Produit consommé", Icons.Default.Restaurant, ColorFresh)
+                            ProductStatus.THROWN -> Triple("Produit jeté", Icons.Default.Delete, ColorExpired)
+                            else -> return@let
+                        }
+                        add(Triple(
+                            statusLabel,
+                            formatInstantDateLong(changedAt).orEmpty(),
+                            Triple<String?, ImageVector, Color>(null, statusIcon, statusColor)
+                        ))
+                    }
+                }
             }
-            TimelineRow(statusLabel, formatInstantDate(changedAt).orEmpty(), icon = statusIcon, color = statusColor)
+            events.forEachIndexed { index, (title, date, extra) ->
+                val (detail, icon, color) = extra
+                TimelineRow(
+                    title = title,
+                    date = date,
+                    detail = detail,
+                    icon = icon,
+                    color = color,
+                    isLast = index == events.lastIndex
+                )
+            }
         }
     }
+
+    // Barcode — centered below timeline, like PWA
+    if (!product.barcode.isNullOrBlank()) {
+        Spacer(Modifier.height(8.dp))
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.QrCode,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                modifier = Modifier.size(14.dp)
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                product.barcode,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.50f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            Spacer(Modifier.width(4.dp))
+            IconButton(
+                onClick = { onCopyBarcode(product.barcode) },
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    if (copiedBarcode) Icons.Default.Check else Icons.Default.ContentCopy,
+                    contentDescription = if (copiedBarcode) "Code copié" else "Copier le code-barres",
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                )
+            }
+        }
+    }
+
+    Spacer(Modifier.height(4.dp))
+    Text(
+        "Les informations proviennent d'OpenFoodFacts et peuvent être inexactes ou incomplètes.",
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
+    )
 }
 
 @Composable
@@ -1149,7 +1249,7 @@ private fun StickyBottomEditBar(isEnabled: Boolean, onEdit: () -> Unit, onDelete
                 Spacer(Modifier.width(8.dp))
                 Text("Modifier")
             }
-            OutlinedButton(
+            Button(
                 onClick = onDelete,
                 enabled = isEnabled,
                 modifier = Modifier
@@ -1158,7 +1258,11 @@ private fun StickyBottomEditBar(isEnabled: Boolean, onEdit: () -> Unit, onDelete
                         role = Role.Button
                         contentDescription = "Supprimer le produit"
                     },
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
+                    contentColor = MaterialTheme.colorScheme.error
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
             ) {
                 Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
@@ -1316,74 +1420,82 @@ private fun NotesField(
     isMutating: Boolean,
     onSave: () -> Unit
 ) {
-    OutlinedTextField(
-        value = notes,
-        onValueChange = onNotesChange,
-        label = { Text("Notes") },
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 100.dp, max = 200.dp)
-            .onFocusChanged { focusState ->
-                if (!focusState.hasFocus && isDirty) onSave()
-            },
-        maxLines = 7
-    )
-    if (isDirty || isMutating) {
-        Text(
-            if (isMutating) "Sauvegarde…" else "Modification non sauvegardée",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+    Box(Modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = notes,
+            onValueChange = onNotesChange,
+            placeholder = { Text("Ajouter une note utile pour tout le foyer…") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 100.dp, max = 200.dp)
+                .onFocusChanged { focusState ->
+                    if (!focusState.hasFocus && isDirty) onSave()
+                },
+            maxLines = 7,
+            shape = RoundedCornerShape(16.dp)
         )
-    }
-}
-
-@Composable
-private fun InfoCard(title: String? = null, content: @Composable ColumnScope.() -> Unit) {
-    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.45f))) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            title?.let {
-                Text(it, fontWeight = FontWeight.Black)
-                Spacer(Modifier.height(2.dp))
+        Surface(
+            onClick = onSave,
+            enabled = isDirty && !isMutating,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp),
+            shape = CircleShape,
+            color = if (isDirty) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+            shadowElevation = if (isDirty) 4.dp else 0.dp
+        ) {
+            Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
+                if (isMutating) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp,
+                        color = if (isDirty) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = "Sauvegarder la note",
+                        modifier = Modifier.size(16.dp),
+                        tint = if (isDirty) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-            content()
         }
     }
 }
 
 @Composable
-private fun InfoRow(label: String, value: String?) {
-    if (value.isNullOrBlank()) return
-    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            label,
-            modifier = Modifier.weight(0.42f),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodySmall
-        )
-        Text(
-            value,
-            modifier = Modifier.weight(0.58f),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
-        )
-    }
+private fun DetailsSectionLabel(text: String) {
+    Text(
+        text.uppercase(),
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Black,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        letterSpacing = androidx.compose.ui.unit.TextUnit(0.18f, androidx.compose.ui.unit.TextUnitType.Em)
+    )
 }
 
 @Composable
-private fun BarcodeRow(barcode: String?, copied: Boolean, onCopy: (String) -> Unit) {
-    if (barcode.isNullOrBlank()) return
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            "Code-barres",
-            modifier = Modifier.weight(0.42f),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodySmall
-        )
-        Text(barcode, modifier = Modifier.weight(0.46f), style = MaterialTheme.typography.bodyMedium)
-        IconButton(onClick = { onCopy(barcode) }) {
-            Icon(
-                if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
-                contentDescription = if (copied) "Code copié" else "Copier le code-barres"
+private fun IconDetailRow(icon: ImageVector, label: String, value: String?) {
+    if (value.isNullOrBlank()) return
+    Row(
+        Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            Modifier.size(40.dp).clip(RoundedCornerShape(14.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+        }
+        Column(Modifier.weight(1f)) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Black
             )
         }
     }
@@ -1395,17 +1507,31 @@ private fun TimelineRow(
     date: String,
     detail: String? = null,
     icon: ImageVector = Icons.Default.Check,
-    color: Color = Color.Unspecified
+    color: Color = Color.Unspecified,
+    isLast: Boolean = false
 ) {
     val resolvedColor = if (color == Color.Unspecified) MaterialTheme.colorScheme.primary else color
-    Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Box(
-            Modifier.size(34.dp).clip(RoundedCornerShape(12.dp)).background(resolvedColor.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = resolvedColor)
+    Row(
+        Modifier.fillMaxWidth().padding(bottom = if (isLast) 0.dp else 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                Modifier.size(34.dp).clip(RoundedCornerShape(12.dp)).background(resolvedColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = resolvedColor)
+            }
+            if (!isLast) {
+                Box(
+                    Modifier
+                        .width(1.dp)
+                        .height(28.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant)
+                )
+            }
         }
-        Column(Modifier.weight(1f)) {
+        Column(Modifier.weight(1f).padding(top = 4.dp, bottom = if (isLast) 0.dp else 16.dp)) {
             Text(title, fontWeight = FontWeight.Medium)
             Text(date, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (!detail.isNullOrBlank()) {
