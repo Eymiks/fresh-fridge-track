@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,7 +14,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,8 +40,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Sell
@@ -67,6 +65,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -81,13 +81,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
@@ -165,15 +167,13 @@ fun ProductDetailScreen(
     }
     var scoreDialog by remember { mutableStateOf<ScoreDialogType?>(null) }
     var showFullscreenImage by remember { mutableStateOf(false) }
-    var nutritionOpen by remember { mutableStateOf(true) }
-    var ingredientsOpen by remember { mutableStateOf(false) }
-    var detailsOpen by remember { mutableStateOf(false) }
+    var selectedTab by remember { mutableIntStateOf(0) }
     var ingredientsExpanded by remember(product?.ingredients) { mutableStateOf(false) }
     val clipboard = LocalClipboardManager.current
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
     val showStickyHeader by remember(density) {
-        derivedStateOf { scrollState.value > with(density) { 110.dp.roundToPx() } }
+        derivedStateOf { scrollState.value > with(density) { 96.dp.roundToPx() } }
     }
 
     LaunchedEffect(ui.feedbackId) {
@@ -208,11 +208,15 @@ fun ProductDetailScreen(
                 Modifier.fillMaxSize().padding(innerPadding).padding(24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(message, style = MaterialTheme.typography.titleMedium)
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(message, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
                     ui.error?.let {
-                        Spacer(Modifier.height(8.dp))
-                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+                    }
+                    OutlinedButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Retour")
                     }
                 }
             }
@@ -239,31 +243,25 @@ fun ProductDetailScreen(
                     .verticalScroll(scrollState)
                     .padding(bottom = 14.dp)
             ) {
-                Box(Modifier.fillMaxWidth().height(384.dp)) {
-                    ProductHeroBackdrop(product = product, statusColor = statusColor)
-                    TopFloatingActions(
-                        onBack = { navController.popBackStack() }
-                    )
-                    ProductSummaryCard(
-                        product = product,
-                        categoryLabel = categoryLabel,
-                        expirationStatus = expirationStatus,
-                        onImageClick = { if (!product.imageUrl.isNullOrBlank()) showFullscreenImage = true },
-                        onScoreClick = { scoreDialog = it },
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 14.dp)
-                    )
-                }
+                ProductFreshnessDashboardHero(
+                    product = product,
+                    categoryLabel = categoryLabel,
+                    daysLeft = daysLeft,
+                    expirationStatus = expirationStatus,
+                    statusColor = statusColor,
+                    onBack = { navController.popBackStack() },
+                    onImageClick = { if (!product.imageUrl.isNullOrBlank()) showFullscreenImage = true },
+                    onScoreClick = { scoreDialog = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                )
 
                 Column(
-                    Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+                    Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    DeadlineCard(
-                        product = product,
-                        daysLeft = daysLeft,
-                        expirationStatus = expirationStatus,
-                        statusColor = statusColor
-                    )
                     QuickActionsCard(
                         product = product,
                         isMutating = ui.isMutating,
@@ -272,53 +270,52 @@ fun ProductDetailScreen(
                         onFreeze = { vm.freezeProduct() },
                         onUnfreeze = { vm.unfreezeProduct() }
                     )
-                    DetailAccordionCard(
-                        title = "Nutrition & Allergènes",
-                        icon = Icons.Default.BarChart,
-                        expanded = nutritionOpen,
-                        onToggle = { nutritionOpen = !nutritionOpen }
+                    DeadlineCard(
+                        product = product,
+                        daysLeft = daysLeft,
+                        expirationStatus = expirationStatus,
+                        statusColor = statusColor
+                    )
+                    ProductDetailTabRow(
+                        selectedTab = selectedTab,
+                        onTabSelected = { selectedTab = it }
+                    )
+                    Card(
+                        Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(26.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
-                        NutritionAccordionContent(
-                            facts = nutritionFacts,
-                            nutritionMap = nutritionMap,
-                            allergens = translatedAllergens,
-                            insights = nutritionInsights
-                        )
-                    }
-                    DetailAccordionCard(
-                        title = "Ingrédients",
-                        icon = Icons.Default.Menu,
-                        expanded = ingredientsOpen,
-                        onToggle = { ingredientsOpen = !ingredientsOpen }
-                    ) {
-                        IngredientsAccordionContent(
-                            ingredients = product.ingredients,
-                            ingredientsExpanded = ingredientsExpanded,
-                            onToggleIngredients = { ingredientsExpanded = !ingredientsExpanded },
-                            allergens = translatedAllergens,
-                            additives = additives
-                        )
-                    }
-                    DetailAccordionCard(
-                        title = "Détails & historique",
-                        icon = Icons.Default.Info,
-                        expanded = detailsOpen,
-                        onToggle = { detailsOpen = !detailsOpen }
-                    ) {
-                        DetailsAccordionContent(
-                            product = product,
-                            categoryLabel = categoryLabel,
-                            copiedBarcode = copiedBarcode,
-                            onCopyBarcode = { code ->
-                                clipboard.setText(AnnotatedString(code))
-                                copiedBarcode = true
-                            },
-                            notes = notes,
-                            onNotesChange = { notes = it },
-                            notesDirty = notesDirty,
-                            isMutating = ui.isMutating,
-                            onSaveNotes = { vm.updateNotes(notes) }
-                        )
+                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            when (selectedTab) {
+                                0 -> NutritionAccordionContent(
+                                    facts = nutritionFacts,
+                                    nutritionMap = nutritionMap,
+                                    allergens = translatedAllergens,
+                                    insights = nutritionInsights
+                                )
+                                1 -> IngredientsAccordionContent(
+                                    ingredients = product.ingredients,
+                                    ingredientsExpanded = ingredientsExpanded,
+                                    onToggleIngredients = { ingredientsExpanded = !ingredientsExpanded },
+                                    allergens = translatedAllergens,
+                                    additives = additives
+                                )
+                                2 -> DetailsAccordionContent(
+                                    product = product,
+                                    categoryLabel = categoryLabel,
+                                    copiedBarcode = copiedBarcode,
+                                    onCopyBarcode = { code ->
+                                        clipboard.setText(AnnotatedString(code))
+                                        copiedBarcode = true
+                                    },
+                                    notes = notes,
+                                    onNotesChange = { notes = it },
+                                    notesDirty = notesDirty,
+                                    isMutating = ui.isMutating,
+                                    onSaveNotes = { vm.updateNotes(notes) }
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -328,7 +325,11 @@ fun ProductDetailScreen(
                 exit = fadeOut() + slideOutVertically { -it },
                 modifier = Modifier.align(Alignment.TopCenter)
             ) {
-                FloatingDetailHeader(product = product, onBack = { navController.popBackStack() })
+                FloatingDetailHeader(
+                    product = product,
+                    onBack = { navController.popBackStack() },
+                    onImageClick = { if (!product.imageUrl.isNullOrBlank()) showFullscreenImage = true }
+                )
             }
         }
     }
@@ -377,61 +378,76 @@ fun ProductDetailScreen(
 }
 
 @Composable
-private fun ProductHeroBackdrop(product: Product, statusColor: Color) {
-    Box(Modifier.fillMaxWidth().height(260.dp)) {
-        if (!product.imageUrl.isNullOrBlank()) {
-            FreshProductImage(
-                imageUrl = product.imageUrl,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize().blur(18.dp),
-                shape = RectangleShape,
-                contentScale = ContentScale.Crop
-            )
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.Black.copy(alpha = 0.28f),
-                                Color.Black.copy(alpha = 0.42f),
-                                MaterialTheme.colorScheme.background
-                            )
-                        )
-                    )
-            )
-        } else {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                statusColor.copy(alpha = 0.26f),
-                                statusColor.copy(alpha = 0.10f),
-                                MaterialTheme.colorScheme.background
-                            )
-                        )
-                    )
-            )
-        }
-    }
-}
-
-@Composable
-private fun TopFloatingActions(
-    onBack: () -> Unit
+private fun ProductFreshnessDashboardHero(
+    product: Product,
+    categoryLabel: String?,
+    daysLeft: Int,
+    expirationStatus: ExpirationStatus,
+    statusColor: Color,
+    onBack: () -> Unit,
+    onImageClick: () -> Unit,
+    onScoreClick: (ScoreDialogType) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    val effectiveDate = product.getEffectiveExpirationDate()
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(30.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.65f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        FloatingIconButton(icon = Icons.AutoMirrored.Filled.ArrowBack, label = "Retour", onClick = onBack)
-        Spacer(Modifier.size(44.dp))
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .background(statusColor.copy(alpha = 0.035f))
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FloatingIconButton(icon = Icons.AutoMirrored.Filled.ArrowBack, label = "Retour", onClick = onBack)
+                Row(
+                    Modifier
+                        .weight(1f)
+                        .horizontalScroll(rememberScrollState())
+                        .padding(start = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    StatusBadge(expirationStatus)
+                    if (product.status != ProductStatus.ACTIVE) {
+                        StatusBadge(product.status)
+                    }
+                    if (product.frozenUntil != null) {
+                        StatusMiniPill(Icons.Default.AcUnit, "Congelé", ColorFrozen)
+                    }
+                }
+            }
+
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FreshnessGauge(
+                    daysLeft = daysLeft,
+                    expirationStatus = expirationStatus,
+                    statusColor = statusColor,
+                    modifier = Modifier.weight(1f)
+                )
+                ProductThumbnail(
+                    product = product,
+                    modifier = Modifier.size(width = 112.dp, height = 136.dp),
+                    onClick = onImageClick
+                )
+            }
+
+            HeroProductIdentity(product = product, categoryLabel = categoryLabel)
+            HeroScoreStrip(product = product, effectiveDateText = formatDate(effectiveDate).orEmpty(), onScoreClick = onScoreClick)
+        }
     }
 }
 
@@ -451,9 +467,10 @@ private fun FloatingIconButton(
             contentDescription = label
         },
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.84f),
-        tonalElevation = 4.dp,
-        shadowElevation = 4.dp
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.45f)),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp
     ) {
         Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
             Icon(icon, contentDescription = null, tint = contentColor)
@@ -462,92 +479,141 @@ private fun FloatingIconButton(
 }
 
 @Composable
-private fun ProductSummaryCard(
-    product: Product,
-    categoryLabel: String?,
+private fun FreshnessGauge(
+    daysLeft: Int,
     expirationStatus: ExpirationStatus,
-    onImageClick: () -> Unit,
-    onScoreClick: (ScoreDialogType) -> Unit,
+    statusColor: Color,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    Surface(
+        modifier = modifier.height(136.dp),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
+        border = BorderStroke(1.dp, statusColor.copy(alpha = 0.14f))
     ) {
-        Column {
-            Row(
-                Modifier.padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                ProductThumbnail(product = product, modifier = Modifier.size(width = 104.dp, height = 132.dp), onClick = onImageClick)
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        "Fiche produit",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Black
-                    )
-                    Text(
-                        product.name,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Black,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        listOfNotNull(product.brand, product.quantity).joinToString(" · ")
-                            .ifBlank { "Produit du foyer" },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    categoryLabel?.let {
-                        CompactPill(
-                            label = listOfNotNull(it, product.subcategory).joinToString(" · "),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+        Box(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp), contentAlignment = Alignment.Center) {
+            Canvas(Modifier.fillMaxWidth().height(82.dp).align(Alignment.TopCenter)) {
+                val strokeWidth = 14.dp.toPx()
+                val arcSize = Size(width = size.width - strokeWidth, height = (size.height - strokeWidth) * 2f)
+                val topLeft = Offset(x = strokeWidth / 2f, y = strokeWidth / 2f)
+                drawArc(
+                    color = statusColor.copy(alpha = 0.16f),
+                    startAngle = 180f,
+                    sweepAngle = 180f,
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = arcSize,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                )
+                drawArc(
+                    color = statusColor,
+                    startAngle = 180f,
+                    sweepAngle = 180f * freshnessGaugeProgress(daysLeft),
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = arcSize,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                )
             }
-            Surface(color = MaterialTheme.colorScheme.background.copy(alpha = 0.55f)) {
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    ScoreBadgesRow(product = product, onScoreClick = onScoreClick)
-                    StatusBadge(expirationStatus)
-                    if (product.status != ProductStatus.ACTIVE) {
-                        StatusBadge(product.status)
-                    }
-                    if (product.frozenUntil != null) {
-                        CompactStatusPill(Icons.Default.AcUnit, "Congelé", ColorFrozen)
-                    }
-                }
+            Column(
+                Modifier.align(Alignment.BottomCenter).padding(bottom = 2.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    deadlineCounterLabel(daysLeft),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = statusColor,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    expirationStatus.label(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ProductThumbnail(product: Product, modifier: Modifier, onClick: () -> Unit) {
+private fun HeroProductIdentity(product: Product, categoryLabel: String?) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+        Text(
+            product.name,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Black,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            listOfNotNull(product.brand, product.quantity).joinToString(" · ").ifBlank { "Produit du foyer" },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        categoryLabel?.let {
+            CompactPill(
+                label = listOfNotNull(it, product.subcategory).joinToString(" · "),
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+@Composable
+private fun HeroScoreStrip(product: Product, effectiveDateText: String, onScoreClick: (ScoreDialogType) -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.background.copy(alpha = 0.42f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.36f))
+    ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ScoreBadgesRow(product = product, onScoreClick = onScoreClick)
+            StatusMiniPill(Icons.Default.Schedule, "Date $effectiveDateText", MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+internal fun freshnessGaugeProgress(daysLeft: Int): Float = when {
+    daysLeft < 0 -> 0f
+    daysLeft == 0 -> 0.05f
+    else -> (daysLeft / 30f).coerceAtMost(1f)
+}
+
+@Composable
+private fun ProductThumbnail(
+    product: Product,
+    modifier: Modifier,
+    onClick: () -> Unit,
+    semanticLabel: String = "Photo de ${product.name}"
+) {
     Box(
         modifier
             .clip(RoundedCornerShape(22.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clearAndSetSemantics {
+                role = Role.Button
+                contentDescription = semanticLabel
+            }
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         FreshProductImage(
             imageUrl = product.imageUrl,
-            contentDescription = product.name,
+            contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             shape = RoundedCornerShape(22.dp),
             contentScale = ContentScale.Crop
@@ -562,184 +628,168 @@ private fun DeadlineCard(
     expirationStatus: ExpirationStatus,
     statusColor: Color
 ) {
-    val counter = when {
-        daysLeft < 0 -> (-daysLeft).toString()
-        daysLeft == 0 -> "!"
-        else -> daysLeft.toString()
-    }
-    val label = when {
-        daysLeft < 0 -> "jour${if (-daysLeft > 1) "s" else ""} de retard"
-        daysLeft == 0 -> "Expire aujourd'hui"
-        daysLeft == 1 -> "Expire demain"
-        else -> "jours restants"
-    }
+    val effectiveDate = product.getEffectiveExpirationDate()
+    val counter = deadlineCounterLabel(daysLeft)
     Card(
         Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = statusColor.copy(alpha = 0.07f)),
-        border = BorderStroke(1.dp, statusColor.copy(alpha = 0.16f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, statusColor.copy(alpha = 0.18f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
-            Modifier.fillMaxWidth().padding(18.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Box(
-                Modifier.size(44.dp).clip(RoundedCornerShape(15.dp)).background(MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)),
-                contentAlignment = Alignment.Center
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Icon(expirationStatus.icon(), contentDescription = null, tint = statusColor)
+                Box(
+                    Modifier.size(42.dp).clip(RoundedCornerShape(16.dp)).background(statusColor.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(expirationStatus.icon(), contentDescription = null, tint = statusColor)
+                }
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Date limite",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Black
+                    )
+                    Text(
+                        expirationStatus.label(),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+                Surface(
+                    shape = RoundedCornerShape(999.dp),
+                    color = statusColor.copy(alpha = 0.13f),
+                    border = BorderStroke(1.dp, statusColor.copy(alpha = 0.20f))
+                ) {
+                    Text(
+                        counter,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = statusColor,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 1
+                    )
+                }
             }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                "Date limite",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Black
-            )
-            Text(
-                counter,
-                style = MaterialTheme.typography.displayMedium,
-                color = statusColor,
-                fontWeight = FontWeight.Black,
-                textAlign = TextAlign.Center
-            )
-            Text(label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black)
-            Text(
-                formatDateLong(product.getEffectiveExpirationDate()).orEmpty(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.SemiBold
-            )
-            // Opened-since section (like PWA "Ouvert depuis X jours")
+
+            Surface(
+                color = statusColor.copy(alpha = 0.07f),
+                shape = RoundedCornerShape(18.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        formatDateLong(effectiveDate).orEmpty(),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Black
+                    )
+                    if (effectiveDate != product.expirationDate) {
+                        Text(
+                            "Date initiale : ${formatDate(product.expirationDate).orEmpty()}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+
             if (product.openedAt != null && product.daysAfterOpening != null) {
                 val tz = TimeZone.currentSystemDefault()
                 val today = Clock.System.todayIn(tz)
                 val openedDate = product.openedAt.toLocalDateTime(tz).date
                 val openedDays = maxOf(0, openedDate.daysUntil(today))
-                val effectiveDate = product.getEffectiveExpirationDate()
-                Spacer(Modifier.height(10.dp))
-                Surface(
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth().border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                ) {
-                    Column(Modifier.padding(12.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Box(
-                                Modifier.size(32.dp).clip(RoundedCornerShape(12.dp))
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Default.Inventory2,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                            Text(
-                                "Ouvert depuis $openedDays jour${if (openedDays > 1) "s" else ""}",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Black,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                        if (effectiveDate != product.expirationDate) {
-                            Spacer(Modifier.height(6.dp))
-                            Text(
-                                "Date effective : ${formatDate(effectiveDate).orEmpty()}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 40.dp)
-                            )
-                        }
-                    }
-                }
+                DeadlineInfoRow(
+                    icon = Icons.Default.Inventory2,
+                    title = "Ouvert depuis $openedDays jour${if (openedDays > 1) "s" else ""}",
+                    subtitle = if (effectiveDate != product.expirationDate) {
+                        "Date effective : ${formatDate(effectiveDate).orEmpty()}"
+                    } else {
+                        null
+                    },
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
 
-            // Frozen section (like PWA "Congelé jusqu'au")
             if (product.frozenUntil != null) {
-                Spacer(Modifier.height(10.dp))
-                Surface(
-                    color = ColorFrozen.copy(alpha = 0.08f),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(
-                            Modifier.size(32.dp).clip(RoundedCornerShape(12.dp))
-                                .background(ColorFrozen.copy(alpha = 0.12f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.AcUnit,
-                                contentDescription = null,
-                                tint = ColorFrozen,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        Text(
-                            "Congelé jusqu'au ${formatDate(product.frozenUntil).orEmpty()}",
-                            color = ColorFrozen,
-                            fontWeight = FontWeight.Black,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
+                DeadlineInfoRow(
+                    icon = Icons.Default.AcUnit,
+                    title = "Congelé jusqu'au ${formatDate(product.frozenUntil).orEmpty()}",
+                    color = ColorFrozen
+                )
             }
 
-            // Post-expiry note (always shown when available, like PWA) — blue tint like PWA
             getPostExpiryNote(product.category, product.subcategory)?.let { note ->
-                Spacer(Modifier.height(10.dp))
-                Surface(
-                    color = ColorFrozen.copy(alpha = 0.05f),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth().border(
-                        width = 1.dp,
-                        color = ColorFrozen.copy(alpha = 0.16f),
-                        shape = RoundedCornerShape(16.dp)
+                DeadlineInfoRow(
+                    icon = Icons.Default.Info,
+                    title = "Conservation possible",
+                    subtitle = "Jusqu'à $note après la date d'expiration.",
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeadlineInfoRow(
+    icon: ImageVector,
+    title: String,
+    color: Color,
+    subtitle: String? = null
+) {
+    Surface(
+        color = color.copy(alpha = 0.07f),
+        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier.fillMaxWidth(),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.14f))
+    ) {
+        Row(
+            Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                Modifier.size(34.dp).clip(RoundedCornerShape(13.dp)).background(color.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(17.dp))
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    title,
+                    color = color,
+                    fontWeight = FontWeight.Black,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                subtitle?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                ) {
-                    Row(
-                        Modifier.padding(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Box(
-                            Modifier.size(32.dp).clip(RoundedCornerShape(12.dp))
-                                .background(ColorFrozen.copy(alpha = 0.12f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.Info,
-                                contentDescription = null,
-                                tint = ColorFrozen,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        Text(
-                            "Ce produit peut généralement être consommé jusqu'à $note après la date d'expiration.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
                 }
             }
         }
     }
+}
+
+private fun deadlineCounterLabel(daysLeft: Int): String = when {
+    daysLeft < 0 -> "${-daysLeft} j de retard"
+    daysLeft == 0 -> "Aujourd'hui"
+    daysLeft == 1 -> "Demain"
+    else -> "Dans $daysLeft j"
 }
 
 @Composable
@@ -755,7 +805,8 @@ private fun QuickActionsCard(
     Card(
         modifier,
         shape = RoundedCornerShape(26.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f))
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SectionEyebrow(icon = Icons.Default.CheckCircle, eyebrow = "Statut", title = "Actions rapides")
@@ -795,28 +846,42 @@ private fun QuickActionsCard(
                     modifier = Modifier.weight(1f)
                 )
             }
-            // "Remettre en actif" text link visible when not active (like PWA)
+            // "Remettre en actif" visible when not active
             if (product.status != ProductStatus.ACTIVE) {
                 Surface(
                     onClick = { onSetStatus(ProductStatus.ACTIVE) },
                     enabled = !isMutating,
-                    shape = RoundedCornerShape(999.dp),
-                    color = Color.Transparent
+                    modifier = Modifier.clearAndSetSemantics {
+                        role = Role.Button
+                        contentDescription = "Remettre en actif"
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.22f))
                 ) {
                     Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp),
+                        Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 9.dp),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(15.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.width(6.dp))
                         Text("Remettre en actif", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                     }
                 }
             }
+            val freezeLabel = if (product.frozenUntil == null) {
+                "Mettre au congélateur (${getFreezeDuration(product.category)} mois)"
+            } else {
+                "Retirer du congélateur"
+            }
             Surface(
                 onClick = if (product.frozenUntil == null) onFreeze else onUnfreeze,
                 enabled = !isMutating,
+                modifier = Modifier.clearAndSetSemantics {
+                    role = Role.Button
+                    contentDescription = freezeLabel
+                },
                 shape = RoundedCornerShape(16.dp),
                 color = ColorFrozen.copy(alpha = 0.10f)
             ) {
@@ -828,11 +893,7 @@ private fun QuickActionsCard(
                     Icon(Icons.Default.AcUnit, contentDescription = null, tint = ColorFrozen, modifier = Modifier.size(17.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        if (product.frozenUntil == null) {
-                            "Mettre au congélateur (${getFreezeDuration(product.category)} mois)"
-                        } else {
-                            "Retirer du congélateur"
-                        },
+                        freezeLabel,
                         color = ColorFrozen,
                         fontWeight = FontWeight.Black,
                         style = MaterialTheme.typography.labelLarge,
@@ -888,36 +949,49 @@ private fun QuickStatusButton(
 }
 
 @Composable
-private fun DetailAccordionCard(
-    title: String,
-    icon: ImageVector,
-    expanded: Boolean,
-    onToggle: () -> Unit,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(26.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+private fun ProductDetailTabRow(selectedTab: Int, onTabSelected: (Int) -> Unit) {
+    val tabs = listOf(
+        Triple("Nutrition", Icons.Default.BarChart, "Onglet Nutrition et allergènes"),
+        Triple("Ingrédients", Icons.Default.Menu, "Onglet Ingrédients"),
+        Triple("Détails", Icons.Default.Info, "Onglet Détails et historique")
+    )
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f))
     ) {
-        Column {
-            Row(
-                Modifier.fillMaxWidth().clickable(onClick = onToggle).padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    Modifier.size(40.dp).clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)),
-                    contentAlignment = Alignment.Center
+        TabRow(
+            selectedTabIndex = selectedTab,
+            containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.primary
+        ) {
+            tabs.forEachIndexed { index, (label, icon, semanticLabel) ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { onTabSelected(index) },
+                    modifier = Modifier.clearAndSetSemantics {
+                        role = Role.Tab
+                        contentDescription = semanticLabel
+                    }
                 ) {
-                    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                }
-                Spacer(Modifier.width(12.dp))
-                Text(title, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
-                Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null)
-            }
-            if (expanded) {
-                Column(Modifier.padding(horizontal = 14.dp).padding(bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    content()
+                    Column(
+                        Modifier.padding(vertical = 12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = if (selectedTab == index) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            label,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = if (selectedTab == index) FontWeight.Black else FontWeight.Medium,
+                            color = if (selectedTab == index) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
@@ -1279,7 +1353,7 @@ private fun StickyBottomEditBar(isEnabled: Boolean, onEdit: () -> Unit, onDelete
 }
 
 @Composable
-private fun FloatingDetailHeader(product: Product, onBack: () -> Unit) {
+private fun FloatingDetailHeader(product: Product, onBack: () -> Unit, onImageClick: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp),
         shape = RoundedCornerShape(18.dp),
@@ -1300,7 +1374,12 @@ private fun FloatingDetailHeader(product: Product, onBack: () -> Unit) {
             ) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
             }
-            ProductThumbnail(product = product, modifier = Modifier.size(34.dp), onClick = {})
+            ProductThumbnail(
+                product = product,
+                modifier = Modifier.size(34.dp),
+                onClick = onImageClick,
+                semanticLabel = "Photo de ${product.name}"
+            )
             Spacer(Modifier.width(10.dp))
             Text(
                 product.name,
@@ -1336,41 +1415,57 @@ private fun SectionEyebrow(icon: ImageVector, eyebrow: String, title: String) {
 
 @Composable
 private fun ScoreBadgesRow(product: Product, onScoreClick: (ScoreDialogType) -> Unit) {
-    // Always show Nutri-Score like PWA (shows '?' if unknown)
-    val nutriGrade = displayScoreValue(product.nutriScore)
-    ScoreBadge("Nutri", nutriGrade, scoreColor(nutriGrade), onClick = { onScoreClick(ScoreDialogType.NUTRI) })
-    product.novaGroup?.let {
-        ScoreBadge("NOVA", it.toString(), novaColor(it), onClick = { onScoreClick(ScoreDialogType.NOVA) })
+    normalizeVisibleScore(product.nutriScore, VisibleScoreKind.LETTER)?.let { grade ->
+        ScoreMiniBadge("Nutri", grade, scoreColor(grade), onClick = { onScoreClick(ScoreDialogType.NUTRI) })
     }
-    product.ecoScore?.let {
-        val ecoGrade = displayScoreValue(it)
-        ScoreBadge("Eco", ecoGrade, scoreColor(ecoGrade), onClick = { onScoreClick(ScoreDialogType.ECO) })
+    normalizeVisibleScore(product.novaGroup?.toString(), VisibleScoreKind.NOVA)?.let { group ->
+        ScoreMiniBadge("NOVA", group, novaColor(group.toInt()), onClick = { onScoreClick(ScoreDialogType.NOVA) })
+    }
+    normalizeVisibleScore(product.ecoScore, VisibleScoreKind.LETTER)?.let { grade ->
+        ScoreMiniBadge("Eco", grade, scoreColor(grade), onClick = { onScoreClick(ScoreDialogType.ECO) })
     }
 }
 
-private fun displayScoreValue(raw: String?): String {
-    val value = raw?.trim().orEmpty()
-    if (value.isBlank()) return "?"
+internal enum class VisibleScoreKind { LETTER, NOVA }
+
+internal fun normalizeVisibleScore(raw: String?, kind: VisibleScoreKind): String? {
+    val value = raw?.trim()?.uppercase().orEmpty()
+    if (value.isBlank()) return null
     val normalized = value.lowercase()
-    return when {
-        normalized in setOf("not-applicable", "not_applicable", "not applicable", "unknown", "undefined") -> "N/A"
-        value.length > 3 -> value.take(3).uppercase()
-        else -> value.uppercase()
+    if (normalized in setOf("n/a", "na", "-", "not-applicable", "not_applicable", "not applicable", "unknown", "undefined")) {
+        return null
+    }
+    return when (kind) {
+        VisibleScoreKind.LETTER -> value.takeIf { it in setOf("A", "B", "C", "D", "E") }
+        VisibleScoreKind.NOVA -> value.takeIf { it in setOf("1", "2", "3", "4") }
     }
 }
 
 @Composable
-private fun ScoreBadge(label: String, value: String, color: Color, onClick: () -> Unit) {
-    Surface(onClick = onClick, shape = RoundedCornerShape(13.dp), color = Color.Transparent) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(54.dp)) {
+private fun ScoreMiniBadge(label: String, value: String, color: Color, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = Color.Transparent
+    ) {
+        Column(
+            Modifier
+                .width(48.dp)
+                .height(52.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             Box(
-                Modifier.size(32.dp).clip(RoundedCornerShape(10.dp)).background(color),
+                Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(13.dp))
+                    .background(color),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     value,
                     color = Color.White,
-                    style = if (value.length > 2) MaterialTheme.typography.labelSmall else MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Black,
                     maxLines = 1,
                     overflow = TextOverflow.Clip
@@ -1378,10 +1473,11 @@ private fun ScoreBadge(label: String, value: String, color: Color, onClick: () -
             }
             Text(
                 label,
-                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 1
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Clip
             )
         }
     }
@@ -1394,7 +1490,7 @@ private fun StatusBadge(expirationStatus: ExpirationStatus) {
         ExpirationStatus.SOON -> Triple("Bientôt", ColorSoon, Icons.Default.Warning)
         ExpirationStatus.EXPIRED -> Triple("Périmé", ColorExpired, Icons.Default.Warning)
     }
-    CompactStatusPill(icon, label, color)
+    StatusMiniPill(icon, label, color)
 }
 
 @Composable
@@ -1405,16 +1501,23 @@ private fun StatusBadge(status: ProductStatus) {
         ProductStatus.CONSUMED -> Triple("Consommé", ColorFresh, Icons.Default.Check)
         ProductStatus.THROWN -> Triple("Jeté", MaterialTheme.colorScheme.error, Icons.Default.Delete)
     }
-    CompactStatusPill(icon, label, color)
+    StatusMiniPill(icon, label, color)
 }
 
 @Composable
-private fun CompactStatusPill(icon: ImageVector, label: String, color: Color) {
-    Surface(shape = RoundedCornerShape(999.dp), color = color.copy(alpha = 0.14f)) {
-        Row(Modifier.padding(horizontal = 9.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
+private fun StatusMiniPill(icon: ImageVector, label: String, color: Color) {
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = color.copy(alpha = 0.08f),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.12f))
+    ) {
+        Row(
+            Modifier.height(32.dp).padding(horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(13.dp))
             Spacer(Modifier.width(5.dp))
-            Text(label, color = color, fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelSmall)
+            Text(label, color = color, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
         }
     }
 }
@@ -1733,6 +1836,12 @@ private fun ExpirationStatus.icon(): ImageVector = when (this) {
     ExpirationStatus.EXPIRED -> Icons.Default.Warning
     ExpirationStatus.SOON -> Icons.Default.Warning
     ExpirationStatus.FRESH -> Icons.Default.CheckCircle
+}
+
+private fun ExpirationStatus.label(): String = when (this) {
+    ExpirationStatus.EXPIRED -> "Périmé"
+    ExpirationStatus.SOON -> "Bientôt périmé"
+    ExpirationStatus.FRESH -> "Frais"
 }
 
 private fun Product.categoryLabel(): String? =
